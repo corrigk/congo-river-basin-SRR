@@ -1,108 +1,118 @@
-# Congo River Basin: SoS Con Ops
+# Congo River Basin SRR: RFP S-3 BASINLINK & BASINCAST
 
-Interactive concept-of-operations visualization for the Congo River Basin System of Systems. It shows how
-satellites, aircraft/UAVs, ground stations, river assets, community reporting and governance institutions
-would monitor **every hazard in the basin** and turn observations into action through one nine-stage loop.
+Live demo for our System Requirements Review. It narrows the Congo Basin system-of-systems ConOps to what
+**RFP S-3** (space-based communications for sensors, responders and communities) must accomplish, which requirements
+drive it, and which gaps it closes. Flooding is one worked example; the same comms layer serves every hazard.
 
-It is a concept visualization, **not a live monitoring system**. The satellite orbits and weather layers use
-real public data for illustration only.
+It is a concept visualization, not a live system. Requirement text and numbers are verbatim from the RFP; anything
+we inferred (traceability, interface roles, latency sub-allocations, map positions) is labelled *Proposed*, *TBR* or
+*illustrative* on the page. The page is orbit-neutral: no orbit or architecture is shown as decided.
 
-## Run it
+## Tabs
 
-```bash
-npm install
-npm run dev          # http://localhost:5173
-```
-
-Present from a production build (faster load):
-
-```bash
-npm run build && npm run preview   # http://localhost:4173
-```
-
-**Backup:** `congo-conops-backup.html` is a single self-contained file (app + data + fonts inlined).
-Double-click it to open in Chrome/Edge. It loads Cesium from the jsDelivr CDN, so it needs internet.
-Rebuild it with `npm run build:single`.
-
-## Views
-
-| Tab | What it shows |
-| --- | --- |
-| **System Overview** (landing view) | All-hazards flow: problems monitored → data collection → integrate & forecast → prioritize, act & feed back, plus a hazard × data-source matrix. Click a hazard, source or stage to highlight what it connects to. |
-| **Mission Map** | The 3D globe: basin, focus zones, deployed assets, overlays, and the nine-stage rail. |
-| **Process & Gaps** | The nine stages with requirements (R-1…R-5), capability gaps, stakeholders and zones. |
-
-**Example: Flooding** is one worked example of the system: an illustrative Upper-Ubangi flood walked through
-the same nine stages. Open it from the Flooding hazard ("See it in action") or the Ubangi zone panel, or reach it
-in the tour. The river reach, gauges and towns are real; the timings and magnitudes are notional.
+| Key | Tab | What it shows |
+| --- | --- | --- |
+| 1 | **S-3 Overview** | Core gap (data out, warnings in), headline requirements, mission objectives, S-3's role in the nine-stage loop, scenarios |
+| 2 | **Requirements** | The ten Level 0 requirements with a threshold / objective toggle; select one for what it traces to and where it applies |
+| 3 | **Scenario** | Click-to-advance scenarios on the map with the latency budget; A flood warning chain, B routine collection, C degraded operations, D non-flood hazard |
+| 4 | **Interfaces** | S-3 in the centre, partner RFPs around it, what we carry and in which direction |
+| 5 | **Trades & Open Items** | Open trades, TBR list, constraints |
 
 ## Presenting
 
 | Key | Action |
 | --- | --- |
-| → / Space / PgDn | Next briefing step (clickers work) |
-| ← / PgUp | Previous step |
-| 1 – 9 | Jump to a process stage |
-| O | System Overview |
-| H | Basin view on the map |
-| P | Toggle Process & Gaps |
-| D · S · W · R · G | Toggle Data flow · Satellites · Weather · River flow · Coverage gaps |
-| K | Play / pause the flooding example |
-| L | Layers · F fullscreen · ? shortcuts |
-| Esc | Close panel / back to the map |
+| 1 – 5 | Switch tab |
+| → · PgDn · Space | Next scenario step (clickers work) |
+| ← · PgUp | Previous step |
+| R | Reset the scenario to step 1 |
+| T | Threshold / objective values everywhere |
+| M | 3D globe / schematic map |
+| F · ? · Esc | Fullscreen · shortcuts · close panel |
 
-Tour: Intro → System Overview → The Basin → 6 focus zones → Space Segment → 9 process stages (with data flow)
-→ Example: Flooding (9 beats) → Process & Gaps. Each chapter switches on the overlays that suit it. Clicking
-anything keeps the tour cursor in sync, so you can go off-script and then press → to resume.
+**Deep links** open a view directly, so a slide can link straight to a step:
+`…/#overview`, `…/#requirements`, `…/#scenario/A/5`, `…/#interfaces`, `…/#trades`.
+Add `?offline` (`…/?offline#scenario/A/1`) to skip the online satellite imagery and use the bundled basemap.
 
-## Overlays (toggle bar on the map)
+**Before presenting on a computer you don't control:** open the page once and wait for the badge in the top bar to
+read **Ready offline** (or click **Preload for offline**). After that the page and the 3D globe work with no network.
+If anything goes wrong, `srr-offline.html` is a single file with everything inside: copy it to a USB stick and
+double-click it (schematic map only).
 
-- **Data flow:** animated arcs between every deployed asset and the Basin Data Hub, a *concept* node at
-  CICOS in Kinshasa. Mint arcs are observations flowing in; gold arcs are alerts and tasking flowing out. When a
-  stage is selected the pattern follows it: 1–4 in, 5–6 the hub pulses, 7–8 out, 9 the full loop.
-- **Satellites:** Sentinel-1A/1C, Landsat 8/9, GPM Core and SWOT, propagated from CelesTrak TLEs (SGP4),
-  with time running ×90. The legend lists each satellite's altitude and its next pass over the basin.
-- **Weather:** NASA GIBS, no key needed. It shows yesterday's VIIRS true-color clouds plus a looping GPM IMERG
-  rainfall animation over the past ~day. **Needs internet.**
-- **River flow:** comet pulses moving downstream along the HydroRIVERS main-stem network.
-- **Coverage gaps:** distance to the nearest major road (Natural Earth), used as a proxy for where ground sensors
-  are hardest to install and maintain.
+## Run it locally
 
-## Content and what still needs verifying
+```bash
+npm install
+npm run dev            # http://localhost:5173 (no service worker in dev)
+```
 
-- `src/content.js` holds the team-validated stages, requirements, gaps, zones, assets and stakeholders.
-- `src/hazards.js` holds the all-hazards layer. Every hazard→zone and hazard→source link is tagged `content`
-  (already stated in our zone or asset content) or `proposed` (inferred; drawn dashed on the page). Search for
-  `TODO: verify` to find placeholder text.
-- Zone blurbs are general-knowledge geography. The page says so; verify them before presenting.
+Production build and a local copy of the GitHub Pages setup:
+
+```bash
+npm run build          # dist/ (site + sw.js) and srr-offline.html
+npm run serve          # http://localhost:4180/congo-river-basin-SRR/
+node scripts/serve.mjs --port 4181 --kbps 400 --latency 400   # imitate bad Wi-Fi
+node scripts/serve.mjs --port 4182 --block globemap            # imitate the globe failing to load
+```
+
+All paths are relative (`base: './'`), so the same build works on GitHub Pages under the repo subpath, on
+`localhost`, and from any folder behind a static server. Opening `dist/index.html` straight from disk does not work
+(browsers block ES modules over `file://`); use `srr-offline.html` for that. Pushing to `main` deploys to GitHub Pages
+(`.github/workflows/deploy.yml`).
+
+## Add or edit a scenario
+
+Scenarios are data: `src/s3/scenarios.json`. No rendering code changes are needed.
+
+1. Add any new map points to `nodes` (`label`, `sub`, `kind`, `at: [lon, lat]`, and `rfp` for a partner system).
+   Kinds: `sensor`, `field`, `space`, `ground`, `authority`, `receiver`, `responder`, `outage`, `hazard`, `partner`.
+2. Append an object to `scenarios` with `id` (one letter), `title`, `pov`, `summary`, `reqs`, optional `latency: true`
+   (shows the budget bars), and `steps`.
+3. Each step has `title`, `text`, optional `before` (the "today, without S-3" contrast), `reqs` (requirement IDs),
+   `mo`, `stages` (nine-stage keys), `show` (node IDs on the map), `links` (`[from, to, kind]`, kind
+   `up | down | two | cue | relay`), `focus` (nodes to frame), and optionally `state`, `area` (draw the S3-06 alert
+   footprint), `latency` (`{ leg, segments }`), `interfaces` (`[{ id, note }]`) and `note`.
+
+The selector, step list, panel, map and keyboard pick it up automatically. Requirement text lives in
+`src/s3/content.js`, the single source of truth for every number on the page.
+
+## How the offline cache works
+
+- **First visit.** The page needs about 105 kB to render (HTML, one JS file, one CSS file, five fonts) and draws the
+  schematic map with no WebGL or network. The 3D globe (CesiumJS, about 1.5 MB compressed) loads afterwards in the
+  background and takes over when ready. All libraries and fonts are self-hosted; nothing loads from a CDN.
+- **Service worker** (`dist/sw.js`, generated from `scripts/sw-template.js` by `scripts/sw-plugin.mjs` with the list
+  of files the build actually produced):
+  - on install it caches the **core** files (about 0.25 MB), so a second visit works offline;
+  - once the globe has loaded it caches the **globe** files too (about 7 MB uncompressed); **Preload for offline**
+    does the same on demand and shows progress;
+  - files are served cache-first; the page itself is served from cache and refreshed in the background, so a new
+    deploy shows up on the next reload.
+- **Badge** (top bar): *Loading…* → *Preload for offline* (page cached, globe not yet) → *Ready offline* (everything).
+- **Imagery.** The globe always has Cesium's bundled Natural Earth II basemap. Esri World Imagery is layered on top
+  only after a probe tile loads, so with no internet the globe stays on the bundled basemap instead of failing. Esri
+  tiles are not bulk-cached, to stay within Esri's terms of use.
+- **Fallbacks.** No WebGL, or the globe fails to load: the schematic map stays, with a short notice. You can switch
+  maps at any time with **M**.
+
+## Code map
+
+- `src/s3/content.js`: requirements, objectives, gap facts, constraints, trades, TBR list, latency budget, partner RFPs
+- `src/s3/scenarios.json`: scenario steps and map nodes
+- `src/s3/views.js`: HTML for every tab and panel
+- `src/main.js`: state, routing (`#scenario/A/5`), tabs, keyboard, map switching
+- `src/s3/schematic.js`: SVG schematic map (geometry precomputed by `scripts/build-schematic.mjs`)
+- `src/s3/globemap.js`: 3D globe adapter (same `render(view)` API), built on `src/globe.js`, `src/riverflow.js`, `src/fx.js`
+- `src/s3/offline.js`: service-worker registration and the offline badge
+- `src/style.css` (`:root` colour tokens, shared components) and `src/s3/s3.css`
 
 ## Data
 
 | Layer | Source |
 | --- | --- |
-| Satellite imagery | Esri World Imagery (no token); offline fallback: Cesium's bundled Natural Earth II |
-| Basin boundary, catchments, zone polygons | HydroSHEDS HydroBASINS level 6 (Africa) |
-| River network (width = mean discharge) | HydroSHEDS HydroRIVERS (Africa) |
+| Basin boundary, river network | HydroSHEDS HydroBASINS / HydroRIVERS (Africa) |
 | National borders | Natural Earth 50m |
+| Online imagery | Esri World Imagery (no token); offline: Cesium's bundled Natural Earth II |
 
-Zone polygons are derived from HydroBASINS drainage topology (`scripts/build-data.mjs`). Ubangi, Sangha, Kasai and
-Lualaba are everything upstream of a point on each river. River Mouth is everything downstream of the Kasai
-confluence. Cuvette Centrale is **approximated**: the remaining central-depression catchments.
-
-To regenerate `src/data/*.json`, download and unzip the two HydroSHEDS files (URLs at the top of
-`scripts/build-data.mjs`) and run `RAW=<folder> npm run data`. This also refreshes the satellite TLEs
-(`tle.json`). Refresh them close to presentation day so the orbits stay accurate.
-
-## Code map
-
-- `src/content.js`: Con Ops content (stages, zones, assets, stakeholders), places, the data-hub concept,
-  asset data-flow roles and the stage → data-flow mapping
-- `src/hazards.js`: hazards and their links to sources, zones and forecast outputs
-- `src/overview.js`, `src/overview.css`: the System Overview view
-- `src/views.js`: HTML for map panels, rails and the Process & Gaps view
-- `src/main.js`: state, selection, tabs, presenter tour, keyboard/mouse
-- `src/globe.js`: Cesium viewer, imagery, vector layers, zone highlighting, camera moves, HTML-marker projection
-- `src/style.css` (`:root` = the colour tokens), `src/overlays.css`, `src/theme.js` (lets JS read the tokens)
-- `src/fx.js`: the animated "flow" line material and line helpers
-- `src/dataflow.js`, `src/orbits.js`, `src/weather.js`, `src/riverflow.js`, `src/coverage.js`: map overlays
-- `src/scenario.js`: Example: Flooding (beat text is at the top of the file, easy to edit)
+To regenerate `src/data/*.json` and the schematic geometry, see the header of `scripts/build-data.mjs`, then run
+`RAW=<folder> npm run data`.

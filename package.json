@@ -1,23 +1,22 @@
 {
-  "name": "congo-conops",
+  "name": "congo-srr-s3",
   "version": "1.0.0",
-  "description": "",
+  "description": "RFP S-3 BASINLINK & BASINCAST: System Requirements Review demo page",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.offline.config.js",
+    "build:offline": "vite build --config vite.offline.config.js",
     "preview": "vite preview",
-    "data": "node scripts/build-data.mjs && node scripts/build-mask.mjs && node scripts/build-extras.mjs",
-    "build:single": "vite build --config vite.single.config.js"
+    "serve": "node scripts/serve.mjs",
+    "data": "node scripts/build-data.mjs && node scripts/build-mask.mjs && node scripts/build-extras.mjs && node scripts/build-schematic.mjs"
   },
   "keywords": [],
   "type": "module",
   "dependencies": {
     "@fontsource/big-shoulders-text": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
-    "cesium": "^1.145.0",
-    "satellite.js": "^5.0.0"
+    "cesium": "^1.145.0"
   },
   "devDependencies": {
     "mapshaper": "^0.7.66",

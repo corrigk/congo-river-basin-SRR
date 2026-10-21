@@ -385,3 +385,16 @@ button.sys-id:hover, .sys-id.is-hl { color: var(--gold); }
 .gm-lbl em { font-style: normal; font-size: 10.5px; color: var(--faint); }
 .gm-node.k-partner .gm-lbl b { color: var(--precip); }
 .gm-area { position: absolute; transform: translate(-50%, 0); white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--gold); text-shadow: 0 1px 3px #000, 0 0 8px #000; }
+
+/* offline status badge / preload button */
+.offline { display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px; margin-right: 6px; border-radius: 999px; font-size: 11.5px; font-weight: 500; color: var(--muted); border: 1px solid var(--line-2); white-space: nowrap; transition: background .2s, color .2s; }
+.offline i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; }
+.offline:disabled { cursor: default; }
+.offline[data-state="ready"] { color: var(--data); border-color: rgba(124,245,207,.45); }
+.offline[data-state="ready"] i { background: var(--data); }
+.offline[data-state="partial"], .offline[data-state="error"] { color: var(--text); border-color: var(--gold); }
+.offline[data-state="partial"] i { background: var(--gold); }
+.offline[data-state="error"] i { background: var(--rust-hi); }
+.offline:is([data-state="partial"], [data-state="error"]):hover { background: rgba(207,185,145,.14); }
+.offline:is([data-state="loading"], [data-state="busy"]) i { background: var(--river); animation: ping 1.2s infinite; }
+@media (max-width: 1100px) { .offline span { display: none; } .offline { padding: 6px; } }

@@ -65,18 +65,32 @@ export async function createGlobe({ container, creditContainer }) {
     animation: false, timeline: false, baseLayerPicker: false, geocoder: false, homeButton: false,
     sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false, infoBox: false,
     selectionIndicator: false, creditContainer, msaaSamples: 4,
+    skyBox: false, // no star field, sun or moon: their textures are never seen at basin zoom and would need caching
   });
   const { scene, camera } = viewer;
+  viewer.imageryLayers.get(0).brightness = 0.6; // the bundled basemap is bright; dim it so panels and marks read on top
   viewer.useBrowserRecommendedResolution = false;
   viewer.resolutionScale = Math.min(window.devicePixelRatio, 2) / window.devicePixelRatio;
 
-  // Real satellite imagery (no token) over the bundled offline Natural Earth base.
-  const esri = viewer.imageryLayers.addImageryProvider(new C.UrlTemplateImageryProvider({
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    maximumLevel: 18,
-    credit: new C.Credit('Imagery © Esri, Maxar, Earthstar Geographics'),
-  }));
-  Object.assign(esri, { brightness: 1.0, contrast: 1.1, saturation: 0.95, gamma: 1.0 });
+  // Real satellite imagery (no token) over the bundled offline Natural Earth base. Added only once a probe tile
+  // loads, so with no internet the globe quietly stays on the bundled base instead of failing tile requests.
+  const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+  let esri = null;
+  function addOnlineImagery() {
+    if (esri) return;
+    esri = viewer.imageryLayers.addImageryProvider(new C.UrlTemplateImageryProvider({
+      url: ESRI, maximumLevel: 18, credit: new C.Credit('Imagery © Esri, Maxar, Earthstar Geographics'),
+    }));
+    Object.assign(esri, { brightness: 1.0, contrast: 1.1, saturation: 0.95, gamma: 1.0 });
+  }
+  function probeImagery(timeoutMs = 4000) {
+    return new Promise(resolve => {
+      const img = new Image(), t = setTimeout(() => { img.src = ''; resolve(false); }, timeoutMs);
+      img.onload = () => { clearTimeout(t); resolve(true); };
+      img.onerror = () => { clearTimeout(t); resolve(false); };
+      img.src = `${ESRI.replace('{z}/{y}/{x}', '3/3/4')}?probe=${Date.now()}`;
+    });
+  }
 
   const g = scene.globe;
   Object.assign(g, {
@@ -360,5 +374,6 @@ export async function createGlobe({ container, creditContainer }) {
     setZoneStates(map) { zoneState = { ...Object.fromEntries(zoneKeys.map(k => [k, 'idle'])), ...map }; zonesDirty = true; },
     setGlow,
     zoneAt, lonLatAt, inBasin, addMarker, addBeam,
+    addOnlineImagery, probeImagery, get onlineImagery() { return !!esri; },
   };
 }

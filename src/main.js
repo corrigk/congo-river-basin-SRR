@@ -4,6 +4,7 @@ import { ICON, MARK } from './icons.js';
 import { LATENCY, GEO_TARGET_KM2 } from './s3/content.js';
 import * as V from './s3/views.js';
 import { createSchematicMap } from './s3/schematic.js';
+import { createOffline } from './s3/offline.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -41,6 +42,7 @@ const insets = () => {
   };
 };
 // The schematic draws instantly with no WebGL or network; the 3D globe loads lazily and takes over once ready.
+const offline = createOffline($('.offline'));
 const schematic = createSchematicMap($('#map .map-sch'), { insets });
 let map = schematic, globeMap = null, lastView = null;
 const pref = { get: () => { try { return localStorage.getItem('srr-map'); } catch { return null; } },
@@ -55,7 +57,7 @@ function useMap(kind) {
   if (lastView) map.render(lastView);
 }
 function setMapStatus(s) {
-  const text = { loading: 'Loading 3D globe…', failed: '3D globe unavailable', none: 'No WebGL: schematic only', ready: '' }[s];
+  const text = { loading: 'Loading 3D globe…', failed: '3D globe unavailable', none: 'No WebGL: schematic only', file: 'Offline file: schematic only', ready: '' }[s];
   $('.map-status').textContent = text;
   $('.map-switch [data-map="globe"]').disabled = s !== 'ready';
 }
@@ -68,11 +70,12 @@ async function loadGlobe() {
     const { createGlobeMap } = await import('./s3/globemap.js');
     globeMap = await createGlobeMap($('#map .map-globe'), { insets });
     setMapStatus('ready');
+    setTimeout(() => offline.preload(), 2000); // the globe files are already downloaded: keep them for offline use
     useMap(pref.get() === 'schematic' ? 'schematic' : 'globe');
   } catch (err) {
     console.warn('Globe failed to load; staying on the schematic map.', err);
     globeMap = null;
-    setMapStatus('failed');
+    setMapStatus(location.protocol.startsWith('http') ? 'failed' : 'file');
   }
 }
 
@@ -226,6 +229,7 @@ document.addEventListener('click', e => {
       case 'close': state.panel = null; render(); return;
       case 'help': toggleHelp(); return;
       case 'fullscreen': fullscreen(); return;
+      case 'preload': offline.preload(); return;
     }
   }
   if (d.view) { setTab(d.view); return; }

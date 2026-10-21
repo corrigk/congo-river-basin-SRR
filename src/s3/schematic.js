@@ -1,25 +1,19 @@
 // Schematic basin map in plain SVG: basin outline, main rivers, borders, and the scenario's nodes and links.
 // No WebGL, no network. It's the offline fallback for the globe and draws the same scenario view.
-import basinGeo from '../data/basin.json';
-import riversGeo from '../data/rivers.json';
-import bordersGeo from '../data/borders.json';
+// Geometry is precomputed by scripts/build-schematic.mjs (simplified SVG paths in the projection below).
+import GEO from './schematic-geo.json';
 import { ICON, ASSET_ICON } from '../icons.js';
 import { esc } from './views.js';
 
-const K = 40;                       // SVG units per degree
+const K = 40;                       // SVG units per degree (keep in sync with scripts/build-schematic.mjs)
 const X0 = 8, Y0 = 12;              // lon/lat at the SVG origin
 const px = ([lon, lat]) => [(lon - X0) * K, (Y0 - lat) * K];
 const r1 = n => Math.round(n * 10) / 10;
-const path = ring => ring.map((p, i) => { const [x, y] = px(p); return `${i ? 'L' : 'M'}${r1(x)} ${r1(y)}`; }).join('');
 
-const BASIN_BOX = basinGeo.features[0].properties.bbox;
-const lines = g => (g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : []);
-
-// Precomputed geometry (rivers: main stem and major tributaries only; small streams add bytes, not meaning).
-const BASIN_D = basinGeo.features[0].geometry.coordinates.map(path).join('') + 'Z';
-const RIVERS = riversGeo.features.filter(f => f.properties.c <= 2)
-  .map(f => ({ c: f.properties.c, d: lines(f.geometry).map(path).join('') }));
-const BORDERS_D = bordersGeo.features.flatMap(f => lines(f.geometry)).map(path).join('');
+const BASIN_BOX = GEO.bbox;
+const BASIN_D = GEO.basin;
+const RIVERS = GEO.rivers;          // main stem and major tributaries only
+const BORDERS_D = GEO.borders;
 
 const PLACES = [
   ['Kinshasa', [15.322, -4.325]], ['Bangui', [18.558, 4.394]], ['Kisangani', [25.191, 0.515]],

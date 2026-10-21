@@ -18,6 +18,16 @@ export async function createGlobeMap(container, { insets = () => ({ l: 0, r: 0, 
   Object.assign(globe.layers, { zones: false, catchments: false, labels: false });
   globe.setOverlays(true);
   createRiverFlow(globe);
+  // Online satellite imagery when it's reachable (and not switched off with ?offline); bundled basemap otherwise.
+  const allowOnline = !new URLSearchParams(location.search).has('offline');
+  const badge = container.querySelector('.sm-badge');
+  const tryOnline = async () => {
+    const ok = allowOnline && navigator.onLine && await globe.probeImagery();
+    if (ok) globe.addOnlineImagery();
+    badge.textContent = `3D globe · ${ok ? 'Esri imagery' : 'bundled offline basemap'} · positions illustrative`;
+  };
+  tryOnline();
+  addEventListener('online', tryOnline);
   const layer = container.querySelector('#markers');
   const P = globe.scene.primitives;
 
@@ -123,5 +133,5 @@ export async function createGlobeMap(container, { insets = () => ({ l: 0, r: 0, 
   // Pause rendering while the Scenario tab is hidden so the globe doesn't burn CPU behind other tabs.
   const pause = p => { globe.viewer.useDefaultRenderLoop = !p; };
 
-  return { kind: 'globe', render, pause, home: () => frame(BASIN_BOX), viewer: globe.viewer };
+  return { kind: 'globe', render, pause, home: () => frame(BASIN_BOX), viewer: globe.viewer, get onlineImagery() { return globe.onlineImagery; } };
 }

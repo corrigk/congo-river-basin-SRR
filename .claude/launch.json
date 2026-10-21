@@ -1,8 +1,9 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "conops", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5173 },
-    { "name": "conops-dist", "runtimeExecutable": "npx", "runtimeArgs": ["vite", "preview", "--port", "4173", "--strictPort"], "port": 4173 },
-    { "name": "conops-backup", "runtimeExecutable": "npx", "runtimeArgs": ["vite", "preview", "--config", "vite.single.config.js", "--port", "4174", "--strictPort"], "port": 4174 }
+    { "name": "srr-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5173 },
+    { "name": "srr-pages", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs", "--port", "4180"], "port": 4180 },
+    { "name": "srr-slow", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs", "--port", "4181", "--kbps", "400", "--latency", "400"], "port": 4181 },
+    { "name": "srr-noglobe", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs", "--port", "4182", "--block", "globemap"], "port": 4182 }
   ]
 }
