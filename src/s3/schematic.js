@@ -26,7 +26,7 @@ const PLACES = [
   ['Mbandaka', [18.26, 0.048]], ['Ouesso', [16.05, 1.61]], ['Lubumbashi', [27.479, -11.664]],
 ];
 
-const KIND_ICON = {
+export const KIND_ICON = {
   sensor: ASSET_ICON.water, space: ASSET_ICON.satellite, ground: ICON.dish, authority: ASSET_ICON.government,
   receiver: ICON.radio, responder: ASSET_ICON.community, outage: ICON.towerOff, field: ICON.field, hazard: ICON.alert, partner: ICON.hex,
 };

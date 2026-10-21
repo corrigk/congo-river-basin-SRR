@@ -34,13 +34,47 @@ const insets = () => {
   const card = $('#sc-card').getBoundingClientRect(), lt = $('#lt-card');
   const phone = W < 760;
   return {
-    t: $('.topbar').offsetHeight + gut,
+    t: $('.map-switch').getBoundingClientRect().bottom + gut,
     l: phone ? 0 : card.right + gut,
     r: phone || !panel.classList.contains('is-open') ? 0 : panel.offsetWidth + 2 * gut, // not its rect: it may still be sliding in
     b: (lt.offsetParent && !phone ? innerHeight - lt.getBoundingClientRect().top : 0) + gut,
   };
 };
-const map = createSchematicMap($('#map'), { insets });
+// The schematic draws instantly with no WebGL or network; the 3D globe loads lazily and takes over once ready.
+const schematic = createSchematicMap($('#map .map-sch'), { insets });
+let map = schematic, globeMap = null, lastView = null;
+const pref = { get: () => { try { return localStorage.getItem('srr-map'); } catch { return null; } },
+               set: v => { try { localStorage.setItem('srr-map', v); } catch { /* private mode: no memory */ } } };
+
+function useMap(kind) {
+  if (kind === 'globe' && !globeMap) return;
+  map = kind === 'globe' ? globeMap : schematic;
+  app.dataset.map = kind;
+  for (const b of $$('.map-switch [data-map]')) b.setAttribute('aria-pressed', b.dataset.map === kind);
+  globeMap?.pause(state.tab !== 'scenario' || map !== globeMap);
+  if (lastView) map.render(lastView);
+}
+function setMapStatus(s) {
+  const text = { loading: 'Loading 3D globe…', failed: '3D globe unavailable', none: 'No WebGL: schematic only', ready: '' }[s];
+  $('.map-status').textContent = text;
+  $('.map-switch [data-map="globe"]').disabled = s !== 'ready';
+}
+const hasWebGL = () => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } };
+async function loadGlobe() {
+  if (!hasWebGL()) { setMapStatus('none'); return; }
+  setMapStatus('loading');
+  try {
+    window.CESIUM_BASE_URL ??= './cesium/';
+    const { createGlobeMap } = await import('./s3/globemap.js');
+    globeMap = await createGlobeMap($('#map .map-globe'), { insets });
+    setMapStatus('ready');
+    useMap(pref.get() === 'schematic' ? 'schematic' : 'globe');
+  } catch (err) {
+    console.warn('Globe failed to load; staying on the schematic map.', err);
+    globeMap = null;
+    setMapStatus('failed');
+  }
+}
 
 // ---------- routing (hash deep links, e.g. #scenario/A/3 from a slide) ----------
 function readHash() {
@@ -68,6 +102,7 @@ function render() {
   for (const v of TABS) $(`#view-${v}`).hidden = v !== state.tab;
   for (const b of $$('.mode button')) b.setAttribute('aria-pressed', b.dataset.mode === state.mode);
   moveInk();
+  globeMap?.pause(state.tab !== 'scenario' || map !== globeMap);
   renderPanel();     // before the scenario, so the map frames around an open panel
   renderScenario();
   renderHighlights();
@@ -100,7 +135,8 @@ function renderScenario() {
 
   if (state.tab !== 'scenario') return;
   const area = st.area ? { km2: GEO_TARGET_KM2 } : null;
-  map.render({ nodes: V.NODES, show: st.show, links: st.links, state: st.state || {}, focus: st.focus, area });
+  lastView = { nodes: V.NODES, show: st.show, links: st.links, state: st.state || {}, focus: st.focus, area, mode: state.mode };
+  map.render(lastView);
 }
 
 function renderPanel() {
@@ -194,6 +230,7 @@ document.addEventListener('click', e => {
   }
   if (d.view) { setTab(d.view); return; }
   if (d.mode) { setMode(d.mode); return; }
+  if (d.map) { pref.set(d.map); useMap(d.map); return; }
   if (d.scenario) { setScenario(d.scenario); return; }
   if (d.openScenario) { setScenario(d.openScenario); return; }
   if (d.step) { goStep(+d.step); return; }
@@ -233,6 +270,7 @@ document.addEventListener('keydown', e => {
   if (state.tab === 'scenario' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); goStep(state.step + 1); return; }
   if (state.tab === 'scenario' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); goStep(state.step - 1); return; }
   if (lk === 'r') { reset(); return; }
+  if (lk === 'm') { const k = map === globeMap ? 'schematic' : 'globe'; pref.set(k); useMap(k); return; }
   if (lk === 't') { setMode(state.mode === 't' ? 'o' : 't'); return; }
   if (lk === 'f') { fullscreen(); return; }
   if (k === '?') { toggleHelp(); return; }
@@ -246,4 +284,5 @@ document.addEventListener('keydown', e => {
 readHash();
 render();
 requestAnimationFrame(() => { moveInk(); app.classList.add('is-ready'); });
-window.__srr = { state, render, map, LATENCY };
+setTimeout(loadGlobe, 150); // after first paint: the page is usable before Cesium arrives
+window.__srr = { state, render, get map() { return map; }, LATENCY };

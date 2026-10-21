@@ -10,8 +10,8 @@
     "rx-betou":   { "label": "Bétou", "sub": "community receiver", "kind": "receiver",  "at": [18.52, 3.05] },
     "rx-kouango": { "label": "Kouango", "sub": "community receiver", "kind": "receiver",  "at": [19.97, 4.98] },
     "rx-mobaye":  { "label": "Mobaye", "sub": "community receiver", "kind": "receiver",  "at": [21.05, 4.20] },
-    "rangers":    { "label": "Ranger team", "sub": "two-way terminal", "kind": "responder", "at": [19.20, 3.55] },
-    "responders": { "label": "Responders", "sub": "two-way terminal", "kind": "responder", "at": [18.30, 4.05] },
+    "rangers":    { "label": "Ranger team", "sub": "two-way terminal", "kind": "responder", "at": [19.4, 3.3] },
+    "responders": { "label": "Responders", "sub": "two-way terminal", "kind": "responder", "at": [18.0, 3.7] },
     "towers":     { "label": "Cell towers and grid", "sub": "down · illustrative", "kind": "outage",    "at": [18.85, 4.10] },
     "field-cuv":  { "label": "Sensor field", "sub": "gauges, tags, ranger devices", "kind": "field", "at": [18.6, 0.4] },
     "field-san":  { "label": "Sensor field", "sub": "gauges, tags, ranger devices", "kind": "field", "at": [16.1, 2.4] },
@@ -24,9 +24,9 @@
     "if-S-1":     { "label": "S-1 RADAR-RAPID", "sub": "revisit cued", "kind": "partner", "rfp": "S-1", "at": [22.6, 6.6] },
     "if-S-2":     { "label": "S-2 DEEP CANOPY", "sub": "under-canopy detection", "kind": "partner", "rfp": "S-2", "at": [14.9, 3.4] },
     "if-A-1":     { "label": "A-1 SKY STATION", "sub": "regional relay · TBR", "kind": "partner", "rfp": "A-1", "at": [17.6, 2.6] },
-    "if-A-2":     { "label": "A-2 RANGER WING", "sub": "dock · confirms overhead", "kind": "partner", "rfp": "A-2", "at": [19.6, 4.75] },
+    "if-A-2":     { "label": "A-2 RANGER WING", "sub": "dock · confirms overhead", "kind": "partner", "rfp": "A-2", "at": [20.7, 4.0] },
     "if-A-2s":    { "label": "A-2 RANGER WING", "sub": "dock · confirms overhead", "kind": "partner", "rfp": "A-2", "at": [16.9, 2.6] },
-    "if-A-3":     { "label": "A-3 RIVER LIFT", "sub": "dispatched", "kind": "partner", "rfp": "A-3", "at": [17.6, 4.95] },
+    "if-A-3":     { "label": "A-3 RIVER LIFT", "sub": "dispatched", "kind": "partner", "rfp": "A-3", "at": [17.0, 5.3] },
     "if-A-4":     { "label": "A-4 STORM SOUNDER", "sub": "balloon payloads", "kind": "partner", "rfp": "A-4", "at": [23.6, -2.4] }
   },
 

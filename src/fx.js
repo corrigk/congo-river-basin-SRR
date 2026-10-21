@@ -88,3 +88,5 @@ export function arc([x1, y1, h1 = 0], [x2, y2, h2 = 0], { n = 64, lift = 0.18 } 
   }
   return out;
 }
+// Stop ticking a flow material once its primitive is removed.
+export function releaseFlow(mat) { flowMats.delete(mat); }

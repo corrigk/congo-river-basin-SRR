@@ -350,3 +350,38 @@ button.sys-id:hover, .sys-id.is-hl { color: var(--gold); }
   .lt-card { display: none !important; }
   .mode button { padding: 4px 7px; font-size: 11px; }
 }
+
+/* ---------- map switch: schematic (always) and 3D globe (lazy) ---------- */
+.map-sch, .map-globe, .gm-globe { position: absolute; inset: 0; }
+#app[data-map="globe"] .map-sch, #app[data-map="schematic"] .map-globe { visibility: hidden; }
+.map-globe .cesium-widget-credits { display: none !important; }
+.gm-credits { position: absolute; right: calc(var(--panel-w) + 2 * var(--gut)); bottom: 2px; font-size: 9.5px; color: var(--faint); z-index: 6; }
+.gm-credits .cesium-credit-logoContainer { display: none; }
+.gm-credits .cesium-credit-textContainer, .gm-credits a { display: inline; color: var(--faint); }
+.map-switch { position: absolute; top: calc(var(--top) + var(--gut)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 10px; }
+.map-switch button { padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 7px; color: var(--muted); }
+.map-switch button[aria-pressed="true"] { background: rgba(255,255,255,.12); color: var(--text); }
+.map-switch button:disabled { opacity: .4; cursor: default; }
+.map-status { font-size: 11px; color: var(--faint); padding: 0 6px; }
+.map-status:empty { display: none; }
+
+/* globe node markers (HTML pinned to the globe; colours match the schematic) */
+.mk-gm, .mk-gm-area { z-index: 1; }
+.gm-node { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; pointer-events: auto; --c: var(--river); }
+.gm-node.k-sensor, .gm-node.k-field { --c: var(--data); }
+.gm-node.k-space, .gm-node.k-authority { --c: var(--gold); }
+.gm-node.k-receiver { --c: var(--alert); }
+.gm-node.k-partner { --c: var(--precip); }
+.gm-node.k-outage, .gm-node.k-hazard { --c: var(--rust-hi); }
+.gm-ico { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: rgba(10,14,18,.88); border: 2px solid var(--c); color: var(--c); box-shadow: 0 0 18px color-mix(in srgb, var(--c) 40%, transparent), 0 6px 16px rgba(0,0,0,.5); animation: pop .5s var(--ease) both; }
+.gm-ico svg { width: 20px; height: 20px; }
+.gm-node.k-space .gm-ico, .gm-node.k-partner .gm-ico { border-style: dashed; }
+.gm-halo { position: absolute; left: 50%; top: 50%; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; }
+.gm-node.s-alarm .gm-halo, .gm-node.s-down .gm-halo { border: 2px solid var(--rust-hi); animation: ring 1.8s var(--ease) infinite; }
+.gm-node.s-ok .gm-ico { --c: var(--data); background: rgba(20,60,50,.9); }
+.map.is-hl .gm-halo { border: 2px solid var(--gold); animation: ring 2s var(--ease) infinite; }
+.gm-lbl { position: absolute; left: 46px; display: flex; flex-direction: column; white-space: nowrap; padding: 3px 9px; border-radius: 8px; background: rgba(10,10,10,.78); border: 1px solid var(--line); line-height: 1.25; }
+.gm-lbl b { font-size: 12.5px; font-weight: 600; }
+.gm-lbl em { font-style: normal; font-size: 10.5px; color: var(--faint); }
+.gm-node.k-partner .gm-lbl b { color: var(--precip); }
+.gm-area { position: absolute; transform: translate(-50%, 0); white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--gold); text-shadow: 0 1px 3px #000, 0 0 8px #000; }

@@ -321,7 +321,7 @@ export function tradesView() {
 export function helpView() {
   const rows = [
     ['1 – 5', 'Switch tab'], ['→ &nbsp;PgDn &nbsp;Space', 'Next scenario step'], ['← &nbsp;PgUp', 'Previous step'], ['R', 'Reset scenario'],
-    ['T', 'Threshold / objective'], ['Esc', 'Close panel'], ['?', 'This help'],
+    ['T', 'Threshold / objective'], ['M', 'Globe / schematic map'], ['Esc', 'Close panel'], ['?', 'This help'],
   ];
   return `<div class="help-head"><span>Keyboard</span><button class="icon-btn" data-act="help" aria-label="Close shortcuts">${ICON.close}</button></div>
     <dl>${rows.map(([k, v]) => `<dt>${k.split(' &nbsp;').map(x => `<kbd>${x}</kbd>`).join('')}</dt><dd>${v}</dd>`).join('')}</dl>`;
