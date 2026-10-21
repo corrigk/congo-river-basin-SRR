@@ -1,0 +1,223 @@
+{
+  "_readme": "Scenario data for the Scenario tab. Add a scenario by appending to `scenarios`; add a map node to `nodes`. Positions are illustrative. Step fields: title, text, before (optional 'today' contrast), reqs, mo, stages (nine-stage keys), show (node ids on the map), links ([from, to, kind] with kind up|down|two|cue|relay), focus (node ids to frame), latency ({leg, segments}), area (show the S3-06 geo-target footprint), interfaces ([{id, note}]), note (optional caveat).",
+
+  "nodes": {
+    "gauge":      { "label": "Ubangi river gauge", "sub": "near Mobaye · illustrative", "kind": "sensor",    "at": [21.18, 4.32] },
+    "space":      { "label": "S-3 space segment", "sub": "orbit open · trade pending", "kind": "space",     "at": [20.2, 1.2] },
+    "cop":        { "label": "Gateway & COP", "sub": "location illustrative", "kind": "ground",    "at": [15.32, -4.33] },
+    "agency":     { "label": "National agency", "sub": "issues the alert · illustrative", "kind": "authority", "at": [18.56, 4.39] },
+    "rx-mong":    { "label": "Mongoumba", "sub": "community receiver", "kind": "receiver",  "at": [18.60, 3.64] },
+    "rx-betou":   { "label": "Bétou", "sub": "community receiver", "kind": "receiver",  "at": [18.52, 3.05] },
+    "rx-kouango": { "label": "Kouango", "sub": "community receiver", "kind": "receiver",  "at": [19.97, 4.98] },
+    "rx-mobaye":  { "label": "Mobaye", "sub": "community receiver", "kind": "receiver",  "at": [21.05, 4.20] },
+    "rangers":    { "label": "Ranger team", "sub": "two-way terminal", "kind": "responder", "at": [19.20, 3.55] },
+    "responders": { "label": "Responders", "sub": "two-way terminal", "kind": "responder", "at": [18.30, 4.05] },
+    "towers":     { "label": "Cell towers and grid", "sub": "down · illustrative", "kind": "outage",    "at": [18.85, 4.10] },
+    "field-cuv":  { "label": "Sensor field", "sub": "gauges, tags, ranger devices", "kind": "field", "at": [18.6, 0.4] },
+    "field-san":  { "label": "Sensor field", "sub": "gauges, tags, ranger devices", "kind": "field", "at": [16.1, 2.4] },
+    "field-ubg":  { "label": "Sensor field", "sub": "gauges, tags, ranger devices", "kind": "field", "at": [22.4, 4.6] },
+    "field-kas":  { "label": "Sensor field", "sub": "gauges, tags, ranger devices", "kind": "field", "at": [20.9, -6.2] },
+    "field-lua":  { "label": "Sensor field", "sub": "gauges, tags, ranger devices", "kind": "field", "at": [26.6, -7.6] },
+    "field-kis":  { "label": "Sensor field", "sub": "gauges, tags, ranger devices", "kind": "field", "at": [25.2, 0.6] },
+    "site":       { "label": "Incursion site", "sub": "illegal mining or logging · illustrative", "kind": "hazard", "at": [16.35, 2.05] },
+    "ranger-post":{ "label": "Ranger post", "sub": "two-way terminal", "kind": "responder", "at": [16.05, 1.62] },
+    "if-S-1":     { "label": "S-1 RADAR-RAPID", "sub": "revisit cued", "kind": "partner", "rfp": "S-1", "at": [22.6, 6.6] },
+    "if-S-2":     { "label": "S-2 DEEP CANOPY", "sub": "under-canopy detection", "kind": "partner", "rfp": "S-2", "at": [14.9, 3.4] },
+    "if-A-1":     { "label": "A-1 SKY STATION", "sub": "regional relay · TBR", "kind": "partner", "rfp": "A-1", "at": [17.6, 2.6] },
+    "if-A-2":     { "label": "A-2 RANGER WING", "sub": "dock · confirms overhead", "kind": "partner", "rfp": "A-2", "at": [19.6, 4.75] },
+    "if-A-2s":    { "label": "A-2 RANGER WING", "sub": "dock · confirms overhead", "kind": "partner", "rfp": "A-2", "at": [16.9, 2.6] },
+    "if-A-3":     { "label": "A-3 RIVER LIFT", "sub": "dispatched", "kind": "partner", "rfp": "A-3", "at": [17.6, 4.95] },
+    "if-A-4":     { "label": "A-4 STORM SOUNDER", "sub": "balloon payloads", "kind": "partner", "rfp": "A-4", "at": [23.6, -2.4] }
+  },
+
+  "scenarios": [
+    {
+      "id": "A",
+      "title": "Flood warning chain",
+      "pov": "National agency’s point of view",
+      "summary": "A gauge on the Ubangi crosses its threshold. S-3 gets the message out, the agency authorizes a warning, S-3 broadcasts it in the local language, confirms delivery, and carries the response.",
+      "reqs": ["S3-03", "S3-05", "S3-06", "S3-08", "S3-09"],
+      "latency": true,
+      "steps": [
+        {
+          "title": "Trigger",
+          "text": "A river gauge on the Ubangi, under heavy rain and canopy, crosses its flood threshold.",
+          "before": "Today this reading would sit unreported. Only 13-15 of 400+ pre-1960 river stations still operate, few in real time, and sensors sync only after 3-7 days.",
+          "reqs": ["S3-01"], "mo": ["MO-1"], "stages": ["observe"],
+          "show": ["gauge"], "links": [], "focus": ["gauge"], "state": { "gauge": "alarm" }
+        },
+        {
+          "title": "Uplink (BASINLINK)",
+          "text": "The gauge sends a priority message straight to the S-3 space segment, from under the canopy.",
+          "reqs": ["S3-03", "S3-01"], "mo": ["MO-1"], "stages": ["collect"],
+          "show": ["gauge", "space"], "links": [["gauge", "space", "up"]], "focus": ["gauge", "space"],
+          "latency": { "leg": "uplink", "segments": ["wait", "relay"] }
+        },
+        {
+          "title": "Ground and COP",
+          "text": "The message is relayed to a gateway and appears in the common operating picture (COP). The COP cues S-1 to revisit the reach.",
+          "reqs": ["S3-03"], "mo": ["MO-1"], "stages": ["integrate", "assess"],
+          "show": ["gauge", "space", "cop", "if-S-1"], "links": [["space", "cop", "down"], ["cop", "if-S-1", "cue"]], "focus": ["gauge", "cop"],
+          "latency": { "leg": "uplink", "segments": ["ground"] },
+          "interfaces": [{ "id": "S-1", "note": "COP cues an S-1 revisit of the priority area." }]
+        },
+        {
+          "title": "Authority decision",
+          "text": "The national agency reviews the data and authorizes the alert. S-3 does not decide. The alert arrives at S-3 as a CAP message.",
+          "reqs": [], "mo": ["MO-2"], "stages": ["forecast", "prioritize"],
+          "show": ["cop", "agency"], "links": [["cop", "agency", "two"]], "focus": ["agency", "cop"],
+          "note": "The S3-05 clock starts when the alert is authorized, so the agency’s decision time is outside S-3’s budget."
+        },
+        {
+          "title": "Broadcast (BASINCAST)",
+          "text": "The alert is geo-targeted to the reach at risk, spoken in the local language, and broadcast to community receivers.",
+          "reqs": ["S3-05", "S3-06", "S3-07"], "mo": ["MO-2"], "stages": ["deploy"],
+          "show": ["agency", "space", "rx-betou", "rx-mong", "rx-kouango", "rx-mobaye"],
+          "links": [["agency", "space", "up"], ["space", "rx-betou", "down"], ["space", "rx-mong", "down"], ["space", "rx-kouango", "down"], ["space", "rx-mobaye", "down"]],
+          "focus": ["rx-betou", "rx-mobaye", "rx-mong"], "area": true,
+          "latency": { "leg": "alert", "segments": ["cap", "target", "up", "broadcast"] }
+        },
+        {
+          "title": "Confirmation",
+          "text": "Delivery confirmation returns to the agency. The agency knows which receivers played the alert. This closes MO-2.",
+          "reqs": [], "mo": ["MO-2"], "stages": ["deploy", "feedback"],
+          "show": ["agency", "space", "rx-betou", "rx-mong", "rx-kouango", "rx-mobaye"],
+          "links": [["rx-betou", "space", "up"], ["rx-mong", "space", "up"], ["rx-kouango", "space", "up"], ["rx-mobaye", "space", "up"], ["space", "agency", "down"]],
+          "focus": ["rx-betou", "rx-mobaye", "rx-mong"], "state": { "rx-betou": "ok", "rx-mong": "ok", "rx-kouango": "ok", "rx-mobaye": "ok" }
+        },
+        {
+          "title": "Response coordination",
+          "text": "Two-way terminals carry commands and acknowledgments to rangers and responders. A-2 confirms the situation overhead and A-3 is dispatched.",
+          "reqs": ["S3-08", "S3-09"], "mo": ["MO-3"], "stages": ["support"],
+          "show": ["agency", "space", "rangers", "responders", "if-A-2", "if-A-3"],
+          "links": [["agency", "space", "two"], ["space", "rangers", "two"], ["space", "responders", "two"], ["space", "if-A-2", "two"], ["space", "if-A-3", "two"]],
+          "focus": ["rangers", "responders", "if-A-2", "if-A-3"],
+          "interfaces": [
+            { "id": "A-2", "note": "A-2’s ≤45 min clock starts when our alert is delivered." },
+            { "id": "A-3", "note": "Dispatch commands and acknowledgments over two-way terminals." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "Routine collection",
+      "pov": "Basin-wide, every day",
+      "summary": "Thousands of gauges, wildlife tags, ranger devices and A-4 balloons send small daily payloads from under the canopy, across the whole basin.",
+      "reqs": ["S3-01", "S3-02", "S3-04"],
+      "steps": [
+        {
+          "title": "Terminals across the basin",
+          "text": "Low-power terminals sit on gauges, wildlife tags and ranger devices, under canopy, everywhere in the basin.",
+          "before": "Today sensors and ranger devices sync only after 3-7 days.",
+          "reqs": ["S3-01", "S3-04"], "mo": ["MO-1"], "stages": ["observe"],
+          "show": ["field-cuv", "field-san", "field-ubg", "field-kas", "field-lua", "field-kis"], "links": [], "focus": ["field-san", "field-lua", "field-ubg", "field-kas"]
+        },
+        {
+          "title": "Daily payloads",
+          "text": "Each terminal sends its routine daily data. The constellation serves every terminal in the basin.",
+          "reqs": ["S3-02"], "mo": ["MO-1"], "stages": ["collect"],
+          "show": ["field-cuv", "field-san", "field-ubg", "field-kas", "field-lua", "field-kis", "space"],
+          "links": [["field-cuv", "space", "up"], ["field-san", "space", "up"], ["field-ubg", "space", "up"], ["field-kas", "space", "up"], ["field-lua", "space", "up"], ["field-kis", "space", "up"]],
+          "focus": ["field-san", "field-lua", "field-ubg", "field-kas"]
+        },
+        {
+          "title": "A-4 balloons ride the same link",
+          "text": "A-4 balloon and sonde payloads uplink through BASINLINK like any other terminal.",
+          "reqs": ["S3-02"], "mo": ["MO-1"], "stages": ["collect"],
+          "show": ["field-cuv", "field-san", "field-ubg", "field-kas", "field-lua", "field-kis", "space", "if-A-4"],
+          "links": [["if-A-4", "space", "up"], ["field-kas", "space", "up"], ["field-lua", "space", "up"]],
+          "focus": ["field-san", "field-lua", "field-ubg", "if-A-4"],
+          "interfaces": [{ "id": "A-4", "note": "Balloon and sonde payloads uplink through BASINLINK." }]
+        },
+        {
+          "title": "Into the COP",
+          "text": "Everything lands in the COP through the gateway. Terminals run for years on solar or battery.",
+          "reqs": ["S3-02", "S3-04", "S3-10"], "mo": ["MO-1"], "stages": ["integrate"],
+          "show": ["field-cuv", "field-san", "field-ubg", "field-kas", "field-lua", "field-kis", "space", "cop"],
+          "links": [["space", "cop", "down"]], "focus": ["field-san", "field-lua", "field-ubg", "cop"]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "title": "Degraded operations",
+      "pov": "Responders after towers and grid fail",
+      "summary": "Conflict or storms take out towers and the grid. Rangers and responders keep working over S-3 two-way terminals, and A-1 and S-3 cover for each other.",
+      "reqs": ["S3-08", "S3-09", "S3-10"],
+      "steps": [
+        {
+          "title": "Terrestrial networks go down",
+          "text": "Conflict or storms take out cell towers and the grid around the response area.",
+          "before": "Floods and conflict take down towers and the grid, and internet reaches only about 27-32% of people even before that.",
+          "reqs": [], "mo": ["MO-3"], "stages": ["support"],
+          "show": ["towers", "rangers", "responders"], "links": [], "focus": ["towers", "rangers", "responders"], "state": { "towers": "down" }
+        },
+        {
+          "title": "Two-way over S-3",
+          "text": "Rangers and responders switch to S-3 two-way terminals. Commands go out and acknowledgments come back.",
+          "reqs": ["S3-08", "S3-09"], "mo": ["MO-3"], "stages": ["support"],
+          "show": ["towers", "rangers", "responders", "space", "cop"],
+          "links": [["rangers", "space", "two"], ["responders", "space", "two"], ["space", "cop", "two"]],
+          "focus": ["rangers", "responders", "cop"], "state": { "towers": "down" }
+        },
+        {
+          "title": "A-1 relay as a complement",
+          "text": "Where A-1 is on station, it adds a regional relay. S-3 stays the primary basin-wide layer, and each covers for the other.",
+          "reqs": ["S3-10"], "mo": ["MO-3"], "stages": ["support"],
+          "show": ["towers", "rangers", "responders", "space", "cop", "if-A-1"],
+          "links": [["rangers", "if-A-1", "relay"], ["if-A-1", "space", "relay"], ["responders", "space", "two"], ["space", "cop", "two"]],
+          "focus": ["rangers", "responders", "if-A-1"], "state": { "towers": "down" },
+          "interfaces": [{ "id": "A-1", "note": "Complementary regional relay. Overlap on “comms lost in conflict”, TBR with the A-1 team." }],
+          "note": "S-3 primary, A-1 complementary is our assumption, TBR with the A-1 team."
+        },
+        {
+          "title": "Service holds through the weather",
+          "text": "Availability is specified in heavy tropical rain, so the link is sized for the weather that drives floods in the first place.",
+          "reqs": ["S3-10"], "mo": ["MO-3"], "stages": ["support"],
+          "show": ["towers", "rangers", "responders", "space", "cop"],
+          "links": [["rangers", "space", "two"], ["responders", "space", "two"], ["space", "cop", "two"]],
+          "focus": ["rangers", "responders", "cop"], "state": { "towers": "down" }
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "Non-flood hazard",
+      "pov": "Illegal mining or logging incursion",
+      "summary": "S-2 detects disturbance under the canopy, the alert reaches rangers, A-2 confirms overhead, and S-3 carries the two-way link. The same comms layer serves every hazard.",
+      "reqs": ["S3-05", "S3-06", "S3-08"],
+      "steps": [
+        {
+          "title": "S-2 detects disturbance",
+          "text": "S-2 sees new clearing under the canopy in the Sangha forest and flags it to the COP.",
+          "reqs": [], "mo": [], "stages": ["observe", "assess"],
+          "show": ["site", "if-S-2", "cop"], "links": [["if-S-2", "cop", "cue"]], "focus": ["site", "if-S-2"], "state": { "site": "alarm" },
+          "interfaces": [{ "id": "S-2", "note": "Detections become alerts and tasking that S-3 carries to rangers." }]
+        },
+        {
+          "title": "Alert reaches rangers",
+          "text": "The responsible agency authorizes an alert. S-3 geo-targets it to the rangers covering that area.",
+          "reqs": ["S3-05", "S3-06"], "mo": ["MO-2"], "stages": ["prioritize", "deploy"],
+          "show": ["site", "cop", "space", "ranger-post"], "links": [["cop", "space", "up"], ["space", "ranger-post", "down"]],
+          "focus": ["site", "ranger-post", "cop"], "state": { "site": "alarm" }, "area": true
+        },
+        {
+          "title": "A-2 confirms overhead",
+          "text": "A-2 launches from its dock and confirms the incursion from overhead, reporting back over S-3.",
+          "reqs": ["S3-08"], "mo": ["MO-3"], "stages": ["deploy"],
+          "show": ["site", "space", "ranger-post", "if-A-2s"], "links": [["space", "if-A-2s", "two"]],
+          "focus": ["site", "if-A-2s", "ranger-post"], "state": { "site": "alarm" },
+          "interfaces": [{ "id": "A-2", "note": "A-2’s ≤45 min clock starts when our alert is delivered." }]
+        },
+        {
+          "title": "Two-way link for the response",
+          "text": "Rangers move with S-3 two-way terminals: commands out, acknowledgments back. The same layer that carried the flood warning carries this.",
+          "reqs": ["S3-08", "S3-09"], "mo": ["MO-3"], "stages": ["support"],
+          "show": ["site", "space", "ranger-post", "if-A-2s", "cop"], "links": [["ranger-post", "space", "two"], ["space", "cop", "two"], ["if-A-2s", "space", "two"]],
+          "focus": ["site", "ranger-post", "cop"], "state": { "site": "alarm" }
+        }
+      ]
+    }
+  ]
+}

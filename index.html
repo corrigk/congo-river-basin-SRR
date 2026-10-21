@@ -4,77 +4,53 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0A0A0A" />
-  <title>Congo Basin Con Ops</title>
+  <meta name="description" content="RFP S-3 BASINLINK & BASINCAST: System Requirements Review demo for the Congo River Basin system of systems." />
+  <title>S-3 BASINLINK SRR</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230A0A0A' stroke='%23CFB991' stroke-width='2'/%3E%3Cpath d='M7 20.5c3-1 3.6-5.2 7-6.2s4.8 2.4 7.6 1.3c2-.8 2.6-3.1 3.4-4.6' fill='none' stroke='%237FCBEA' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
-  <!--cesium-->
 </head>
 <body>
-  <div id="app" class="is-intro">
-    <div id="globe" role="tabpanel" aria-labelledby="tab-globe"></div>
-    <div id="markers"></div>
-    <div class="vignette"></div>
+  <div id="app" data-view="overview" data-mode="t">
+    <div id="map" class="map" aria-hidden="true"></div>
 
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark" id="brand-mark"></span>
         <div class="brand-text">
-          <span class="brand-kicker">Congo River Basin · System of Systems</span>
-          <span class="brand-title">Concept of Operations</span>
+          <span class="brand-kicker">Congo River Basin · SRR · RFP S-3</span>
+          <span class="brand-title">BASINLINK &amp; BASINCAST</span>
         </div>
       </div>
       <nav class="tabs" role="tablist" aria-label="View">
         <span class="tabs-ink"></span>
-        <button role="tab" id="tab-overview" data-view="overview" aria-selected="true" aria-controls="overview-view"><span class="t-long">System </span>Overview</button>
-        <button role="tab" id="tab-globe" data-view="globe" aria-selected="false" aria-controls="globe" tabindex="-1"><span class="t-long">Mission </span>Map</button>
-        <button role="tab" id="tab-process" data-view="process" aria-selected="false" aria-controls="process-view" tabindex="-1">Process<span class="t-long"> &amp; Gaps</span></button>
+        <button role="tab" id="tab-overview" data-view="overview" aria-controls="view-overview"><span class="t-long">S-3 </span>Overview</button>
+        <button role="tab" id="tab-requirements" data-view="requirements" aria-controls="view-requirements">Requirements</button>
+        <button role="tab" id="tab-scenario" data-view="scenario" aria-controls="view-scenario">Scenario</button>
+        <button role="tab" id="tab-interfaces" data-view="interfaces" aria-controls="view-interfaces">Interfaces</button>
+        <button role="tab" id="tab-trades" data-view="trades" aria-controls="view-trades">Trades<span class="t-long"> &amp; Open Items</span></button>
       </nav>
       <div class="top-right">
-        <div class="tour" aria-label="Presenter tour">
-          <button class="icon-btn" data-act="prev" title="Previous (←)"></button>
-          <div class="tour-meta"><span class="tour-chapter" id="tour-chapter">Intro</span><span class="tour-count" id="tour-count">00 / 00</span></div>
-          <button class="icon-btn" data-act="next" title="Next (→ / Space)"></button>
+        <div class="mode" role="group" aria-label="Requirement values (T)">
+          <button data-mode="t" aria-pressed="true">Threshold</button>
+          <button data-mode="o" aria-pressed="false">Objective</button>
         </div>
         <span class="divider"></span>
-        <button class="icon-btn" data-act="home" title="Basin view on the map (H)"></button>
-        <button class="icon-btn" data-act="layers" title="Layers (L)"></button>
-        <button class="icon-btn" data-act="fullscreen" title="Fullscreen (F)"></button>
-        <button class="icon-btn" data-act="help" title="Shortcuts (?)"></button>
+        <button class="icon-btn" data-act="fullscreen" title="Fullscreen (F)" aria-label="Fullscreen"></button>
+        <button class="icon-btn" data-act="help" title="Shortcuts (?)" aria-label="Keyboard shortcuts"></button>
       </div>
-      <div class="tour-progress"><i id="tour-bar"></i></div>
     </header>
 
-    <aside class="zones-rail glass" id="zones-rail" aria-label="Focus zones"></aside>
+    <section class="process-view" id="view-overview" role="tabpanel" aria-labelledby="tab-overview"></section>
+    <section class="process-view" id="view-requirements" role="tabpanel" aria-labelledby="tab-requirements"></section>
+    <section class="sc-view" id="view-scenario" role="tabpanel" aria-labelledby="tab-scenario">
+      <aside class="sc-card glass" id="sc-card" aria-label="Scenario steps"></aside>
+      <div class="lt-card glass" id="lt-card" aria-label="Latency budget"></div>
+    </section>
+    <section class="process-view" id="view-interfaces" role="tabpanel" aria-labelledby="tab-interfaces"></section>
+    <section class="process-view" id="view-trades" role="tabpanel" aria-labelledby="tab-trades"></section>
+
     <aside class="panel glass" id="panel" aria-label="Details"></aside>
     <div class="sr-only" id="announce" aria-live="polite"></div>
-    <div class="layers-pop glass" id="layers-pop" role="dialog" aria-label="Map layers" hidden></div>
-    <footer class="process-rail glass" id="process-rail" aria-label="Nine-stage process"></footer>
-    <footer class="scenario-bar glass" id="scenario-bar" aria-label="Example: Flooding timeline"></footer>
-    <div class="dock glass" id="dock" aria-label="Overlays"></div>
-    <div class="legend" id="legend"></div>
-    <div class="hud" id="hud"></div>
-    <div class="toast" id="toast"></div>
-    <div class="hover-tip" id="hover-tip"></div>
-
-    <section class="process-view overview-view" id="overview-view" role="tabpanel" aria-labelledby="tab-overview"></section>
-    <section class="process-view" id="process-view" role="tabpanel" aria-labelledby="tab-process"></section>
-
-    <section class="intro" id="intro">
-      <div class="intro-inner">
-        <div class="intro-kicker"><span></span>System-of-Systems · Concept of Operations</div>
-        <h1 class="intro-title">Congo<br />River Basin</h1>
-        <p class="intro-sub">One integrated observe&nbsp;→&nbsp;understand&nbsp;→&nbsp;predict&nbsp;→&nbsp;respond loop for every hazard in the basin: flooding and drought, forest loss, peatland carbon, mining impacts on water, urban growth and habitat pressure.</p>
-        <div class="intro-stats" id="intro-stats"></div>
-        <div class="intro-actions">
-          <button class="btn-primary" data-act="begin"><span class="btn-play"></span>Begin briefing</button>
-          <button class="btn-ghost" data-act="explore">Explore freely</button>
-        </div>
-        <p class="intro-note">Concept-of-operations visualization, not a live monitoring system. Satellite and weather layers use real public data for illustration.</p>
-        <div class="intro-hint"><kbd>→</kbd> / <kbd>Space</kbd> advance &nbsp;·&nbsp; <kbd>←</kbd> back &nbsp;·&nbsp; <kbd>Esc</kbd> free explore</div>
-      </div>
-    </section>
-
-    <div class="help glass" id="help" role="dialog" aria-label="Keyboard and mouse shortcuts" hidden></div>
-    <div id="credits"></div>
+    <div class="help glass" id="help" role="dialog" aria-label="Keyboard shortcuts" hidden></div>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

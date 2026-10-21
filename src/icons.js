@@ -28,6 +28,16 @@ export const ICON = {
   wave: svg('<path d="M3 8c2.2 0 2.2-2 4.5-2S9.7 8 12 8s2.2-2 4.5-2S18.8 8 21 8M3 13c2.2 0 2.2-2 4.5-2s2.2 2 4.5 2 2.2-2 4.5-2 2.3 2 4.5 2M3 18c2.2 0 2.2-2 4.5-2s2.2 2 4.5 2 2.2-2 4.5-2 2.3 2 4.5 2"/>'),
   gap: svg('<circle cx="12" cy="12" r="8.5" stroke-dasharray="3 3"/><circle cx="12" cy="12" r="3.5"/>'),
   flow: svg('<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 12h3M14 12h3"/>'),
+  // S-3 additions
+  radio: svg('<rect x="3.5" y="9" width="17" height="11" rx="2"/><path d="m7 9 9-5"/><circle cx="15.5" cy="14.5" r="2.6"/><path d="M7 13h3M7 16h3"/>'),
+  dish: svg('<path d="M5 6.5a9 9 0 0 0 12.5 12.5z"/><path d="m11.2 12.8 4.3-4.3M15.5 8.5l1.2-1.2"/><circle cx="17.3" cy="6.7" r="1.1"/><path d="M9 18.5 6.5 21h8"/>'),
+  alert: svg('<path d="M12 3.5 21.5 20h-19z"/><path d="M12 10v4.5M12 17.2h.01"/>'),
+  towerOff: svg('<path d="M12 10.5V21M8 21h8M9.2 21 12 10.5 14.8 21"/><circle cx="12" cy="8.3" r="1.5"/><path d="M4 4l16 16"/>'),
+  field: svg('<circle cx="6" cy="7" r="1.6"/><circle cx="15" cy="5.5" r="1.6"/><circle cx="10" cy="12" r="1.6"/><circle cx="18.5" cy="12.5" r="1.6"/><circle cx="5.5" cy="17" r="1.6"/><circle cx="13.5" cy="18.5" r="1.6"/>'),
+  hex: svg('<path d="M12 2.8 20 7.4v9.2l-8 4.6-8-4.6V7.4z"/>'),
+  wifi: svg('<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.3a9.5 9.5 0 0 1 13 0M8.6 15.5a5 5 0 0 1 6.8 0"/><path d="M12 19h.01" stroke-width="2.4"/>'),
+  present: svg('<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8"/>'),
+  reset: svg('<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5v4h4"/>'),
 };
 
 export const MARK = `<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="none" style="stroke:var(--gold)" stroke-width="1.4"/><path d="M7 20.5c3-1 3.6-5.2 7-6.2s4.8 2.4 7.6 1.3c2-.8 2.6-3.1 3.4-4.6" fill="none" style="stroke:var(--river)" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" style="fill:var(--gold)"/></svg>`;

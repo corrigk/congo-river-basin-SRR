@@ -1,638 +1,249 @@
 import './style.css';
-import './overlays.css';
-import './overview.css';
-import { Cesium as C } from './cesium.js';
-import { createGlobe, BASIN, ZONE_PROPS, MAX_ALT } from './globe.js';
-import { STAGES, ZONES, ASSET_INFO, ASSET_ROLE, ZONE_GEO, CITIES, RIVER_LABELS, HUB, STAGE_FLOW } from './content.js';
-import { ASSET_ICON, ICON, MARK } from './icons.js';
-import { createRiverFlow } from './riverflow.js';
-import { createDataFlow } from './dataflow.js';
-import { createOrbits } from './orbits.js';
-import { createWeather } from './weather.js';
-import { createCoverage, ACCESS } from './coverage.js';
-import { createScenario, SCENARIO } from './scenario.js';
-import { HAZARDS, hazardBy, hazardsForAsset, SENSING_ASSETS, OVERVIEW_COLUMNS } from './hazards.js';
-import { overviewView, overviewDetail } from './overview.js';
-import tle from './data/tle.json';
-import * as V from './views.js';
+import './s3/s3.css';
+import { ICON, MARK } from './icons.js';
+import { LATENCY, GEO_TARGET_KM2 } from './s3/content.js';
+import * as V from './s3/views.js';
+import { createSchematicMap } from './s3/schematic.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
+const TABS = ['overview', 'requirements', 'scenario', 'interfaces', 'trades'];
 
 // ---------- static chrome ----------
 $('#brand-mark').innerHTML = MARK;
-const ACT_ICON = { prev: 'prev', next: 'next', home: 'home', layers: 'layers', fullscreen: 'expand', help: 'help' };
-for (const b of $$('.topbar [data-act]')) {
-  b.innerHTML = ICON[ACT_ICON[b.dataset.act]];
-  b.setAttribute('aria-label', b.title.replace(/ \(.*\)$/, '')); // "Basin overview (H)" -> "Basin overview"
-}
-$('.btn-play').innerHTML = ICON.play;
-$('#zones-rail').innerHTML = V.zonesRail(ZONE_PROPS);
-$('#process-rail').innerHTML = V.processRail();
-$('#process-view').innerHTML = V.processView();
-$('#overview-view').innerHTML = overviewView();
-$('#scenario-bar').innerHTML = V.scenarioBar(SCENARIO);
+$('[data-act="fullscreen"]').innerHTML = ICON.expand;
+$('[data-act="help"]').innerHTML = ICON.help;
+$('#view-overview').innerHTML = V.overviewView();
+$('#view-requirements').innerHTML = V.requirementsView();
+$('#view-interfaces').innerHTML = V.interfacesView();
+$('#view-trades').innerHTML = V.tradesView();
+$('#sc-card').innerHTML = V.scenarioCard();
+$('#lt-card').innerHTML = V.latencyCard();
 $('#help').innerHTML = V.helpView();
-$('#intro-stats').innerHTML = [
-  [`${(BASIN.area_km2 / 1e6).toFixed(2)}M`, 'km² basin'],
-  [HAZARDS.length, 'hazards monitored'],
-  [ZONES.length, 'focus zones'],
-  [STAGES.length, 'stage loop'],
-].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
-
-// ---------- globe ----------
-await document.fonts?.ready;
-const globe = await createGlobe({ container: 'globe', creditContainer: $('#credits') });
-globe.introView();
-globe.spin(true);
-$('#dock').innerHTML = V.dock(globe.layers);
-
-// ---------- markers ----------
-const layer = $('#markers');
-const el = (html, cls) => {
-  const d = document.createElement('div');
-  d.className = `mk ${cls} is-hidden`;
-  d.innerHTML = html;
-  layer.appendChild(d);
-  return d;
-};
-
-const zoneMarkers = {};
-ZONES.forEach((z, i) => {
-  const [lon, lat] = ZONE_GEO[z.k].anchor;
-  const d = el(`<button class="zm${ZONE_GEO[z.k].side === 'l' ? ' side-l' : ''}" data-zone="${z.k}" aria-label="${z.name}">
-      <span class="zm-pin"><span class="zm-ring"></span><b>${V.pad(i + 1)}</b></span>
-      <span class="zm-label"><span class="zm-name">${z.name}</span><span class="zm-issue">${z.issue}</span></span>
-    </button>`, 'mk-zone');
-  zoneMarkers[z.k] = { d, h: globe.addMarker(d, lon, lat, 0, { maxAlt: MAX_ALT.zone }) };
-});
-
-// Assets ring their zone's anchor; satellites sit in orbit with a sensing beam to the ground.
-const assetMarkers = [];
-ZONES.forEach(z => {
-  const [lon, lat] = ZONE_GEO[z.k].anchor;
-  const r = z.k === 'mouth' ? 0.95 : z.k === 'sangha' ? 1.15 : 1.5;
-  const ground = z.assets.filter(a => a !== 'satellite');
-  z.assets.forEach(a => {
-    let mlon, mlat, h = 0, beam = null;
-    if (a === 'satellite') {
-      mlon = lon + 0.4; mlat = lat + 0.9; h = 420_000;
-      beam = globe.addBeam([mlon, mlat, h], [lon, lat, 0]);
-    } else {
-      const j = ground.indexOf(a);
-      const t = C.Math.toRadians(-150 + (j * 300) / Math.max(ground.length, 1) + 25);
-      mlon = lon + r * Math.cos(t) * 1.15; mlat = lat + r * Math.sin(t);
-    }
-    const d = el(`<button class="am" data-asset="${a}" data-zone="${z.k}" aria-label="${ASSET_INFO[a].name}">
-        <span class="am-ico">${ASSET_ICON[a]}</span><span class="am-label">${ASSET_INFO[a].name}</span></button>`, `mk-asset${a === 'satellite' ? ' is-orbit' : ''}`);
-    const m = globe.addMarker(d, mlon, mlat, h, { maxAlt: MAX_ALT.asset });
-    m.on = false;
-    assetMarkers.push({ z: z.k, a, m, beam, d, lon: mlon, lat: mlat, h });
-  });
-});
-
-const labelMarkers = [
-  ...CITIES.map(c => globe.addMarker(el(`<span class="cm-dot"></span><span class="cm-name">${c.name}</span>`, `mk-city side-${c.side || 'r'}`), ...c.at, 0, { maxAlt: MAX_ALT.label })),
-  ...RIVER_LABELS.map(r => globe.addMarker(el(`<span>${r.name}</span>`, 'mk-river'), r.lon, r.lat, 0, { maxAlt: MAX_ALT.label })),
-];
-
-const hubEl = el(`<button class="hb" data-hub="1" aria-label="${HUB.name} (concept)"><span class="hb-hex"><i></i></span>
-  <span class="hb-label"><b>${HUB.name}</b><em>${HUB.host} · concept</em></span></button>`, 'mk-hub');
-const hubMk = globe.addMarker(hubEl, ...HUB.at, 0, { maxAlt: MAX_ALT.hub });
-hubMk.on = false;
-
-// ---------- overlay modules ----------
-createRiverFlow(globe);
-const dataflow = createDataFlow(globe);
-dataflow.setAssets(assetMarkers);
-const orbits = await createOrbits(globe, { inBasin: globe.inBasin });
-const weather = createWeather(globe);
-await createCoverage(globe);
-const scenario = createScenario(globe, { dataflow, makeMarker: el, hubEl });
 
 // ---------- state ----------
-const state = { view: 'globe', sel: null, hover: null, tour: 0, started: false, playing: false };
+// tab, mode ('t' threshold | 'o' objective), scenario + step, side panel, highlighted requirement.
+const state = { tab: 'overview', mode: 't', sc: 'A', step: 0, panel: null, hl: null };
 
-function syncDataflow() {
-  const on = globe.layers.dataflow;
-  hubMk.on = on || scenario.active;
-  if (scenario.active) return;
-  const sel = state.sel;
-  const mode = sel?.type === 'stage' ? STAGE_FLOW[sel.k] : 'all';
-  dataflow.update({ on, mode, zone: sel?.type === 'zone' ? sel.k : null });
-  hubEl.classList.toggle('is-busy', on && (mode === 'hub' || mode === 'loop'));
-}
-
-function applyHighlights() {
-  const { sel, hover } = state;
-  const zs = {};
-  let linked = [];
-  if (sel?.type === 'zone') {
-    for (const z of ZONES) zs[z.k] = z.k === sel.k ? 'selected' : 'dim';
-  } else if (sel?.type === 'beat') {
-    for (const z of ZONES) zs[z.k] = z.k === 'ubangi' ? 'selected' : 'dim';
-  } else if (sel?.type === 'stage') {
-    linked = V.zonesForStage(sel.k).map(z => z.k);
-  } else if (sel?.type === 'asset') {
-    linked = V.zonesForAsset(sel.k).map(z => z.k);
-  } else if (sel?.type === 'hazard') {
-    linked = Object.keys(hazardBy[sel.k].zones);
-  }
-  if (linked.length) for (const z of ZONES) zs[z.k] = linked.includes(z.k) ? 'linked' : 'dim';
-  if (hover && zs[hover] !== 'selected') zs[hover] = 'hover';
-  globe.setZoneStates(zs);
-  globe.setGlow(sel?.type === 'zone' ? sel.k : sel?.type === 'beat' ? 'ubangi' : null);
-
-  for (const z of ZONES) {
-    const s = zs[z.k] || 'idle';
-    zoneMarkers[z.k].d.dataset.state = s;
-    $(`.zr-item[data-zone="${z.k}"]`).dataset.state = s;
-  }
-  // Assets visible for the selected zone, the selected asset class, or the "all assets" layer.
-  for (const am of assetMarkers) {
-    const on = globe.layers.assets || (sel?.type === 'zone' && sel.k === am.z) || (sel?.type === 'asset' && sel.k === am.a)
-      || (globe.layers.dataflow && !scenario.active && state.view === 'globe' && (!sel || ['stage', 'hub', 'basin'].includes(sel.type)));
-    am.m.on = on;
-    if (am.beam) am.beam.show = on;
-    am.d.classList.toggle('is-active', sel?.type === 'asset' && sel.k === am.a);
-    am.d.classList.toggle('is-mini', !(sel?.type === 'zone' && sel.k === am.z) && !(sel?.type === 'asset' && sel.k === am.a));
-  }
-  for (const m of labelMarkers) m.on = globe.layers.labels;
-  syncDataflow();
-
-  // Process rail + process view
-  const zoneStages = sel?.type === 'zone' ? V.zoneBy[sel.k].stages : [];
-  for (const n of $$('.pr-node, .pv-card')) {
-    n.classList.toggle('is-active', sel?.type === 'stage' && sel.k === n.dataset.stage);
-    n.classList.toggle('is-linked', zoneStages.includes(n.dataset.stage));
-  }
-  const ai = sel?.type === 'stage' ? STAGES.findIndex(s => s.k === sel.k) : -1;
-  $('#process-rail').style.setProperty('--progress', ai < 0 ? 0 : ai / (STAGES.length - 1));
-  $('#process-rail').classList.toggle('has-active', ai >= 0);
-  $('.pr-loop').classList.toggle('is-active', sel?.type === 'stage' && sel.k === 'feedback');
-  $('#pr-caption').innerHTML = V.railCaption(sel);
-  for (const c of $$('.pv-cell')) c.classList.toggle('is-col', sel?.type === 'stage' && c.dataset.stage === sel.k);
-  for (const r of $$('.pv-zone')) r.classList.toggle('is-active', sel?.type === 'zone' && r.dataset.zone === sel.k);
-  for (const b of $$('.sc-beat')) {
-    const i = +b.dataset.beat;
-    b.classList.toggle('is-active', sel?.type === 'beat' && sel.k === i);
-    b.classList.toggle('is-done', sel?.type === 'beat' && i < sel.k);
-  }
-  applyOverviewHighlights();
-}
-
-// System Overview: the selected item is 'active' (gold); everything related to it is 'linked'; the rest dims.
-function applyOverviewHighlights() {
-  const { sel } = state;
-  const root = $('#overview-view');
-  const [collectCol, , actCol] = OVERVIEW_COLUMNS;
-  let hz = null, src = null, stg = null;
-  if (sel?.type === 'hazard') {
-    hz = [sel.k];
-    src = Object.keys(hazardBy[sel.k].sources);
-    stg = STAGES.map(s => s.k); // every hazard runs the whole loop
-  } else if (sel?.type === 'asset') {
-    hz = hazardsForAsset(sel.k).map(h => h.k);
-    src = [sel.k];
-    stg = sel.k === 'government' ? actCol.stages : collectCol.stages;
-  } else if (sel?.type === 'stage') {
-    hz = HAZARDS.map(h => h.k); // every stage serves every hazard
-    stg = [sel.k];
-    src = collectCol.stages.includes(sel.k) ? SENSING_ASSETS : actCol.stages.includes(sel.k) ? ['government'] : [];
-  }
-  root.classList.toggle('has-sel', !!hz);
-  const mark = (el, active, linked) => {
-    el.classList.toggle('is-active', active);
-    el.classList.toggle('is-linked', !active && linked);
-  };
-  for (const el of $$('[data-hazard]', root)) mark(el, sel?.type === 'hazard' && sel.k === el.dataset.hazard, !!hz?.includes(el.dataset.hazard));
-  for (const el of $$('[data-source]:not(.ov-cell)', root)) mark(el, sel?.type === 'asset' && sel.k === el.dataset.source, !!src?.includes(el.dataset.source));
-  for (const el of $$('[data-stage]', root)) mark(el, sel?.type === 'stage' && sel.k === el.dataset.stage, !!stg?.includes(el.dataset.stage));
-  for (const row of $$('[data-hazard-row]', root)) {
-    const on = !!hz?.includes(row.dataset.hazardRow);
-    row.classList.toggle('is-linked', on && sel?.type !== 'stage');
-    for (const c of $$('.ov-cell', row)) c.classList.toggle('is-hit', on && !!src?.includes(c.dataset.source));
-  }
-}
-
-// ---------- panel ----------
+// ---------- map ----------
 const panel = $('#panel');
+const insets = () => {
+  if (state.tab !== 'scenario') return { l: 0, r: 0, t: 0, b: 0 };
+  const W = innerWidth, gut = 16;
+  const card = $('#sc-card').getBoundingClientRect(), lt = $('#lt-card');
+  const phone = W < 760;
+  return {
+    t: $('.topbar').offsetHeight + gut,
+    l: phone ? 0 : card.right + gut,
+    r: phone || !panel.classList.contains('is-open') ? 0 : panel.offsetWidth + 2 * gut, // not its rect: it may still be sliding in
+    b: (lt.offsetParent && !phone ? innerHeight - lt.getBoundingClientRect().top : 0) + gut,
+  };
+};
+const map = createSchematicMap($('#map'), { insets });
+
+// ---------- routing (hash deep links, e.g. #scenario/A/3 from a slide) ----------
+function readHash() {
+  const [tab, sc, step] = location.hash.slice(1).split('/');
+  if (TABS.includes(tab)) state.tab = tab;
+  if (V.scenarioBy[sc]) state.sc = sc;
+  const n = +step;
+  if (n >= 1 && n <= V.scenarioBy[state.sc].steps.length) state.step = n - 1;
+}
+function writeHash() {
+  const h = state.tab === 'scenario' ? `#scenario/${state.sc}/${state.step + 1}` : `#${state.tab}`;
+  if (location.hash !== h) history.replaceState(null, '', h);
+}
+addEventListener('hashchange', () => { readHash(); render(); });
+
+// ---------- render ----------
+function render() {
+  app.dataset.view = state.tab;
+  app.dataset.mode = state.mode;
+  for (const t of $$('.tabs [role="tab"]')) {
+    const on = t.dataset.view === state.tab;
+    t.setAttribute('aria-selected', on);
+    t.tabIndex = on ? 0 : -1;
+  }
+  for (const v of TABS) $(`#view-${v}`).hidden = v !== state.tab;
+  for (const b of $$('.mode button')) b.setAttribute('aria-pressed', b.dataset.mode === state.mode);
+  moveInk();
+  renderPanel();     // before the scenario, so the map frames around an open panel
+  renderScenario();
+  renderHighlights();
+  writeHash();
+}
+
+function renderScenario() {
+  const s = V.scenarioBy[state.sc], i = state.step, st = s.steps[i];
+  for (const b of $$('.sc-pick [data-scenario]')) b.setAttribute('aria-checked', b.dataset.scenario === s.id);
+  $('#sc-head').innerHTML = V.scenarioHead(s);
+  $('#sc-steps').innerHTML = V.scenarioSteps(s, i);
+  $('#sc-count').textContent = `Step ${i + 1} / ${s.steps.length}`;
+  $('[data-act="step-prev"]').disabled = i === 0;
+  $('[data-act="step-next"]').disabled = i === s.steps.length - 1;
+  $('#sc-stages').innerHTML = V.stageStrip(st.stages);
+
+  // Latency budget: shown for scenarios that carry it; segments fill in as the chain reaches them.
+  app.classList.toggle('has-latency', !!s.latency);
+  app.style.setProperty('--lt-h', `${$('#lt-card').offsetHeight}px`);
+  const done = new Set(), on = new Set();
+  s.steps.forEach((x, j) => {
+    if (!x.latency || j > i) return;
+    for (const k of x.latency.segments) (j === i ? on : done).add(`${x.latency.leg}:${k}`);
+  });
+  for (const seg of $$('.lt-seg')) {
+    seg.classList.toggle('is-on', on.has(seg.dataset.seg));
+    seg.classList.toggle('is-done', done.has(seg.dataset.seg));
+  }
+  for (const leg of $$('.lt-leg')) leg.classList.toggle('is-on', [...on].some(k => k.startsWith(leg.dataset.leg)));
+
+  if (state.tab !== 'scenario') return;
+  const area = st.area ? { km2: GEO_TARGET_KM2 } : null;
+  map.render({ nodes: V.NODES, show: st.show, links: st.links, state: st.state || {}, focus: st.focus, area });
+}
+
 function renderPanel() {
-  const { sel } = state;
-  const det = $('#pv-detail');
-  const detHtml = sel?.type === 'stage' ? V.stageDetail(sel.k) : '';
-  if (det.dataset.k !== (detHtml ? sel.k : '')) {
-    det.innerHTML = detHtml;
-    det.dataset.k = detHtml ? sel.k : '';
-    det.classList.toggle('is-open', !!detHtml);
-  }
-  const ovd = $('#ov-detail');
-  const ovKey = sel ? `${sel.type}:${sel.k}` : '';
-  if (ovd.dataset.k !== ovKey) {
-    const ovHtml = overviewDetail(sel);
-    ovd.innerHTML = ovHtml;
-    ovd.dataset.k = ovKey;
-    ovd.classList.toggle('is-open', !!ovHtml);
-  }
   let html = '';
-  if (sel?.type === 'basin') html = V.basinPanel(BASIN, ZONE_PROPS);
-  else if (sel?.type === 'zone') html = V.zonePanel(sel.k, ZONE_PROPS, BASIN);
-  else if (sel?.type === 'stage') html = V.stagePanel(sel.k);
-  else if (sel?.type === 'asset') html = V.assetPanel(sel.k);
-  else if (sel?.type === 'hub') html = V.hubPanel(assetMarkers.filter(a => ASSET_ROLE[a.a].sends).length, assetMarkers.filter(a => ASSET_ROLE[a.a].receives).length);
-  else if (sel?.type === 'space') html = V.spacePanel(tle.fetched);
-  else if (sel?.type === 'beat') html = V.beatPanel(sel.k, SCENARIO);
-  else if (sel?.type === 'hazard') html = V.hazardPanel(sel.k);
-  if (html) {
+  if (state.tab === 'scenario') html = V.stepPanel(V.scenarioBy[state.sc], state.step);
+  else if (state.panel?.type === 'req') html = V.reqPanel(state.panel.k);
+  else if (state.panel?.type === 'system') html = V.systemPanel(state.panel.k);
+  const key = state.tab === 'scenario' ? `step:${state.sc}:${state.step}` : state.panel ? `${state.panel.type}:${state.panel.k}` : '';
+  if (html && panel.dataset.k !== key) {
     panel.classList.remove('is-swap');
     void panel.offsetWidth;
     panel.innerHTML = `<div class="p-inner">${html}</div>`;
-    panel.classList.add('is-open', 'is-swap');
+    panel.classList.add('is-swap');
     panel.scrollTop = 0;
     $('#announce').textContent = $('.p-title', panel)?.textContent || '';
-    renderSats();
-  } else {
-    panel.classList.remove('is-open');
   }
+  panel.dataset.k = html ? key : '';
+  panel.classList.toggle('is-open', !!html);
   app.classList.toggle('has-panel', !!html);
 }
 
-// ---------- selection ----------
-function select(sel, { fly = true } = {}) {
-  if (sel?.type !== 'beat' && state.view === 'scenario') leaveScenario();
-  state.sel = sel;
-  const flies = sel && fly && state.view === 'globe';
-  hideIntro(!flies);
-  if (flies) {
-    if (sel.type === 'zone') globe.flyToZone(sel.k);
-    else if (sel.type === 'space') globe.flySpace();
-    else if (sel.type !== 'beat') globe.flyHome();
+// Selected requirement / system glows wherever it appears; steps that cite the highlighted requirement are marked.
+function renderHighlights() {
+  const req = state.panel?.type === 'req' ? state.panel.k : state.hl;
+  for (const el of $$('[data-req], [data-req-row]')) el.classList.toggle('is-hl', (el.dataset.req || el.dataset.reqRow) === req);
+  const sys = state.panel?.type === 'system' ? state.panel.k : null;
+  for (const el of $$('[data-system]')) el.classList.toggle('is-hl', el.dataset.system === sys);
+  $('#view-interfaces').classList.toggle('has-sel', !!sys);
+  const s = V.scenarioBy[state.sc];
+  for (const b of $$('.sc-step')) {
+    const hit = !!state.hl && s.steps[+b.dataset.step].reqs.includes(state.hl);
+    b.classList.toggle('is-hl', hit);
+    b.dataset.hl = hit ? state.hl : '';
   }
-  renderPanel();
-  applyHighlights();
+  $('#sc-card').classList.toggle('has-hl', !!state.hl);
+  $('#map').classList.toggle('is-hl', !!state.hl && s.steps[state.step].reqs.includes(state.hl));
 }
 
-// ---------- views ----------
-function setView(v) {
-  if (state.view === 'scenario' && v !== 'scenario') leaveScenario();
-  setViewDom(v);
-  if (v !== 'globe') hideIntro();
+// ---------- actions ----------
+function setTab(t) {
+  if (!TABS.includes(t)) return;
+  if (t !== state.tab) state.panel = null;
+  state.tab = t;
+  render();
 }
-function setViewDom(v) {
-  state.view = v;
-  app.dataset.view = v;
-  for (const t of $$('.tabs [data-view]')) {
-    t.setAttribute('aria-selected', t.dataset.view === tabFor(v));
-    t.tabIndex = t.dataset.view === tabFor(v) ? 0 : -1;
-  }
-  moveInk();
+function goStep(i) {
+  const n = V.scenarioBy[state.sc].steps.length;
+  state.step = Math.max(0, Math.min(n - 1, i));
+  if (state.tab !== 'scenario') state.tab = 'scenario';
+  render();
 }
-// The flooding example ('scenario' view) runs on the map, so the Mission Map tab stays selected.
-const tabFor = v => (v === 'scenario' ? 'globe' : v);
+function setScenario(id, step = 0) { state.sc = id; state.step = step; goStep(step); }
+function reset() { state.step = 0; state.hl = null; render(); }
+function setMode(m) { state.mode = m; render(); $('#announce').textContent = m === 't' ? 'Showing threshold values' : 'Showing objective values'; }
+function openPanel(p) {
+  if (state.tab === 'scenario') return;
+  state.panel = state.panel && p && state.panel.type === p.type && state.panel.k === p.k ? null : p;
+  render();
+}
+
 function moveInk() {
-  const t = $(`.tabs [data-view="${tabFor(state.view)}"]`), ink = $('.tabs-ink');
+  const t = $(`.tabs [data-view="${state.tab}"]`), ink = $('.tabs-ink');
   if (t) Object.assign(ink.style, { width: `${t.offsetWidth}px`, transform: `translateX(${t.offsetLeft - 4}px)` });
 }
-window.addEventListener('resize', moveInk);
+addEventListener('resize', moveInk);
 
-// ---------- flood scenario ----------
-const BEAT_SECS = 9;
-let beatClock = 0;
-function enterBeat(i) {
-  i = Math.max(0, Math.min(SCENARIO.beats.length - 1, i));
-  if (state.view !== 'scenario') setView('scenario');
-  scenario.enter(i);
-  beatClock = performance.now();
-  state.sel = { type: 'beat', k: i };
-  hideIntro(false);
-  renderPanel();
-  applyHighlights();
-}
-function leaveScenario() {
-  if (!scenario.active) return;
-  setPlaying(false);
-  scenario.exit();
-  if (state.sel?.type === 'beat') state.sel = null;
-  setViewDom('globe');
-  syncDataflow();
-}
-function setPlaying(p) {
-  state.playing = p;
-  app.classList.toggle('is-playing', p);
-  beatClock = performance.now();
-}
-globe.onTick(() => {
-  if (state.view !== 'scenario' || state.sel?.type !== 'beat') return;
-  const n = SCENARIO.beats.length, i = state.sel.k;
-  const k = state.playing ? Math.min((performance.now() - beatClock) / (BEAT_SECS * 1000), 1) : 0;
-  $('#sc-fill').style.transform = `scaleX(${(i + k) / (n - 1)})`;
-  if (state.playing && k >= 1) {
-    if (i < n - 1) { enterBeat(i + 1); syncTour(); } else setPlaying(false);
-  }
-});
-
-// ---------- overlays (dock, legend cards) ----------
-function setLayer(k, on) {
-  globe.layers[k] = on;
-  for (const i of $$(`input[data-layer="${k}"]`)) i.checked = on;
-  renderLegend();
-  applyHighlights();
-}
-function renderLegend() {
-  const L = globe.layers;
-  $('#legend').innerHTML = [
-    L.dataflow && V.legendDataflow(),
-    L.sats && V.legendSats(),
-    L.weather && V.legendWeather(weather),
-    L.coverage && V.legendCoverage(ACCESS.pctOver100),
-  ].filter(Boolean).join('');
-  app.classList.toggle('has-legend', !!$('#legend').children.length);
-  renderSats();
-  const t = $('#wx-time');
-  if (t) t.textContent = fmtUTC(weather.current);
-  app.classList.toggle('wx-paused', !weather.playing);
-}
-const fmtUTC = d => `${d.toISOString().slice(5, 10).replace('-', '/')} ${d.toISOString().slice(11, 16)} UTC`;
-function renderSats() {
-  const now = orbits.simNow();
-  for (const id of ['#legend-sats', '#panel-sats']) {
-    const n = $(id);
-    if (n) n.innerHTML = V.satRows(orbits.sats, now);
-  }
-}
-let lastSatRender = 0;
-orbits.onUpdate(() => {
-  if (performance.now() - lastSatRender < 1000) return;
-  lastSatRender = performance.now();
-  renderSats();
-});
-weather.onFrame(t => { const n = $('#wx-time'); if (n) n.textContent = fmtUTC(t); });
-
-// ---------- intro ----------
-// Leaving the title card: cinematic fly-in, unless a selection is about to fly the camera itself.
-function hideIntro(flyIn = true) {
-  if (!app.classList.contains('is-intro')) return;
-  app.classList.remove('is-intro');
-  globe.spin(false);
-  if (!state.started) {
-    state.started = true;
-    if (flyIn) globe.flyIntro();
-    else globe.setOverlays(true);
-  }
-}
-function showIntro() {
-  select(null, { fly: false });
-  setView('globe');
-  app.classList.add('is-intro');
-  state.started = false;
-  globe.setOverlays(false);
-  globe.introView({ animate: true, complete: () => app.classList.contains('is-intro') && globe.spin(true) });
-}
-
-// ---------- presenter tour ----------
-// Each chapter sets a sensible overlay preset when reached through the tour.
-const PRESET = {
-  base:     { dataflow: false, sats: false, weather: false },
-  space:    { dataflow: false, sats: true, weather: true },
-  process:  { dataflow: true, sats: false, weather: false },
-  scenario: { dataflow: false, sats: false, weather: false },
-};
-const showOverview = () => { select(null, { fly: false }); setView('overview'); };
-// A tour step records what it shows (sel / view) so free clicks can be mapped back onto the tour.
-const globeStep = (ch, preset, sel) => ({ ch, preset, sel, run: () => { setView('globe'); select(sel); } });
-const TOUR = [
-  { ch: 'Intro', run: showIntro },
-  { ch: 'System Overview', preset: 'base', view: 'overview', run: showOverview },
-  globeStep('The Basin', 'base', { type: 'basin' }),
-  ...ZONES.map(z => globeStep('Focus Zones', 'base', { type: 'zone', k: z.k })),
-  globeStep('Space Segment', 'space', { type: 'space' }),
-  ...STAGES.map(s => globeStep('The Process', 'process', { type: 'stage', k: s.k })),
-  ...SCENARIO.beats.map((b, i) => ({ ch: 'Example: Flooding', preset: 'scenario', sel: { type: 'beat', k: i }, run: () => enterBeat(i) })),
-  { ch: 'Process & Gaps', view: 'process', run: () => { select(null, { fly: false }); setView('process'); } },
-];
-const CHAPTERS = [...new Set(TOUR.map(t => t.ch))];
-
-function go(i) {
-  i = Math.max(0, Math.min(TOUR.length - 1, i));
-  const prevCh = TOUR[state.tour]?.ch;
-  state.tour = i;
-  const step = TOUR[i];
-  if (step.preset && step.ch !== prevCh) for (const [k, v] of Object.entries(PRESET[step.preset])) if (globe.layers[k] !== v) setLayer(k, v);
-  step.run();
-  updateTourUI();
-  if (step.ch !== prevCh && i > 0) toast(`${V.pad(CHAPTERS.indexOf(step.ch))}`, step.ch);
-}
-function updateTourUI() {
-  $('#tour-chapter').textContent = TOUR[state.tour].ch;
-  $('#tour-count').textContent = `${V.pad(state.tour)} / ${V.pad(TOUR.length - 1)}`;
-  $('#tour-bar').style.transform = `scaleX(${state.tour / (TOUR.length - 1)})`;
-}
-let toastT;
-function toast(n, text) {
-  const t = $('#toast');
-  t.innerHTML = `<span>${n}</span>${text}`;
-  t.classList.remove('is-on'); void t.offsetWidth; t.classList.add('is-on');
-  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('is-on'), 1900);
-}
-
-// Keep the tour cursor in sync when the presenter clicks around freely.
-function syncTour() {
-  const { sel, view } = state;
-  const i = TOUR.findIndex(t => (t.view && t.view === view && !sel) || (sel && t.sel?.type === sel.type && t.sel.k === sel.k));
-  if (i >= 0) { state.tour = i; updateTourUI(); }
-}
-
-// ---------- events ----------
-document.addEventListener('click', e => {
-  if (e.target.closest('summary, label')) return;
-  const t = e.target.closest('button, [data-zone], [data-stage], [data-act], [data-view], [data-page]');
-  if (!t) return;
-  const d = t.dataset;
-
-  if (d.act) {
-    switch (d.act) {
-      case 'begin': go(1); return;
-      case 'explore': explore(); return;
-      case 'next': go(state.tour + 1); return;
-      case 'prev': go(state.tour - 1); return;
-      case 'home': setView('globe'); select({ type: 'basin' }); syncTour(); return;
-      case 'close': select(null, { fly: false }); return;
-      case 'layers': toggle('#layers-pop'); return;
-      case 'help': toggle('#help'); return;
-      case 'fullscreen': fullscreen(); return;
-      case 'sc-play': setPlaying(!state.playing); return;
-      case 'sc-exit': setView('globe'); select({ type: 'basin' }); syncTour(); return;
-      case 'example': enterBeat(0); syncTour(); return;
-      case 'wx-play': weather.toggle(); app.classList.toggle('wx-paused', !weather.playing); return;
-    }
-  }
-  if (d.view) {
-    setView(d.view);
-    if (d.view !== 'globe' && !['stage', 'hazard', 'asset'].includes(state.sel?.type)) select(null, { fly: false });
-    syncTour(); return;
-  }
-  if (d.hazard) { select({ type: 'hazard', k: d.hazard }, { fly: state.view === 'globe' }); return; }
-  if (d.source) { select({ type: 'asset', k: d.source }, { fly: state.view === 'globe' }); return; }
-  if (d.beat) { enterBeat(+d.beat); syncTour(); return; }
-  if (d.hub) { select({ type: 'hub' }); return; }
-  if (d.page) {
-    const [kind, dir] = d.page.split(':');
-    if (kind === 'beat') { enterBeat((state.sel.k + +dir + SCENARIO.beats.length) % SCENARIO.beats.length); syncTour(); return; }
-    const list = kind === 'zone' ? ZONES : STAGES;
-    const i = list.findIndex(x => x.k === state.sel.k);
-    select({ type: kind, k: list[(i + +dir + list.length) % list.length].k });
-    syncTour(); return;
-  }
-  if (d.gap) {
-    const s = STAGES.find(x => x.gapLabel === d.gap);
-    select({ type: 'stage', k: s.k }, { fly: false }); syncTour(); return;
-  }
-  if (d.asset && (t.classList.contains('asset-more') || t.classList.contains('am'))) {
-    if (t.classList.contains('am') && state.sel?.type === 'zone') { openAssetInPanel(d.asset); return; }
-    select({ type: 'asset', k: d.asset }); return;
-  }
-  if (d.zone) {
-    if (state.view !== 'globe') setView('globe');
-    select({ type: 'zone', k: d.zone }); syncTour(); return;
-  }
-  if (d.stage) {
-    if (state.view === 'scenario') setView('globe');
-    select({ type: 'stage', k: d.stage }, { fly: state.view === 'globe' }); syncTour(); return;
-  }
-});
-
-// Clicking an asset marker while its zone is open expands that asset in the panel.
-function openAssetInPanel(a) {
-  const det = $(`.asset[data-asset="${a}"]`, panel);
-  if (!det) return;
-  det.open = true;
-  det.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  det.classList.remove('is-flash'); void det.offsetWidth; det.classList.add('is-flash');
-}
-
-// "Explore freely" lands on the System Overview, like the first tour step.
-function explore() {
-  state.tour = TOUR.findIndex(t => t.view === 'overview'); updateTourUI();
-  showOverview();
-}
-let popoverOpener = null;
-function toggle(sel) {
-  const n = $(sel);
-  n.hidden = !n.hidden;
-  if (sel === '#layers-pop' && !n.hidden) n.innerHTML = V.layersPop(globe.layers);
-  if (!n.hidden) { popoverOpener = document.activeElement; $('button, input', n)?.focus(); }
-  else popoverOpener?.focus?.();
+function toggleHelp() {
+  const h = $('#help');
+  h.hidden = !h.hidden;
+  if (!h.hidden) $('button', h)?.focus();
 }
 function fullscreen() {
   if (document.fullscreenElement) document.exitFullscreen();
   else document.documentElement.requestFullscreen?.();
 }
-for (const box of ['#layers-pop', '#dock']) {
-  $(box).addEventListener('change', e => {
-    const k = e.target.dataset.layer;
-    if (k) setLayer(k, e.target.checked);
-  });
-}
-document.addEventListener('pointerdown', e => {
-  for (const s of ['#layers-pop', '#help']) {
-    const n = $(s);
-    if (!n.hidden && !n.contains(e.target) && !e.target.closest('[data-act="layers"],[data-act="help"]')) n.hidden = true;
+
+// ---------- events ----------
+document.addEventListener('click', e => {
+  const t = e.target.closest('button, [data-system], [data-act], [data-req-row]');
+  if (!t) return;
+  const d = t.dataset;
+  if (d.act) {
+    switch (d.act) {
+      case 'step-next': goStep(state.step + 1); return;
+      case 'step-prev': goStep(state.step - 1); return;
+      case 'step-reset': reset(); return;
+      case 'close': state.panel = null; render(); return;
+      case 'help': toggleHelp(); return;
+      case 'fullscreen': fullscreen(); return;
+    }
   }
+  if (d.view) { setTab(d.view); return; }
+  if (d.mode) { setMode(d.mode); return; }
+  if (d.scenario) { setScenario(d.scenario); return; }
+  if (d.openScenario) { setScenario(d.openScenario); return; }
+  if (d.step) { goStep(+d.step); return; }
+  if (d.goto) { const [sc, i] = d.goto.split(':'); state.hl = state.panel?.type === 'req' ? state.panel.k : state.hl; state.panel = null; setScenario(sc, +i); return; }
+  if (d.trade) { setTab('trades'); $(`#trade-${d.trade}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  if (d.req) {
+    // On the scenario map a requirement toggles its highlight; elsewhere it opens the requirement panel.
+    if (state.tab === 'scenario') { state.hl = state.hl === d.req ? null : d.req; renderHighlights(); return; }
+    openPanel({ type: 'req', k: d.req }); return;
+  }
+  if (d.reqRow) { openPanel({ type: 'req', k: d.reqRow }); return; }
+  if (d.system) { if (state.tab !== 'interfaces') setTab('interfaces'); openPanel({ type: 'system', k: d.system }); return; }
 });
-
-// Globe hover + click
-const canvas = globe.scene.canvas;
-const tip = $('#hover-tip');
-let moveRaf = 0, lastMove = null;
-canvas.addEventListener('pointermove', e => {
-  lastMove = e;
-  if (moveRaf) return;
-  moveRaf = requestAnimationFrame(() => {
-    moveRaf = 0;
-    const r = canvas.getBoundingClientRect();
-    const p = new C.Cartesian2(lastMove.clientX - r.left, lastMove.clientY - r.top);
-    const ll = globe.lonLatAt(p);
-    hud(ll);
-    const k = app.classList.contains('is-intro') || lastMove.buttons || state.view === 'scenario' ? null : globe.zoneAt(p);
-    if (k !== state.hover) { state.hover = k; applyHighlights(); }
-    canvas.style.cursor = k ? 'pointer' : '';
-    if (k) {
-      tip.innerHTML = `<b>${V.zoneBy[k].name}</b><span>${V.zoneBy[k].issue}</span>`;
-      tip.style.transform = `translate3d(${lastMove.clientX + 16}px, ${lastMove.clientY + 14}px, 0)`;
-      tip.classList.add('is-on');
-    } else tip.classList.remove('is-on');
-  });
-});
-canvas.addEventListener('pointerleave', () => { state.hover = null; tip.classList.remove('is-on'); applyHighlights(); });
-let downAt = null;
-canvas.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; globe.spin(false); });
-canvas.addEventListener('pointerup', e => {
-  if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5 || app.classList.contains('is-intro') || state.view === 'scenario') return;
-  const r = canvas.getBoundingClientRect();
-  const p = new C.Cartesian2(e.clientX - r.left, e.clientY - r.top);
-  const k = globe.zoneAt(p);
-  if (k) { select({ type: 'zone', k }); syncTour(); }
-  else if (globe.inBasin(globe.lonLatAt(p))) { select({ type: 'basin' }, { fly: false }); syncTour(); }
-  else if (state.sel) select(null, { fly: false });
-});
-
-// HUD
-const hudEl = $('#hud');
-let lastLL = null;
-function hud(ll = lastLL) {
-  lastLL = ll;
-  const h = globe.camera.positionCartographic.height / 1000;
-  const f = (v, p, n) => `${Math.abs(v).toFixed(3)}°${v >= 0 ? p : n}`;
-  hudEl.innerHTML = `
-    <span><i>LAT</i>${ll ? f(ll[1], 'N', 'S') : '——'}</span>
-    <span><i>LON</i>${ll ? f(ll[0], 'E', 'W') : '——'}</span>
-    <span><i>ALT</i>${V.fmt(Math.round(h))} km</span>`;
-}
-globe.camera.changed.addEventListener(() => hud());
-globe.camera.percentageChanged = 0.01;
-hud();
-
-// Keyboard (presentation clickers send PageUp/PageDown or arrows)
-const LAYER_KEYS = { d: 'dataflow', s: 'sats', w: 'weather', r: 'flow', g: 'coverage' };
+// SVG interface nodes are focusable groups: Enter / Space activates them like buttons.
 document.addEventListener('keydown', e => {
-  if (e.target.closest('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('g[data-system]')) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
+}, true);
+document.addEventListener('pointerdown', e => {
+  const h = $('#help');
+  if (!h.hidden && !h.contains(e.target) && !e.target.closest('[data-act="help"]')) h.hidden = true;
+});
+
+// Keyboard (presentation clickers send PageUp / PageDown or arrows)
+document.addEventListener('keydown', e => {
+  if (e.target.closest?.('input, textarea, select') || e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key, lk = k.toLowerCase();
-  const onControl = e.target.closest('button, summary, label, a, [role="tab"]');
-  if ((k === ' ' || k === 'Enter') && onControl) return; // let the focused control handle it
-  if ((k === 'ArrowRight' || k === 'ArrowLeft') && e.target.closest('[role="tab"]')) {
+  const onControl = e.target.closest?.('button, summary, a, [role="tab"], g[data-system]');
+  if ((k === ' ' || k === 'Enter') && onControl) return;
+  if ((k === 'ArrowRight' || k === 'ArrowLeft') && e.target.closest?.('[role="tab"]')) {
     e.preventDefault();
     const tabs = $$('.tabs [role="tab"]'), i = tabs.indexOf(e.target.closest('[role="tab"]'));
-    tabs[(i + (k === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length].focus();
+    const next = tabs[(i + (k === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
+    next.focus(); setTab(next.dataset.view);
     return;
   }
-  if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') { e.preventDefault(); go(state.tour + 1); }
-  else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); go(state.tour - 1); }
-  else if (k === 'Escape') {
+  if (/^[1-5]$/.test(k)) { setTab(TABS[+k - 1]); return; }
+  if (state.tab === 'scenario' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); goStep(state.step + 1); return; }
+  if (state.tab === 'scenario' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); goStep(state.step - 1); return; }
+  if (lk === 'r') { reset(); return; }
+  if (lk === 't') { setMode(state.mode === 't' ? 'o' : 't'); return; }
+  if (lk === 'f') { fullscreen(); return; }
+  if (k === '?') { toggleHelp(); return; }
+  if (k === 'Escape') {
     if (!$('#help').hidden) $('#help').hidden = true;
-    else if (!$('#layers-pop').hidden) $('#layers-pop').hidden = true;
-    else if (app.classList.contains('is-intro')) explore();
-    else if (state.view === 'scenario') { setView('globe'); select({ type: 'basin' }); syncTour(); }
-    else if (state.sel) select(null, { fly: false });
-    else if (state.view !== 'globe') setView('globe');
+    else if (state.panel) { state.panel = null; render(); }
+    else if (state.hl) { state.hl = null; renderHighlights(); }
   }
-  else if (/^[1-9]$/.test(k)) {
-    if (state.view === 'scenario') setView('globe');
-    select({ type: 'stage', k: STAGES[+k - 1].k }, { fly: state.view === 'globe' }); syncTour();
-  }
-  else if (lk === 'h') { setView('globe'); select({ type: 'basin' }); syncTour(); }
-  else if (lk === 'o') { setView(state.view === 'overview' ? 'globe' : 'overview'); syncTour(); }
-  else if (lk === 'p') { setView(state.view === 'process' ? 'globe' : 'process'); syncTour(); }
-  else if (lk === 'k') { if (state.view === 'scenario') setPlaying(!state.playing); else { enterBeat(0); syncTour(); setPlaying(true); } }
-  else if (LAYER_KEYS[lk]) setLayer(LAYER_KEYS[lk], !globe.layers[LAYER_KEYS[lk]]);
-  else if (lk === 'l') toggle('#layers-pop');
-  else if (lk === 'f') fullscreen();
-  else if (k === '?') toggle('#help');
 });
 
-setView('globe');
-applyHighlights();
-renderLegend();
-updateTourUI();
+readHash();
+render();
 requestAnimationFrame(() => { moveInk(); app.classList.add('is-ready'); });
-window.__conops = { globe, state, go, select, orbits, scenario, dataflow };
+window.__srr = { state, render, map, LATENCY };
