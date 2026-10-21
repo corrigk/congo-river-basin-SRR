@@ -4,6 +4,8 @@ Live demo for our System Requirements Review. It narrows the Congo Basin system-
 **RFP S-3** (space-based communications for sensors, responders and communities) must accomplish, which requirements
 drive it, and which gaps it closes. Flooding is one worked example; the same comms layer serves every hazard.
 
+**Live:** https://corrigk.github.io/congo-river-basin-SRR/ · presenter link: https://corrigk.github.io/congo-river-basin-SRR/?present#scenario/A/1
+
 It is a concept visualization, not a live system. Requirement text and numbers are verbatim from the RFP; anything
 we inferred (traceability, interface roles, latency sub-allocations, map positions) is labelled *Proposed*, *TBR* or
 *illustrative* on the page. The page is orbit-neutral: no orbit or architecture is shown as decided.
@@ -28,11 +30,13 @@ we inferred (traceability, interface roles, latency sub-allocations, map positio
 | R | Reset the scenario to step 1 |
 | T | Threshold / objective values everywhere |
 | M | 3D globe / schematic map |
+| P | Presenter mode: projector contrast, larger type, no keyboard hints (remembered) |
 | F · ? · Esc | Fullscreen · shortcuts · close panel |
 
 **Deep links** open a view directly, so a slide can link straight to a step:
 `…/#overview`, `…/#requirements`, `…/#scenario/A/5`, `…/#interfaces`, `…/#trades`.
-Add `?offline` (`…/?offline#scenario/A/1`) to skip the online satellite imagery and use the bundled basemap.
+Add `?present` to open in presenter mode and `?offline` to skip the online satellite imagery
+(`…/?present&offline#scenario/A/1`). Laid out for 1280×720 and up; also checked at 1024×768 and phone width.
 
 **Before presenting on a computer you don't control:** open the page once and wait for the badge in the top bar to
 read **Ready offline** (or click **Preload for offline**). After that the page and the 3D globe work with no network.

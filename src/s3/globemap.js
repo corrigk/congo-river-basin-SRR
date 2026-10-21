@@ -89,11 +89,14 @@ export async function createGlobeMap(container, { insets = () => ({ l: 0, r: 0, 
     const aw = Math.max(W - ins.l - ins.r, 200), ah = Math.max(H - ins.t - ins.b, 200);
     const dx = e - w, dy = n - s;
     const box = [w - (dx * ins.l) / aw, s - (dy * ins.b) / ah, e + (dx * ins.r) / aw, n + (dy * ins.t) / ah];
-    globe.flyToBox(box, { pitch: -74, scale: 1.95, shift: 0, duration: 1.8, ...opts });
+    const duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1.8;
+    globe.flyToBox(box, { pitch: -74, scale: 1.95, shift: 0, duration, ...opts });
   }
   const BASIN_BOX = [11.8, -13.5, 34.0, 9.3];
 
+  let lastView = null;
   function render(view) {
+    lastView = view;
     const { nodes = {}, show = [], links: ls = [], state = {}, focus = [], area = null, mode = 't' } = view || {};
     clear();
     for (const id of show) {
@@ -133,5 +136,5 @@ export async function createGlobeMap(container, { insets = () => ({ l: 0, r: 0, 
   // Pause rendering while the Scenario tab is hidden so the globe doesn't burn CPU behind other tabs.
   const pause = p => { globe.viewer.useDefaultRenderLoop = !p; };
 
-  return { kind: 'globe', render, pause, home: () => frame(BASIN_BOX), viewer: globe.viewer, get onlineImagery() { return globe.onlineImagery; } };
+  return { kind: 'globe', render, pause, home: () => frame(BASIN_BOX), refit: () => lastView && render(lastView), viewer: globe.viewer, get onlineImagery() { return globe.onlineImagery; } };
 }

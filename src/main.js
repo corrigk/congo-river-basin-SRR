@@ -15,6 +15,7 @@ const TABS = ['overview', 'requirements', 'scenario', 'interfaces', 'trades'];
 $('#brand-mark').innerHTML = MARK;
 $('[data-act="fullscreen"]').innerHTML = ICON.expand;
 $('[data-act="help"]').innerHTML = ICON.help;
+$('[data-act="present"]').innerHTML = ICON.present;
 $('#view-overview').innerHTML = V.overviewView();
 $('#view-requirements').innerHTML = V.requirementsView();
 $('#view-interfaces').innerHTML = V.interfacesView();
@@ -46,7 +47,9 @@ const offline = createOffline($('.offline'));
 const schematic = createSchematicMap($('#map .map-sch'), { insets });
 let map = schematic, globeMap = null, lastView = null;
 const pref = { get: () => { try { return localStorage.getItem('srr-map'); } catch { return null; } },
-               set: v => { try { localStorage.setItem('srr-map', v); } catch { /* private mode: no memory */ } } };
+               set: v => { try { localStorage.setItem('srr-map', v); } catch { /* private mode: no memory */ } },
+               present: () => { try { return localStorage.getItem('srr-present') === '1'; } catch { return false; } },
+               setPresent: v => { try { localStorage.setItem('srr-present', v ? '1' : '0'); } catch { /* no memory */ } } };
 
 function useMap(kind) {
   if (kind === 'globe' && !globeMap) return;
@@ -114,7 +117,7 @@ function render() {
 
 function renderScenario() {
   const s = V.scenarioBy[state.sc], i = state.step, st = s.steps[i];
-  for (const b of $$('.sc-pick [data-scenario]')) b.setAttribute('aria-checked', b.dataset.scenario === s.id);
+  for (const b of $$('.sc-pick [data-scenario]')) b.setAttribute('aria-pressed', b.dataset.scenario === s.id);
   $('#sc-head').innerHTML = V.scenarioHead(s);
   $('#sc-steps').innerHTML = V.scenarioSteps(s, i);
   $('#sc-count').textContent = `Step ${i + 1} / ${s.steps.length}`;
@@ -206,6 +209,14 @@ function moveInk() {
 }
 addEventListener('resize', moveInk);
 
+// Presenter mode: larger type, higher contrast, no keyboard hints. ?present in the link turns it on.
+function setPresent(on) {
+  app.classList.toggle('is-present', on);
+  $('[data-act="present"]').setAttribute('aria-pressed', on);
+  pref.setPresent(on);
+  requestAnimationFrame(() => { moveInk(); map.refit?.(); });
+}
+
 function toggleHelp() {
   const h = $('#help');
   h.hidden = !h.hidden;
@@ -230,6 +241,7 @@ document.addEventListener('click', e => {
       case 'help': toggleHelp(); return;
       case 'fullscreen': fullscreen(); return;
       case 'preload': offline.preload(); return;
+      case 'present': setPresent(!app.classList.contains('is-present')); return;
     }
   }
   if (d.view) { setTab(d.view); return; }
@@ -277,6 +289,7 @@ document.addEventListener('keydown', e => {
   if (lk === 'm') { const k = map === globeMap ? 'schematic' : 'globe'; pref.set(k); useMap(k); return; }
   if (lk === 't') { setMode(state.mode === 't' ? 'o' : 't'); return; }
   if (lk === 'f') { fullscreen(); return; }
+  if (lk === 'p') { setPresent(!app.classList.contains('is-present')); return; }
   if (k === '?') { toggleHelp(); return; }
   if (k === 'Escape') {
     if (!$('#help').hidden) $('#help').hidden = true;
@@ -286,6 +299,7 @@ document.addEventListener('keydown', e => {
 });
 
 readHash();
+setPresent(new URLSearchParams(location.search).has('present') || pref.present());
 render();
 requestAnimationFrame(() => { moveInk(); app.classList.add('is-ready'); });
 setTimeout(loadGlobe, 150); // after first paint: the page is usable before Cesium arrives

@@ -145,8 +145,8 @@ export function reqPanel(id) {
 // ---------- 3. Scenario (chrome over the map) ----------
 export function scenarioCard() {
   return `
-    <div class="sc-pick" role="radiogroup" aria-label="Scenario">
-      ${SCENARIOS.map(s => `<button role="radio" data-scenario="${s.id}" aria-checked="false" title="${esc(s.title)}"><b>${s.id}</b><span>${esc(s.title)}</span></button>`).join('')}
+    <div class="sc-pick" role="group" aria-label="Scenario">
+      ${SCENARIOS.map(s => `<button data-scenario="${s.id}" aria-pressed="false" aria-label="Scenario ${s.id}: ${esc(s.title)}" title="${esc(s.title)}"><b>${s.id}</b><span>${esc(s.title)}</span></button>`).join('')}
     </div>
     <div class="sc-head" id="sc-head"></div>
     <ol class="sc-steps" id="sc-steps"></ol>
@@ -321,7 +321,7 @@ export function tradesView() {
 export function helpView() {
   const rows = [
     ['1 – 5', 'Switch tab'], ['→ &nbsp;PgDn &nbsp;Space', 'Next scenario step'], ['← &nbsp;PgUp', 'Previous step'], ['R', 'Reset scenario'],
-    ['T', 'Threshold / objective'], ['M', 'Globe / schematic map'], ['Esc', 'Close panel'], ['?', 'This help'],
+    ['T', 'Threshold / objective'], ['M', 'Globe / schematic map'], ['P', 'Presenter mode'], ['F', 'Fullscreen'], ['Esc', 'Close panel'], ['?', 'This help'],
   ];
   return `<div class="help-head"><span>Keyboard</span><button class="icon-btn" data-act="help" aria-label="Close shortcuts">${ICON.close}</button></div>
     <dl>${rows.map(([k, v]) => `<dt>${k.split(' &nbsp;').map(x => `<kbd>${x}</kbd>`).join('')}</dt><dd>${v}</dd>`).join('')}</dl>`;
