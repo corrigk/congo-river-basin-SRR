@@ -446,3 +446,40 @@ button.sys-id:hover, .sys-id.is-hl { color: var(--gold); }
   .sc-card { max-height: 40%; }
   .gm-credits { display: none; }
 }
+
+/* ---------- ground view (Three.js) ---------- */
+.map-ground, .gv-canvas, .gv-labels { position: absolute; inset: 0; }
+.gv-canvas { width: 100%; height: 100%; display: block; }
+#app:not([data-map="ground"]) .map-ground { visibility: hidden; }
+#app[data-map="ground"] :is(.map-sch, .map-globe) { visibility: hidden; }
+.gv-labels { pointer-events: none; overflow: hidden; }
+.gv-label { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; white-space: nowrap; line-height: 1.25;
+  margin-top: -6px; translate: -50% -100%; padding: 4px 10px; border-radius: 8px; background: rgba(10,10,10,.8); border: 1px solid var(--line-2); transition: opacity .3s; }
+.gv-label::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 1px; height: 6px; background: var(--line-2); }
+.gv-label.is-hidden { opacity: 0; }
+.gv-label b { font-size: 12.5px; font-weight: 600; }
+.gv-label em { font-style: normal; font-size: 10.5px; color: var(--faint); }
+.gv-label.is-partner { pointer-events: auto; cursor: pointer; }
+.gv-label.is-partner b { color: var(--precip); }
+.gv-label.k-space b { color: var(--gold); }
+.gv-label.k-sensor b, .gv-label.k-field b { color: var(--data); }
+.gv-label.k-receiver b { color: var(--alert); }
+.gv-label.k-outage b, .gv-label.k-hazard b { color: var(--rust-soft); }
+.gv-wait { display: none; font-style: normal; font-size: 10.5px; color: var(--gold); }
+.gv-label.is-waiting { border-color: var(--gold); }
+.gv-label.is-waiting .gv-wait { display: block; animation: blink-text 1.2s ease-in-out infinite alternate; }
+@keyframes blink-text { from { opacity: .45; } }
+.map.is-hl .gv-label:not(.is-hidden) { border-color: var(--gold); box-shadow: 0 0 14px rgba(207,185,145,.35); }
+.gv-orbit { display: none; align-items: center; gap: 2px; padding-left: 8px; margin-left: 4px; border-left: 1px solid var(--line-2); }
+#app[data-map="ground"] .gv-orbit { display: flex; }
+.gv-orbit-k { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); font-weight: 600; margin-right: 4px; }
+.gv-orbit button { padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 7px; color: var(--muted); }
+.gv-orbit button[aria-pressed="true"] { background: var(--gold); color: var(--ink); }
+.gv-orbit button:not([aria-pressed="true"]):hover { background: rgba(255,255,255,.08); color: var(--text); }
+/* one-line caption hung under the bar */
+.gv-orbit-note { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); width: max-content; max-width: 440px; text-align: center; line-height: 1.35; font-size: 11px; color: var(--paper);
+  text-shadow: 0 1px 3px #000, 0 0 10px rgba(0,0,0,.9); pointer-events: none; }
+#app:not([data-view="scenario"]) .gv-orbit { display: none; }
+.is-present .gv-label b { font-size: 14px; }
+@media (max-width: 860px) { .gv-orbit-k { display: none; } .gv-orbit-note { white-space: normal; width: 90vw; text-align: center; } }
+#app[data-map="ground"] .sm-badge { display: none; } /* the ground view carries its own caption in the orbit box */

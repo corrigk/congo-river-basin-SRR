@@ -10,7 +10,7 @@
 </head>
 <body>
   <div id="app" data-view="overview" data-mode="t" data-map="schematic">
-    <div id="map" class="map" aria-hidden="true"><div class="map-sch"></div><div class="map-globe"></div></div>
+    <div id="map" class="map"><div class="map-sch"></div><div class="map-globe" aria-hidden="true"></div><div class="map-ground"></div></div>
 
     <header class="topbar">
       <div class="brand">
@@ -48,6 +48,7 @@
       <div class="lt-card glass" id="lt-card" aria-label="Latency budget"></div>
       <div class="map-switch glass" role="group" aria-label="Map (M)">
         <button data-map="globe" aria-pressed="false" disabled>Globe</button>
+        <button data-map="ground" aria-pressed="false">Ground</button>
         <button data-map="schematic" aria-pressed="true">Schematic</button>
         <span class="map-status" aria-live="polite"></span>
       </div>

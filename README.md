@@ -29,7 +29,9 @@ we inferred (traceability, interface roles, latency sub-allocations, map positio
 | ← · PgUp | Previous step |
 | R | Reset the scenario to step 1 |
 | T | Threshold / objective values everywhere |
-| M | 3D globe / schematic map |
+| M | Next map: 3D globe · ground view · schematic |
+| G | Ground view |
+| O | Ground view satellite: pass overhead (LEO/MEO) / fixed in sky (GEO) |
 | P | Presenter mode: projector contrast, larger type, no keyboard hints (remembered) |
 | F · ? · Esc | Fullscreen · shortcuts · close panel |
 
@@ -42,6 +44,20 @@ Add `?present` to open in presenter mode and `?offline` to skip the online satel
 read **Ready offline** (or click **Preload for offline**). After that the page and the 3D globe work with no network.
 If anything goes wrong, `srr-offline.html` is a single file with everything inside: copy it to a USB stick and
 double-click it (schematic map only).
+
+## Ground view
+
+The Scenario tab has three maps: the 3D globe, an eye-level **Ground** view, and the schematic. The ground view is an
+illustrative low-poly scene on an Ubangi riverbank (Three.js, self-hosted, about 130 kB compressed, cached offline):
+the river gauge under the canopy, the ranger station with its two-way terminal, the village's community receiver,
+a radio tower in the distance, and the satellite overhead. Every scenario step drives it from the same data as the maps:
+beams for links, the gauge alarm, the receiver playing the alert, the tower going dark in degraded operations, smoke at
+the incursion site, A-2's drone and A-1's platform. Nodes that are far away (gateway, COP, agency, other partners) are
+labelled "beyond the horizon".
+
+The **Satellite** toggle shows the open orbit trade instead of deciding it: *Pass overhead* (LEO/MEO; between passes
+the terminal shows "Waiting for a satellite pass", which is the "terminal wait" segment of the latency budget) or
+*Fixed in sky* (GEO). The scene is not to scale and time is compressed; the page says so.
 
 ## Run it locally
 
@@ -106,6 +122,7 @@ The selector, step list, panel, map and keyboard pick it up automatically. Requi
 - `src/s3/views.js`: HTML for every tab and panel
 - `src/main.js`: state, routing (`#scenario/A/5`), tabs, keyboard, map switching
 - `src/s3/schematic.js`: SVG schematic map (geometry precomputed by `scripts/build-schematic.mjs`)
+- `src/s3/groundmap.js`: ground view (Three.js), same `render(view)` API
 - `src/s3/globemap.js`: 3D globe adapter (same `render(view)` API), built on `src/globe.js`, `src/riverflow.js`, `src/fx.js`
 - `src/s3/offline.js`: service-worker registration and the offline badge
 - `src/style.css` (`:root` colour tokens, shared components) and `src/s3/s3.css`

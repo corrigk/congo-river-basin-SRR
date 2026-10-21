@@ -18,7 +18,7 @@ export function serviceWorker() {
       const files = walk(outDir).map(f => path.relative(outDir, f).split(path.sep).join('/'))
         // Browsers that can run a service worker all take woff2, so the .woff fallbacks are never fetched.
         .filter(f => f !== 'sw.js' && !f.endsWith('.woff') && (!f.endsWith('.html') || f === 'index.html'));
-      const isGlobe = f => f.startsWith('cesium/') || /^assets\/globemap-/.test(f);
+      const isGlobe = f => f.startsWith('cesium/') || /^assets\/(globemap|groundmap)-/.test(f); // the lazy 3D views
       const core = ['./', ...files.filter(f => !isGlobe(f))];
       const globe = files.filter(isGlobe);
       const hash = crypto.createHash('sha256');

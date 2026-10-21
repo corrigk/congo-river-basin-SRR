@@ -45,24 +45,45 @@ const insets = () => {
 // The schematic draws instantly with no WebGL or network; the 3D globe loads lazily and takes over once ready.
 const offline = createOffline($('.offline'));
 const schematic = createSchematicMap($('#map .map-sch'), { insets });
-let map = schematic, globeMap = null, lastView = null;
+let map = schematic, globeMap = null, groundMap = null, lastView = null;
 const pref = { get: () => { try { return localStorage.getItem('srr-map'); } catch { return null; } },
                set: v => { try { localStorage.setItem('srr-map', v); } catch { /* private mode: no memory */ } },
                present: () => { try { return localStorage.getItem('srr-present') === '1'; } catch { return false; } },
-               setPresent: v => { try { localStorage.setItem('srr-present', v ? '1' : '0'); } catch { /* no memory */ } } };
+               setPresent: v => { try { localStorage.setItem('srr-present', v ? '1' : '0'); } catch { /* no memory */ } },
+               orbit: () => { try { return localStorage.getItem('srr-orbit') || 'pass'; } catch { return 'pass'; } },
+               setOrbit: v => { try { localStorage.setItem('srr-orbit', v); } catch { /* no memory */ } } };
+const MAPS = ['globe', 'ground', 'schematic'];
 
 function useMap(kind) {
+  if (kind === 'ground' && !groundMap) { loadGround(); return; }
   if (kind === 'globe' && !globeMap) return;
-  map = kind === 'globe' ? globeMap : schematic;
+  map = { globe: globeMap, ground: groundMap }[kind] || schematic;
   app.dataset.map = kind;
   for (const b of $$('.map-switch [data-map]')) b.setAttribute('aria-pressed', b.dataset.map === kind);
-  globeMap?.pause(state.tab !== 'scenario' || map !== globeMap);
+  pauseMaps();
   if (lastView) map.render(lastView);
+}
+// Only the visible WebGL map renders; the others stop their frame loops.
+function pauseMaps() {
+  globeMap?.pause(state.tab !== 'scenario' || map !== globeMap);
+  groundMap?.pause(state.tab !== 'scenario' || map !== groundMap);
+}
+function pickMap(kind) { pref.set(kind); useMap(kind); }
+
+// Ground view: an illustrative eye-level scene (Three.js), loaded the first time it is chosen.
+let groundLoading = null;
+function loadGround() {
+  if (!hasWebGL()) return;
+  groundLoading ||= import('./s3/groundmap.js')
+    .then(({ createGroundMap }) => createGroundMap($('#map .map-ground'), { insets, orbit: pref.orbit() }))
+    .then(g => { groundMap = g; $('.map-switch').append(g.controls); useMap('ground'); })
+    .catch(err => { console.warn('Ground view failed to load.', err); $('.map-switch [data-map="ground"]').disabled = true; groundLoading = null; });
 }
 function setMapStatus(s) {
   const text = { loading: 'Loading 3D globe…', failed: '3D globe unavailable', none: 'No WebGL: schematic only', file: 'Offline file: schematic only', ready: '' }[s];
   $('.map-status').textContent = text;
   $('.map-switch [data-map="globe"]').disabled = s !== 'ready';
+  $('.map-switch [data-map="ground"]').disabled = s === 'none';
 }
 const hasWebGL = () => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } };
 async function loadGlobe() {
@@ -74,13 +95,17 @@ async function loadGlobe() {
     globeMap = await createGlobeMap($('#map .map-globe'), { insets });
     setMapStatus('ready');
     setTimeout(() => offline.preload(), 2000); // the globe files are already downloaded: keep them for offline use
-    useMap(pref.get() === 'schematic' ? 'schematic' : 'globe');
+    if (pref.get() !== 'ground') useMap(pref.get() === 'schematic' ? 'schematic' : 'globe');
   } catch (err) {
     console.warn('Globe failed to load; staying on the schematic map.', err);
     globeMap = null;
     setMapStatus(location.protocol.startsWith('http') ? 'failed' : 'file');
   }
 }
+
+// The scenario card and the ground view's orbit box sit above the latency budget, so track its real height
+// (measuring during render reads 0 while the Scenario tab is hidden).
+new ResizeObserver(([e]) => { if (e.contentRect.height) app.style.setProperty('--lt-h', `${$('#lt-card').offsetHeight}px`); }).observe($('#lt-card'));
 
 // ---------- routing (hash deep links, e.g. #scenario/A/3 from a slide) ----------
 function readHash() {
@@ -108,7 +133,7 @@ function render() {
   for (const v of TABS) $(`#view-${v}`).hidden = v !== state.tab;
   for (const b of $$('.mode button')) b.setAttribute('aria-pressed', b.dataset.mode === state.mode);
   moveInk();
-  globeMap?.pause(state.tab !== 'scenario' || map !== globeMap);
+  pauseMaps();
   renderPanel();     // before the scenario, so the map frames around an open panel
   renderScenario();
   renderHighlights();
@@ -127,7 +152,6 @@ function renderScenario() {
 
   // Latency budget: shown for scenarios that carry it; segments fill in as the chain reaches them.
   app.classList.toggle('has-latency', !!s.latency);
-  app.style.setProperty('--lt-h', `${$('#lt-card').offsetHeight}px`);
   const done = new Set(), on = new Set();
   s.steps.forEach((x, j) => {
     if (!x.latency || j > i) return;
@@ -246,7 +270,8 @@ document.addEventListener('click', e => {
   }
   if (d.view) { setTab(d.view); return; }
   if (d.mode) { setMode(d.mode); return; }
-  if (d.map) { pref.set(d.map); useMap(d.map); return; }
+  if (d.map) { pickMap(d.map); return; }
+  if (d.orbit) { groundMap?.setOrbit(d.orbit); pref.setOrbit(d.orbit); return; }
   if (d.scenario) { setScenario(d.scenario); return; }
   if (d.openScenario) { setScenario(d.openScenario); return; }
   if (d.step) { goStep(+d.step); return; }
@@ -286,7 +311,12 @@ document.addEventListener('keydown', e => {
   if (state.tab === 'scenario' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); goStep(state.step + 1); return; }
   if (state.tab === 'scenario' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); goStep(state.step - 1); return; }
   if (lk === 'r') { reset(); return; }
-  if (lk === 'm') { const k = map === globeMap ? 'schematic' : 'globe'; pref.set(k); useMap(k); return; }
+  if (lk === 'm') { // cycle through the maps that are available
+    const avail = MAPS.filter(k => !$(`.map-switch [data-map="${k}"]`).disabled);
+    pickMap(avail[(avail.indexOf(app.dataset.map) + 1) % avail.length]); return;
+  }
+  if (lk === 'g') { pickMap('ground'); return; }
+  if (lk === 'o' && map === groundMap) { const o = groundMap.orbit === 'pass' ? 'fixed' : 'pass'; groundMap.setOrbit(o); pref.setOrbit(o); return; }
   if (lk === 't') { setMode(state.mode === 't' ? 'o' : 't'); return; }
   if (lk === 'f') { fullscreen(); return; }
   if (lk === 'p') { setPresent(!app.classList.contains('is-present')); return; }
@@ -303,4 +333,5 @@ setPresent(new URLSearchParams(location.search).has('present') || pref.present()
 render();
 requestAnimationFrame(() => { moveInk(); app.classList.add('is-ready'); });
 setTimeout(loadGlobe, 150); // after first paint: the page is usable before Cesium arrives
+if (pref.get() === 'ground') setTimeout(loadGround, 150);
 window.__srr = { state, render, get map() { return map; }, LATENCY };

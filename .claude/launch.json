@@ -4,6 +4,7 @@
     { "name": "srr-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5173 },
     { "name": "srr-pages", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs", "--port", "4180"], "port": 4180 },
     { "name": "srr-slow", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs", "--port", "4181", "--kbps", "400", "--latency", "400"], "port": 4181 },
-    { "name": "srr-noglobe", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs", "--port", "4182", "--block", "globemap"], "port": 4182 }
+    { "name": "srr-noglobe", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs", "--port", "4182", "--block", "globemap"], "port": 4182 },
+    { "name": "srr-fresh", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs", "--port", "4184"], "port": 4184 }
   ]
 }
