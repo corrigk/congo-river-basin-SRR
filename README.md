@@ -19,12 +19,13 @@ we inferred (traceability, interface roles, latency sub-allocations, map positio
 | 3 | **Scenario** | Click-to-advance scenarios on the map with the latency budget; A flood warning chain, B routine collection, C degraded operations, D non-flood hazard |
 | 4 | **Interfaces** | S-3 in the centre, partner RFPs around it, what we carry and in which direction |
 | 5 | **Trades & Open Items** | Open trades, TBR list, constraints |
+| 6 | **Decomposition** | The requirements decomposition (MO → Level 4) from [congo-srr-requirements](https://corrigk.github.io/congo-srr-requirements/): thread tree or radial, click a block to light its thread, segment filter. Each S3-xx requirement panel has a "Show in the requirements decomposition" link, and blocks link back to scenario steps, interfaces, trades and RFP requirements. |
 
 ## Presenting
 
 | Key | Action |
 | --- | --- |
-| 1 – 5 | Switch tab |
+| 1 – 6 | Switch tab |
 | → · PgDn · Space | Next scenario step (clickers work) |
 | ← · PgUp | Previous step |
 | R | Reset the scenario to step 1 |
@@ -79,6 +80,19 @@ All paths are relative (`base: './'`), so the same build works on GitHub Pages u
 `localhost`, and from any folder behind a static server. Opening `dist/index.html` straight from disk does not work
 (browsers block ES modules over `file://`); use `srr-offline.html` for that. Pushing to `main` deploys to GitHub Pages
 (`.github/workflows/deploy.yml`).
+
+## Update the Decomposition tab
+
+The requirements are edited in the separate [congo-srr-requirements](https://github.com/corrigk/congo-srr-requirements)
+repo. This page ships a snapshot of them (so the tab works offline and on a first visit) and, when online, shows the
+newer live baseline from the requirements site instead. To refresh the bundled snapshot after finalizing a baseline
+there (with both repos side by side):
+
+```bash
+npm run sync:decomp
+```
+
+Then commit `src/s3/decomp/snapshot.json`. `src/s3/decomp/model.js` is a copy of that repo's `src/model.js`.
 
 ## Add or edit a scenario
 

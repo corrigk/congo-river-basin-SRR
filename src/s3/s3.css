@@ -483,3 +483,75 @@ button.sys-id:hover, .sys-id.is-hl { color: var(--gold); }
 .is-present .gv-label b { font-size: 14px; }
 @media (max-width: 860px) { .gv-orbit-k { display: none; } .gv-orbit-note { white-space: normal; width: 90vw; text-align: center; } }
 #app[data-map="ground"] .sm-badge { display: none; } /* the ground view carries its own caption in the orbit box */
+
+/* ---------- 6. decomposition (requirements tree from congo-srr-requirements) ---------- */
+.dc-view { position: absolute; inset: var(--top) 0 0 0; z-index: 12; display: flex; flex-direction: column;
+  background: radial-gradient(120% 80% at 70% 0%, rgba(44,95,116,.24), transparent 60%), #07080a; }
+.dc-head { display: grid; grid-template-columns: auto 1fr; gap: 6px 24px; align-items: end; padding: 18px 24px 10px; border-bottom: 1px solid var(--line); }
+.dc-title h2 { margin: 2px 0 0; font-family: var(--display); font-style: italic; font-weight: 900; text-transform: uppercase; font-size: 38px; line-height: .9; }
+.dc-tools { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.seg { display: flex; gap: 2px; padding: 2px; border-radius: 9px; border: 1px solid var(--line); background: rgba(255,255,255,.03); }
+.seg button { padding: 4px 9px; font-size: 12px; border-radius: 7px; color: var(--muted); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--river); color: var(--ink); }
+.seg.dc-mode button[aria-pressed="true"] { background: var(--gold); }
+.seg button:not([aria-pressed="true"]):hover { background: rgba(255,255,255,.07); color: var(--text); }
+.dc-meta { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--faint); }
+.dc-legend { display: flex; gap: 12px; flex-wrap: wrap; }
+.dc-legend span { display: flex; align-items: center; gap: 5px; color: var(--muted); }
+.dc-legend i { width: 9px; height: 9px; border-radius: 50%; }
+.dc-src b { color: var(--text); font-weight: 600; }
+.dc-src a { color: var(--river); }
+.dc-body { flex: 1; min-height: 0; display: flex; gap: 16px; padding: 0 16px 16px 0; }
+.dc-canvas { position: relative; flex: 1; min-width: 0; }
+.dc-svg { display: block; cursor: grab; }
+.dc-svg:active { cursor: grabbing; }
+.dc-fit { position: absolute; right: 8px; bottom: 4px; }
+.dc-detail { width: var(--panel-w); flex: none; margin-top: 16px; padding: 18px 20px; overflow-y: auto; scrollbar-width: thin; }
+.dc-dhead { padding-left: 12px; border-left: 3px solid var(--c); }
+.dc-name { color: var(--muted); font-size: 14px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.dc-kv { margin-top: 10px; }
+.dc-kv span { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+.dc-kv p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.dc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dc-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 8px; border: 1px solid var(--line-2); border-left: 3px solid var(--c, var(--line-2)); font-size: 12px; max-width: 100%; text-align: left; }
+.dc-chip b { font-weight: 600; white-space: nowrap; }
+.dc-chip span { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dc-chip:hover { border-color: var(--gold); }
+.dc-chip.is-srr { --c: var(--river); }
+.dc-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; }
+.dc-sum div { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.03); display: flex; flex-direction: column; }
+.dc-sum b { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 30px; line-height: 1; color: var(--gold); }
+.dc-sum span { font-size: 11.5px; color: var(--faint); }
+.dc-link { fill: none; stroke-width: 1.6; opacity: .7; transition: opacity .25s; }
+.dc-link.is-extra { stroke-dasharray: 5 4; }
+.dc-link.is-dim { opacity: .07; }
+.dc-link.is-hot { stroke-width: 2.6; opacity: 1; }
+.dc-node { cursor: pointer; transition: opacity .25s; }
+.dc-node rect:first-child { fill: #14171b; stroke: var(--line-2); }
+.dc-node.is-ex rect:first-child { stroke-dasharray: 4 3; }
+.dc-node .dc-stripe { fill: var(--c); }
+.dc-node.is-mo rect:first-child { fill: #1c1e22; stroke: var(--c); }
+.dc-node:hover rect:first-child, .dc-node.is-sel rect:first-child, .dc-node:focus-visible rect:first-child { stroke: var(--gold); stroke-width: 2; stroke-dasharray: none; }
+.dc-node:focus-visible, .dc-dot:focus-visible { outline: none; }
+.dc-node.is-dim, .dc-dot.is-dim { opacity: .14; }
+.dc-node text { font-size: 12px; fill: var(--text); }
+.dc-node .dc-id { font-weight: 600; fill: var(--c); }
+.dc-node .dc-nm { fill: var(--muted); }
+.dc-levels text { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; fill: var(--gold); font-weight: 600; }
+.dc-rings circle { fill: none; stroke: var(--line); stroke-dasharray: 2 4; }
+.dc-center { font-family: var(--display); font-style: italic; font-weight: 900; font-size: 26px; fill: var(--gold); }
+.dc-dot { cursor: pointer; transition: opacity .25s; }
+.dc-dot circle { stroke: #07080a; stroke-width: 1.5; }
+.dc-dot:hover circle, .dc-dot.is-sel circle, .dc-dot:focus-visible circle { stroke: var(--gold); stroke-width: 3; }
+.dc-dot text { font-size: 11px; fill: var(--muted); paint-order: stroke; stroke: #07080a; stroke-width: 3px; }
+.dc-dot text.is-mo { font-size: 13px; font-weight: 600; fill: var(--text); }
+.chip-decomp { margin-top: 16px; width: 100%; border-color: rgba(127,203,234,.4); }
+.chip-decomp b { font-family: var(--display); font-style: italic; font-weight: 800; color: var(--river); white-space: nowrap; }
+.chip-decomp span { color: var(--muted); }
+.is-present .dc-node text { font-size: 13.5px; }
+.is-present .dc-dot text { font-size: 13px; }
+/* six tabs: drop the long tab labels before the top bar runs out of room */
+@media (max-width: 1500px) { .t-long { display: none; } }
+@media (max-width: 1100px) { .dc-detail { width: 300px; } .dc-head { grid-template-columns: 1fr; } .dc-tools { justify-content: flex-start; } }
+@media (max-width: 860px) { .dc-body { flex-direction: column; padding: 0 12px 12px; } .dc-detail { width: auto; max-height: 40%; margin-top: 0; } .dc-title h2 { font-size: 30px; } }
+.dc-tools .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }

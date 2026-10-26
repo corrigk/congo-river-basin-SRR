@@ -9,7 +9,8 @@
     "build:offline": "vite build --config vite.offline.config.js",
     "preview": "vite preview",
     "serve": "node scripts/serve.mjs",
-    "data": "node scripts/build-data.mjs && node scripts/build-mask.mjs && node scripts/build-extras.mjs && node scripts/build-schematic.mjs"
+    "data": "node scripts/build-data.mjs && node scripts/build-mask.mjs && node scripts/build-extras.mjs && node scripts/build-schematic.mjs",
+    "sync:decomp": "node scripts/sync-decomposition.mjs"
   },
   "keywords": [],
   "type": "module",
@@ -17,6 +18,7 @@
     "@fontsource/big-shoulders-text": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
     "cesium": "^1.145.0",
+    "d3": "7.9.0",
     "three": "0.180.0"
   },
   "devDependencies": {

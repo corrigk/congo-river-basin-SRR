@@ -9,7 +9,7 @@ import { createOffline } from './s3/offline.js';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
-const TABS = ['overview', 'requirements', 'scenario', 'interfaces', 'trades'];
+const TABS = ['overview', 'requirements', 'scenario', 'interfaces', 'trades', 'decomposition'];
 
 // ---------- static chrome ----------
 $('#brand-mark').innerHTML = MARK;
@@ -26,7 +26,7 @@ $('#help').innerHTML = V.helpView();
 
 // ---------- state ----------
 // tab, mode ('t' threshold | 'o' objective), scenario + step, side panel, highlighted requirement.
-const state = { tab: 'overview', mode: 't', sc: 'A', step: 0, panel: null, hl: null };
+const state = { tab: 'overview', mode: 't', sc: 'A', step: 0, panel: null, hl: null, dsel: null, dsrr: null };
 
 // ---------- map ----------
 const panel = $('#panel');
@@ -111,12 +111,14 @@ new ResizeObserver(([e]) => { if (e.contentRect.height) app.style.setProperty('-
 function readHash() {
   const [tab, sc, step] = location.hash.slice(1).split('/');
   if (TABS.includes(tab)) state.tab = tab;
+  if (tab === 'decomposition') { state.dsel = sc ? decodeURIComponent(sc) : null; return; }
   if (V.scenarioBy[sc]) state.sc = sc;
   const n = +step;
   if (n >= 1 && n <= V.scenarioBy[state.sc].steps.length) state.step = n - 1;
 }
 function writeHash() {
-  const h = state.tab === 'scenario' ? `#scenario/${state.sc}/${state.step + 1}` : `#${state.tab}`;
+  const h = state.tab === 'scenario' ? `#scenario/${state.sc}/${state.step + 1}`
+    : state.tab === 'decomposition' && state.dsel ? `#decomposition/${encodeURIComponent(state.dsel)}` : `#${state.tab}`;
   if (location.hash !== h) history.replaceState(null, '', h);
 }
 addEventListener('hashchange', () => { readHash(); render(); });
@@ -137,7 +139,32 @@ function render() {
   renderPanel();     // before the scenario, so the map frames around an open panel
   renderScenario();
   renderHighlights();
+  renderDecomposition();
   writeHash();
+}
+
+// ---------- decomposition tab (loaded the first time it opens) ----------
+let decomp = null, decompLoading = null;
+function loadDecomposition() {
+  decompLoading ||= import('./s3/decomp/view.js').then(({ createDecomposition }) => {
+    decomp = createDecomposition($('#view-decomposition'), { goSrr, onSelect: id => { state.dsel = id; render(); } });
+    return decomp;
+  });
+  return decompLoading;
+}
+function renderDecomposition() {
+  if (state.tab !== 'decomposition') return;
+  loadDecomposition().then(d => {
+    if (state.dsrr) { state.dsel = d.findBySrr(state.dsrr) || state.dsel; state.dsrr = null; writeHash(); }
+    if (state.tab === 'decomposition') d.render(state.dsel);
+  });
+}
+// From a decomposition block to the matching place on this page.
+function goSrr(kind, ref) {
+  if (kind === 'scenario') { const sc = ref[0], i = +ref.slice(1) - 1; if (V.scenarioBy[sc]) setScenario(sc, i); return; }
+  if (kind === 'interface') { setTab('interfaces'); openPanel({ type: 'system', k: ref }); return; }
+  if (kind === 'trade') { setTab('trades'); $(`#trade-${ref}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  if (kind === 'srr-req') { setTab('requirements'); openPanel({ type: 'req', k: ref }); }
 }
 
 function renderScenario() {
@@ -231,7 +258,7 @@ function moveInk() {
   const t = $(`.tabs [data-view="${state.tab}"]`), ink = $('.tabs-ink');
   if (t) Object.assign(ink.style, { width: `${t.offsetWidth}px`, transform: `translateX(${t.offsetLeft - 4}px)` });
 }
-addEventListener('resize', moveInk);
+addEventListener('resize', () => { moveInk(); if (state.tab === 'decomposition') decomp?.resize(); });
 
 // Presenter mode: larger type, higher contrast, no keyboard hints. ?present in the link turns it on.
 function setPresent(on) {
@@ -275,6 +302,7 @@ document.addEventListener('click', e => {
   if (d.scenario) { setScenario(d.scenario); return; }
   if (d.openScenario) { setScenario(d.openScenario); return; }
   if (d.step) { goStep(+d.step); return; }
+  if (d.decomp) { state.dsrr = d.decomp; state.panel = null; setTab('decomposition'); return; }
   if (d.goto) { const [sc, i] = d.goto.split(':'); state.hl = state.panel?.type === 'req' ? state.panel.k : state.hl; state.panel = null; setScenario(sc, +i); return; }
   if (d.trade) { setTab('trades'); $(`#trade-${d.trade}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
   if (d.req) {
@@ -307,7 +335,7 @@ document.addEventListener('keydown', e => {
     next.focus(); setTab(next.dataset.view);
     return;
   }
-  if (/^[1-5]$/.test(k)) { setTab(TABS[+k - 1]); return; }
+  if (/^[1-6]$/.test(k)) { setTab(TABS[+k - 1]); return; }
   if (state.tab === 'scenario' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); goStep(state.step + 1); return; }
   if (state.tab === 'scenario' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); goStep(state.step - 1); return; }
   if (lk === 'r') { reset(); return; }
@@ -324,6 +352,7 @@ document.addEventListener('keydown', e => {
   if (k === 'Escape') {
     if (!$('#help').hidden) $('#help').hidden = true;
     else if (state.panel) { state.panel = null; render(); }
+    else if (state.tab === 'decomposition' && state.dsel) { state.dsel = null; render(); }
     else if (state.hl) { state.hl = null; renderHighlights(); }
   }
 });

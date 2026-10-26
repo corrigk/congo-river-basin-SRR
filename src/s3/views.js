@@ -135,6 +135,7 @@ export function reqPanel(id) {
     <h3 class="p-h">Traces to ${tbrTag('Proposed')}</h3>
     <ul class="p-mos">${r.mo.map(m => `<li><b>${m}</b><span>${esc(moBy[m].text)}<small>Serves: ${esc(MO_USERS[m])}</small></span></li>`).join('')}</ul>
     ${r.gap.map(k => `<div class="p-block gap"><div class="p-block-top"><span class="lbl">Gap it closes · ${esc(GAP[k].title)}</span></div><ul class="p-facts">${GAP[k].facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul></div>`).join('')}
+    <button class="chip chip-decomp" data-decomp="${r.id}"><b>MO → L4</b><span>Show in the requirements decomposition</span>${ICON.arrow}</button>
     <h3 class="p-h">Where it applies</h3>
     <div class="p-chips">${uses.length ? uses.map(({ s, st, i }) => `
       <button class="chip chip-step" data-goto="${s.id}:${i}"><b>${s.id}${i + 1}</b><span>${esc(st.title)}<small>${esc(s.title)}</small></span>${ICON.arrow}</button>`).join('')
@@ -320,7 +321,7 @@ export function tradesView() {
 // ---------- help ----------
 export function helpView() {
   const rows = [
-    ['1 – 5', 'Switch tab'], ['→ &nbsp;PgDn &nbsp;Space', 'Next scenario step'], ['← &nbsp;PgUp', 'Previous step'], ['R', 'Reset scenario'],
+    ['1 – 6', 'Switch tab'], ['→ &nbsp;PgDn &nbsp;Space', 'Next scenario step'], ['← &nbsp;PgUp', 'Previous step'], ['R', 'Reset scenario'],
     ['T', 'Threshold / objective'], ['M', 'Next map: globe · ground · schematic'], ['G', 'Ground view'], ['O', 'Satellite: pass overhead / fixed in sky'], ['P', 'Presenter mode'], ['F', 'Fullscreen'], ['Esc', 'Close panel'], ['?', 'This help'],
   ];
   return `<div class="help-head"><span>Keyboard</span><button class="icon-btn" data-act="help" aria-label="Close shortcuts">${ICON.close}</button></div>

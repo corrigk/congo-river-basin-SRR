@@ -23,6 +23,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin) return;
   if (req.mode === 'navigate') { e.respondWith(page(req, e)); return; }
+  if (!req.url.startsWith(self.registration.scope)) { e.respondWith(networkFirst(req)); return; }
   e.respondWith((async () => {
     const hit = await caches.match(req, { ignoreSearch: true });
     if (hit) return hit;
@@ -31,6 +32,20 @@ self.addEventListener('fetch', e => {
     return res;
   })());
 });
+
+// Same origin but another site (e.g. the requirements data): fresh when online, last copy when offline.
+async function networkFirst(req) {
+  const cache = await caches.open(CACHE);
+  try {
+    const res = await fetch(req);
+    if (res.ok) cache.put(req, res.clone());
+    return res;
+  } catch (err) {
+    const hit = await cache.match(req);
+    if (hit) return hit;
+    throw err;
+  }
+}
 
 // Stale-while-revalidate for the page: instant from cache, updated for next time when online.
 async function page(req, e) {
