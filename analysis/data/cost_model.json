@@ -1,0 +1,51 @@
+{
+  "_note": "Planning-level estimates for an SRR. Every value marked 'assumption' is ours and should be refined; 'sourced' values cite sources.json. Staff salaries are deliberately excluded (set aside by the team).",
+  "currency": "USD (2026)",
+  "life_years": 15,
+  "station": {
+    "capex_items": [
+      {"id": "tower", "name": "30 m self-supporting lattice tower, foundation, grounding and lightning protection", "usd": 45000, "range": [30000, 80000], "basis": "assumption"},
+      {"id": "speaker", "name": "Voice loudspeaker array, 3.2 kW class (about 124 dBC at 100 ft, about 1.28 km to 70 dB)", "usd": 30000, "range": [20000, 45000], "basis": "assumption; performance class from Federal Signal Modulator spec, tone-siren list price reference $17,387 (Darley Sentry 15)", "sources": ["fedsig_modulator", "darley_siren"]},
+      {"id": "solar", "name": "Solar PV 6 kWp + 40 kWh LiFePO4 storage + controller", "usd": 28000, "range": [20000, 40000], "basis": "assumption"},
+      {"id": "crank", "name": "Hand-crank generator (manual backup for radios and alert playback)", "usd": 500, "range": [200, 1000], "basis": "assumption"},
+      {"id": "s3_terminal", "name": "S-3 fixed responder terminal and antenna (S3-08 class)", "usd": 3000, "range": [1500, 8000], "basis": "assumption, TBR with S-3 design"},
+      {"id": "starlink", "name": "Commercial broadband backhaul kit (Starlink Standard, optional)", "usd": 389, "range": [198, 418], "basis": "sourced: DRC kit price $389; CAR $418", "sources": ["starlink_drc_price", "starlink_car"]},
+      {"id": "vhf", "name": "VHF repeater + 10 ranger handheld radios", "usd": 12000, "range": [8000, 20000], "basis": "assumption"},
+      {"id": "building", "name": "Prefab station building, about 60 m2 (ops room, storage, bunks)", "usd": 55000, "range": [35000, 90000], "basis": "assumption"},
+      {"id": "kit_common", "name": "Medical cache, water purification, sensor spares and charging, A-2 drone landing pad interface", "usd": 14500, "range": [9000, 25000], "basis": "assumption"}
+    ],
+    "access_kit": {
+      "river": {"name": "Boat + 40 hp outboard", "usd": 18000},
+      "road": {"name": "Two motorbikes", "usd": 6000},
+      "remote": {"name": "Boat or motorbikes, plus airlift interface (A-3)", "usd": 18000}
+    },
+    "logistics_multiplier": {"road": 1.15, "river": 1.3, "remote": 1.6, "_basis": "assumption: cost to haul materials and build at the site"},
+    "opex": {
+      "maintenance_pct_of_capex_per_year": 0.06,
+      "battery_replacement_year": 8,
+      "battery_replacement_usd": 10000,
+      "connectivity_usd_per_year": 600,
+      "_basis": "assumption; connectivity = Starlink $50/month in DRC (sourced)"
+    },
+    "hydro_option": {
+      "applies_to": "river sites",
+      "name": "3 kW micro-hydro (run-of-river) replacing most of the solar/battery bank",
+      "hydro_capex_usd": 15000,
+      "reduced_solar_capex_usd": 14000,
+      "battery_replacement_usd": 5000,
+      "extra_opex_usd_per_year": 600,
+      "_basis": "assumption at about $5,000/kW for micro scale. For scale reference, DRC's 13.8 MW Matebe run-of-river plant cost about $19.7M (about $1,430/kW); micro plants cost several times more per kW.",
+      "sources": ["matebe"]
+    }
+  },
+  "community_receiver": {
+    "usd": 25, "objective_usd": 10, "basis": "S3-07 threshold/objective",
+    "people_per_receiver_rural": 500, "people_per_receiver_urban": 5000,
+    "_basis": "assumption: one receiver per village (about 500 people) and one per 5,000 urban residents at public points (schools, markets, churches)"
+  },
+  "loudspeaker": {"intelligible_radius_km": 1.28, "village_clustering_factor": 6, "max_density_per_km2": 12000,
+    "_basis": "1.28 km = 4,200 ft range to 70 dB for a 3.2 kW array (Federal Signal spec). Clustering factor: rural people live in villages along roads/rivers, so local density near a station is several times the cell average (assumption)."},
+  "radio": {"radius_km": 25, "_basis": "assumption: VHF from a 30 m tower to handhelds in forest terrain"},
+  "travel": {"boat_kmh": 25, "road_kmh": 30, "foot_kmh": 3, "corridor_km": 4, "limit_min": 60, "_basis": "assumption"},
+  "budget": {"lcc_cap_usd": 400000000, "basis": "RFP S-3 life-cycle cost cap over 15 years incl. replenishment (TBR)"}
+}

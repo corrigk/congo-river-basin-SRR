@@ -1,0 +1,276 @@
+{
+ "_method": "Step 4: where do the main hub and the regional databases go?\n\nRule set (each is a stated design decision):\n  1. Main hub = Kinshasa (fixed): largest urban area in the basin, national\n     government and disaster agency seat, Tier III data centre, subsea-cable\n     route via Muanda, Inga hydro grid.\n  2. Up to 3 more database nodes (4 total). Choose the set that minimizes the\n     population-weighted distance from every basin resident to their nearest\n     node (p-median, 2041 population), subject to:\n       - at least MIN_SEP_KM between any two nodes (no shared flood, power or\n         conflict event takes out two at once)\n       - not in, or within CONFLICT_BUFFER_KM of, a city under active armed-group\n         control (Goma, Bukavu)\n       - city of >= 400k people (staff, power, fibre, airport)\nOutputs data/databases.json",
+ "min_sep_km": 500,
+ "kinshasa_only_mean_km": 1051,
+ "best_by_count": {
+  "2": {
+   "nodes": [
+    "Kinshasa",
+    "Kalemie"
+   ],
+   "k": 2,
+   "mean_km": 551,
+   "pct_pop_within_500km": 46.5,
+   "min_sep_km": 1547
+  },
+  "3": {
+   "nodes": [
+    "Kinshasa",
+    "Kisangani",
+    "Kalemie"
+   ],
+   "k": 3,
+   "mean_km": 431,
+   "pct_pop_within_500km": 60.2,
+   "min_sep_km": 845
+  },
+  "4": {
+   "nodes": [
+    "Kinshasa",
+    "Mbuji-Mayi",
+    "Kisangani",
+    "Kalemie"
+   ],
+   "k": 4,
+   "mean_km": 354,
+   "pct_pop_within_500km": 76.2,
+   "min_sep_km": 620
+  }
+ },
+ "top_sets_of_4": [
+  {
+   "nodes": [
+    "Kinshasa",
+    "Mbuji-Mayi",
+    "Kisangani",
+    "Kalemie"
+   ],
+   "k": 4,
+   "mean_km": 354,
+   "pct_pop_within_500km": 76.2,
+   "min_sep_km": 620
+  },
+  {
+   "nodes": [
+    "Kinshasa",
+    "Kananga",
+    "Kisangani",
+    "Kalemie"
+   ],
+   "k": 4,
+   "mean_km": 355,
+   "pct_pop_within_500km": 76.1,
+   "min_sep_km": 750
+  },
+  {
+   "nodes": [
+    "Kinshasa",
+    "Bangui",
+    "Mbuji-Mayi",
+    "Kalemie"
+   ],
+   "k": 4,
+   "mean_km": 362,
+   "pct_pop_within_500km": 74.9,
+   "min_sep_km": 620
+  },
+  {
+   "nodes": [
+    "Kinshasa",
+    "Bangui",
+    "Kananga",
+    "Kalemie"
+   ],
+   "k": 4,
+   "mean_km": 364,
+   "pct_pop_within_500km": 74.6,
+   "min_sep_km": 750
+  },
+  {
+   "nodes": [
+    "Kinshasa",
+    "Kisangani",
+    "Tshikapa",
+    "Kalemie"
+   ],
+   "k": 4,
+   "mean_km": 365,
+   "pct_pop_within_500km": 75.8,
+   "min_sep_km": 649
+  },
+  {
+   "nodes": [
+    "Kinshasa",
+    "Kisangani",
+    "Kolwezi",
+    "Kalemie"
+   ],
+   "k": 4,
+   "mean_km": 372,
+   "pct_pop_within_500km": 72.2,
+   "min_sep_km": 670
+  }
+ ],
+ "candidates": [
+  {
+   "name": "Kinshasa",
+   "lat": -4.325,
+   "lon": 15.322,
+   "country": "DRC",
+   "notes": "Main hub (fixed). UN 2025 urban area about 10.9M; Raxio Tier III data centre (1.5 MW, 2024); OADC data centre; WACS subsea cable lands at Muanda.",
+   "km_from_kinshasa": 0,
+   "excluded": false,
+   "pop_within_300km_2041_M": 32.7
+  },
+  {
+   "name": "Brazzaville",
+   "lat": -4.263,
+   "lon": 15.283,
+   "country": "Rep. of Congo",
+   "notes": "Capital across the river from Kinshasa; too close to be an independent backup.",
+   "km_from_kinshasa": 8,
+   "excluded": true,
+   "pop_within_300km_2041_M": 32.4
+  },
+  {
+   "name": "Bangui",
+   "lat": 4.361,
+   "lon": 18.555,
+   "country": "CAR",
+   "notes": "CAR capital on the Ubangi; Starlink licensed in CAR (service from March 2026).",
+   "km_from_kinshasa": 1030,
+   "excluded": false,
+   "pop_within_300km_2041_M": 11.6
+  },
+  {
+   "name": "Lubumbashi",
+   "lat": -11.661,
+   "lon": 27.479,
+   "country": "DRC",
+   "notes": "About 2.8M; mining hub; Raxio has announced a Lubumbashi site; separate southern grid.",
+   "km_from_kinshasa": 1567,
+   "excluded": false,
+   "pop_within_300km_2041_M": 17.4
+  },
+  {
+   "name": "Mbuji-Mayi",
+   "lat": -6.136,
+   "lon": 23.59,
+   "country": "DRC",
+   "notes": "About 3.6M (Kasai-Oriental urban area).",
+   "km_from_kinshasa": 937,
+   "excluded": false,
+   "pop_within_300km_2041_M": 26.2
+  },
+  {
+   "name": "Kananga",
+   "lat": -5.896,
+   "lon": 22.417,
+   "country": "DRC",
+   "notes": "About 1.5M.",
+   "km_from_kinshasa": 805,
+   "excluded": false,
+   "pop_within_300km_2041_M": 29.4
+  },
+  {
+   "name": "Kisangani",
+   "lat": 0.516,
+   "lon": 25.191,
+   "country": "DRC",
+   "notes": "About 0.9M; head of navigation on the middle Congo; central-north basin.",
+   "km_from_kinshasa": 1221,
+   "excluded": false,
+   "pop_within_300km_2041_M": 13.4
+  },
+  {
+   "name": "Kolwezi",
+   "lat": -10.716,
+   "lon": 25.472,
+   "country": "DRC",
+   "notes": "Mining city near Lubumbashi.",
+   "km_from_kinshasa": 1325,
+   "excluded": false,
+   "pop_within_300km_2041_M": 21.2
+  },
+  {
+   "name": "Tshikapa",
+   "lat": -6.416,
+   "lon": 20.8,
+   "country": "DRC",
+   "notes": "About 1.05M.",
+   "km_from_kinshasa": 649,
+   "excluded": false,
+   "pop_within_300km_2041_M": 21.0
+  },
+  {
+   "name": "Kikwit",
+   "lat": -5.041,
+   "lon": 18.816,
+   "country": "DRC",
+   "notes": "About 0.55M.",
+   "km_from_kinshasa": 395,
+   "excluded": false,
+   "pop_within_300km_2041_M": 18.8
+  },
+  {
+   "name": "Mbandaka",
+   "lat": 0.048,
+   "lon": 18.26,
+   "country": "DRC",
+   "notes": "Equator, Cuvette Centrale; flood-exposed river city.",
+   "km_from_kinshasa": 586,
+   "excluded": false,
+   "pop_within_300km_2041_M": 9.2
+  },
+  {
+   "name": "Kalemie",
+   "lat": -5.947,
+   "lon": 29.194,
+   "country": "DRC",
+   "notes": "About 0.76M; Lake Tanganyika port.",
+   "km_from_kinshasa": 1547,
+   "excluded": false,
+   "pop_within_300km_2041_M": 28.8
+  },
+  {
+   "name": "Bujumbura",
+   "lat": -3.382,
+   "lon": 29.361,
+   "country": "Burundi",
+   "notes": "Lake Tanganyika; different country.",
+   "km_from_kinshasa": 1561,
+   "excluded": true,
+   "pop_within_300km_2041_M": 32.6
+  },
+  {
+   "name": "Goma",
+   "lat": -1.679,
+   "lon": 29.222,
+   "country": "DRC",
+   "notes": "EXCLUDED: under AFC/M23 control (2025-2026).",
+   "km_from_kinshasa": 1571,
+   "excluded": true,
+   "pop_within_300km_2041_M": 25.2
+  },
+  {
+   "name": "Bukavu",
+   "lat": -2.508,
+   "lon": 28.861,
+   "country": "DRC",
+   "notes": "EXCLUDED: under AFC/M23 control (2025-2026).",
+   "km_from_kinshasa": 1516,
+   "excluded": true,
+   "pop_within_300km_2041_M": 28.6
+  }
+ ],
+ "recommended": [
+  "Kinshasa",
+  "Mbuji-Mayi",
+  "Kisangani",
+  "Kalemie"
+ ],
+ "roles": {
+  "Kinshasa": "DB-1 main hub: decisions, COP, CAP authorization interface with national agencies, primary satellite gateway",
+  "_regional": "DB-2..4 regional nodes: satellite gateway + edge database that receives data first, filters and forwards to the hub, holds a full replica, and can run the alert chain if the hub is cut off"
+ }
+}

@@ -1,3 +1,9 @@
 node_modules
 dist
 dist-offline
+
+# analysis pipeline inputs (large downloads) and Python environment
+analysis/raw/*
+!analysis/raw/README.txt
+analysis/.venv
+__pycache__

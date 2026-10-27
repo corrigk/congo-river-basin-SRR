@@ -1,0 +1,155 @@
+{
+ "_note": "Notional options for the S-3 space and backhaul layers. Costs are 15-year planning estimates (TBR).",
+ "options": [
+  {
+   "id": "leo_iot",
+   "name": "Own LEO IoT smallsat constellation (about 24 sats, 15 deg inclination, 550 km)",
+   "serves": [
+    "MO-1 sensor uplink",
+    "MO-3 low-rate two-way"
+   ],
+   "requirements": [
+    "S3-01",
+    "S3-02",
+    "S3-03",
+    "S3-04",
+    "S3-09"
+   ],
+   "latency": "open sky: p95 wait 7.0 min (24 sats); under canopy (45 deg mask): p95 134.3 min",
+   "cost_15yr_musd": 265,
+   "cost_basis": "anchor: Kineis raised EUR 100M to fund a 25-nanosat IoT constellation (sourced); we assume about $100M per generation incl. launch and 4 gateways, 2 replenishments at 60%, $3M/yr operations (assumption). Low inclination needs dedicated small launches, not SSO rideshare at $7,000/kg.",
+   "pros": [
+    "Sovereign control of spectrum and service",
+    "Tiny, cheap terminals (S3-04)",
+    "Store-and-forward reaches anywhere"
+   ],
+   "cons": [
+    "Under-canopy links are slow without a relay",
+    "Largest single cost line"
+   ]
+  },
+  {
+   "id": "geo_broadcast",
+   "name": "GEO hosted L-band broadcast payload",
+   "serves": [
+    "MO-2 spoken alerts to every community"
+   ],
+   "requirements": [
+    "S3-05",
+    "S3-06",
+    "S3-07",
+    "S3-10"
+   ],
+   "latency": "continuous coverage; seconds from uplink to every receiver",
+   "cost_15yr_musd": 80,
+   "cost_basis": "anchor: USAF CHIRP hosted payload cost $65M vs about $500M for a dedicated satellite (sourced); we assume $80M incl. uplink and 15-year hosting (assumption). Precedent: AfriStar (1998-2018) broadcast L-band digital radio over Africa to portable receivers.",
+   "pros": [
+    "One satellite covers the whole basin all the time",
+    "Fixed receiver antenna, no pointing (S3-07)",
+    "Proven over Africa (AfriStar)"
+   ],
+   "cons": [
+    "Broadcast only, no return channel",
+    "Depends on finding a host satellite slot"
+   ]
+  },
+  {
+   "id": "starlink_backhaul",
+   "name": "Commercial broadband (Starlink) at hub, nodes and ranger stations",
+   "serves": [
+    "Station and node backhaul",
+    "Backup path for MO-3"
+   ],
+   "requirements": [
+    "S3-08",
+    "S3-10"
+   ],
+   "latency": "real time (tens of ms)",
+   "cost_15yr_musd_per_100_stations": 0.94,
+   "cost_basis": "DRC price $389 kit + $50/month (sourced)",
+   "pros": [
+    "Very cheap per site",
+    "High bandwidth for images, voice, video"
+   ],
+   "cons": [
+    "Licensed only in some basin countries (DRC 2025, CAR 2026; others verify)",
+    "Needs clear sky and about 50-100 W",
+    "Cannot serve $150 sensors or $25 receivers",
+    "Foreign commercial dependency: DRC banned it before licensing"
+   ]
+  },
+  {
+   "id": "iridium_sbd",
+   "name": "Commercial Iridium SBD for sensors",
+   "serves": [
+    "MO-1 sensor uplink"
+   ],
+   "requirements": [
+    "S3-02",
+    "S3-03"
+   ],
+   "latency": "near real time",
+   "cost_15yr_musd_10k_terminals": 48.6,
+   "cost_15yr_musd_100k_terminals": 485.8,
+   "cost_basis": "$26.99/month plan + $50 activation (sourced, one reseller); module price not sourced",
+   "pros": [
+    "Exists today, global",
+    "Named interoperability target in the RFP"
+   ],
+   "cons": [
+    "Airtime cost scales with every terminal",
+    "Module cost likely above S3-04 $150 cap (verify)"
+   ]
+  },
+  {
+   "id": "dtc",
+   "name": "Direct-to-cell text alerts (Airtel + Starlink)",
+   "serves": [
+    "MO-2 supplementary channel to existing phones"
+   ],
+   "requirements": [
+    "S3-07 objective"
+   ],
+   "latency": "minutes (text)",
+   "cost_15yr_musd": null,
+   "cost_basis": "commercial service, pricing not public",
+   "pros": [
+    "Reaches phones people already own (S3-07 objective)"
+   ],
+   "cons": [
+    "Only in Airtel markets with approval",
+    "Many people have no phone or no charge"
+   ]
+  },
+  {
+   "id": "station_relay",
+   "name": "Ranger-station tower as canopy-top relay (LoRa-class mesh to tower)",
+   "serves": [
+    "MO-1 under-canopy sensors",
+    "MO-3 local two-way"
+   ],
+   "requirements": [
+    "S3-01",
+    "S3-03",
+    "S3-04"
+   ],
+   "latency": "seconds to the tower, then the satellite path",
+   "cost_15yr_musd": null,
+   "cost_basis": "included in station cost",
+   "pros": [
+    "Fixes the under-canopy latency problem the LEO model shows",
+    "Reuses the tower we build anyway"
+   ],
+   "cons": [
+    "Only within about 15-25 km of a station"
+   ]
+  }
+ ],
+ "notional_baseline": [
+  "leo_iot",
+  "geo_broadcast",
+  "station_relay",
+  "starlink_backhaul"
+ ],
+ "baseline_label": "Notional baseline, trade study pending"
+}

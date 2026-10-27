@@ -1,0 +1,152 @@
+{
+ "_note": "APPROXIMATE centroids and sizes for display and sensor placement only. Replace with WDPA polygons (protectedplanet.net) in production.",
+ "areas": [
+  {
+   "name": "Salonga NP",
+   "lat": -2.1,
+   "lon": 21.2,
+   "country": "DRC",
+   "approx_radius_km": 140
+  },
+  {
+   "name": "Lomami NP",
+   "lat": -1.9,
+   "lon": 25.0,
+   "country": "DRC",
+   "approx_radius_km": 60
+  },
+  {
+   "name": "Maiko NP",
+   "lat": -0.5,
+   "lon": 27.6,
+   "country": "DRC",
+   "approx_radius_km": 80
+  },
+  {
+   "name": "Kahuzi-Biega NP",
+   "lat": -2.3,
+   "lon": 28.2,
+   "country": "DRC",
+   "approx_radius_km": 60
+  },
+  {
+   "name": "Okapi Wildlife Reserve",
+   "lat": 1.6,
+   "lon": 28.6,
+   "country": "DRC",
+   "approx_radius_km": 70
+  },
+  {
+   "name": "Garamba NP",
+   "lat": 4.2,
+   "lon": 29.3,
+   "country": "DRC",
+   "approx_radius_km": 50
+  },
+  {
+   "name": "Bili-Uere Reserve",
+   "lat": 4.3,
+   "lon": 25.0,
+   "country": "DRC",
+   "approx_radius_km": 80
+  },
+  {
+   "name": "Upemba NP",
+   "lat": -9.0,
+   "lon": 26.7,
+   "country": "DRC",
+   "approx_radius_km": 70
+  },
+  {
+   "name": "Kundelungu NP",
+   "lat": -10.5,
+   "lon": 28.0,
+   "country": "DRC",
+   "approx_radius_km": 45
+  },
+  {
+   "name": "Tumba-Lediima Reserve",
+   "lat": -1.7,
+   "lon": 17.7,
+   "country": "DRC",
+   "approx_radius_km": 50
+  },
+  {
+   "name": "Virunga NP (southern sector)",
+   "lat": -1.2,
+   "lon": 29.4,
+   "country": "DRC",
+   "approx_radius_km": 35
+  },
+  {
+   "name": "Odzala-Kokoua NP",
+   "lat": 0.7,
+   "lon": 14.9,
+   "country": "Rep. Congo",
+   "approx_radius_km": 60
+  },
+  {
+   "name": "Nouabale-Ndoki NP",
+   "lat": 2.4,
+   "lon": 16.5,
+   "country": "Rep. Congo",
+   "approx_radius_km": 45
+  },
+  {
+   "name": "Lac Tele Community Reserve",
+   "lat": 1.3,
+   "lon": 17.2,
+   "country": "Rep. Congo",
+   "approx_radius_km": 45
+  },
+  {
+   "name": "Dzanga-Sangha",
+   "lat": 2.6,
+   "lon": 16.2,
+   "country": "CAR",
+   "approx_radius_km": 40
+  },
+  {
+   "name": "Lobeke NP",
+   "lat": 2.3,
+   "lon": 15.8,
+   "country": "Cameroon",
+   "approx_radius_km": 30
+  },
+  {
+   "name": "Nki NP",
+   "lat": 2.3,
+   "lon": 14.4,
+   "country": "Cameroon",
+   "approx_radius_km": 35
+  },
+  {
+   "name": "Dja Faunal Reserve",
+   "lat": 3.1,
+   "lon": 12.9,
+   "country": "Cameroon",
+   "approx_radius_km": 40
+  },
+  {
+   "name": "Mahale Mountains NP",
+   "lat": -6.2,
+   "lon": 29.9,
+   "country": "Tanzania",
+   "approx_radius_km": 30
+  },
+  {
+   "name": "Gombe Stream NP",
+   "lat": -4.7,
+   "lon": 29.6,
+   "country": "Tanzania",
+   "approx_radius_km": 8
+  },
+  {
+   "name": "Kasanka NP",
+   "lat": -12.6,
+   "lon": 30.2,
+   "country": "Zambia",
+   "approx_radius_km": 15
+  }
+ ]
+}

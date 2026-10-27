@@ -1,0 +1,75 @@
+{
+ "_note": "What we build on. Locations are city-level; verify before final.",
+ "items": [
+  {
+   "type": "data_centre",
+   "name": "Raxio DRC1 (Tier III, 1.5 MW, 2024)",
+   "lat": -4.36,
+   "lon": 15.34,
+   "source": "raxio"
+  },
+  {
+   "type": "data_centre",
+   "name": "OADC Kinshasa data centre",
+   "lat": -4.32,
+   "lon": 15.31,
+   "source": "oadc"
+  },
+  {
+   "type": "data_centre_planned",
+   "name": "Raxio Lubumbashi (announced)",
+   "lat": -11.66,
+   "lon": 27.48,
+   "source": "raxio_expansion"
+  },
+  {
+   "type": "cable_landing",
+   "name": "WACS subsea cable landing, Muanda (2012)",
+   "lat": -5.93,
+   "lon": 12.35,
+   "source": "wacs"
+  },
+  {
+   "type": "cable_landing",
+   "name": "WACS landing, Pointe-Noire area (Rep. Congo)",
+   "lat": -4.78,
+   "lon": 11.86,
+   "source": "wacs"
+  },
+  {
+   "type": "hydro",
+   "name": "Inga dams (Congo River)",
+   "lat": -5.52,
+   "lon": 13.62,
+   "source": "general knowledge"
+  },
+  {
+   "type": "hydro",
+   "name": "Matebe run-of-river plant, 13.8 MW (2015)",
+   "lat": -1.24,
+   "lon": 29.44,
+   "source": "matebe"
+  },
+  {
+   "type": "conflict",
+   "name": "Goma (AFC/M23 control)",
+   "lat": -1.68,
+   "lon": 29.22,
+   "source": "m23"
+  },
+  {
+   "type": "conflict",
+   "name": "Bukavu (AFC/M23 control)",
+   "lat": -2.51,
+   "lon": 28.86,
+   "source": "m23"
+  }
+ ],
+ "river_gauges_note": "Only 13-15 of 400+ pre-1960 river stations still operate (RFP need statement). Exact operating sites: obtain from GRDC / national hydrology services.",
+ "starlink_status": {
+  "COD": "licensed May 2025, live June 2025 (kit $389, $50/month)",
+  "CAF": "licensed Dec 2025, live March 2026 (kit about $418, about $57/month)",
+  "others": "verify current status on Starlink's availability map"
+ },
+ "direct_to_cell": "Airtel Africa + SpaceX direct-to-cell rollout across Airtel's 14 African markets from 2026 (text first), subject to each country's approval"
+}

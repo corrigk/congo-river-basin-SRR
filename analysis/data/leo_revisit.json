@@ -1,0 +1,505 @@
+{
+ "_method": "Step 5: how many LEO satellites does S3-03 need?\n\nSimple two-body propagation (circular orbits, J2 ignored, Earth rotation\nincluded) of Walker-style constellations at 550 km. For sample points across\nthe basin we measure how long a sensor waits until a satellite is in view of\nBOTH the sensor (min elevation, higher for under-canopy) AND at least one\ngateway at a database node (min elevation 10 deg). That wait is the\ndominant term in S3-03 (priority message to the COP <= 30 min / <= 5 min).\n\nOutputs data/leo_revisit.json",
+ "altitude_km": 550.0,
+ "gateways": {
+  "Kinshasa": [
+   -4.325,
+   15.322
+  ],
+  "Mbuji-Mayi": [
+   -6.136,
+   23.59
+  ],
+  "Kisangani": [
+   0.516,
+   25.191
+  ],
+  "Kalemie": [
+   -5.947,
+   29.194
+  ]
+ },
+ "results": [
+  {
+   "inclination_deg": 15,
+   "satellites": 4,
+   "planes": 1,
+   "open_sky_20deg": {
+    "mean_wait_min": 149.1,
+    "p95_wait_min": 565.7,
+    "max_wait_min": 793.3,
+    "pct_time_in_contact": 8.9
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 279.5,
+    "p95_wait_min": 744.7,
+    "max_wait_min": 973.7,
+    "pct_time_in_contact": 1.8
+   }
+  },
+  {
+   "inclination_deg": 15,
+   "satellites": 6,
+   "planes": 2,
+   "open_sky_20deg": {
+    "mean_wait_min": 39.2,
+    "p95_wait_min": 220.7,
+    "max_wait_min": 441.3,
+    "pct_time_in_contact": 11.2
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 136.7,
+    "p95_wait_min": 453.7,
+    "max_wait_min": 614.0,
+    "pct_time_in_contact": 2.5
+   }
+  },
+  {
+   "inclination_deg": 15,
+   "satellites": 8,
+   "planes": 2,
+   "open_sky_20deg": {
+    "mean_wait_min": 32.2,
+    "p95_wait_min": 207.3,
+    "max_wait_min": 396.0,
+    "pct_time_in_contact": 17.7
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 128.7,
+    "p95_wait_min": 442.3,
+    "max_wait_min": 589.0,
+    "pct_time_in_contact": 3.5
+   }
+  },
+  {
+   "inclination_deg": 15,
+   "satellites": 12,
+   "planes": 3,
+   "open_sky_20deg": {
+    "mean_wait_min": 6.5,
+    "p95_wait_min": 19.3,
+    "max_wait_min": 143.7,
+    "pct_time_in_contact": 26.6
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 63.0,
+    "p95_wait_min": 231.0,
+    "max_wait_min": 332.0,
+    "pct_time_in_contact": 5.3
+   }
+  },
+  {
+   "inclination_deg": 15,
+   "satellites": 18,
+   "planes": 3,
+   "open_sky_20deg": {
+    "mean_wait_min": 3.7,
+    "p95_wait_min": 11.3,
+    "max_wait_min": 124.3,
+    "pct_time_in_contact": 39.5
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 57.3,
+    "p95_wait_min": 222.7,
+    "max_wait_min": 323.7,
+    "pct_time_in_contact": 7.9
+   }
+  },
+  {
+   "inclination_deg": 15,
+   "satellites": 24,
+   "planes": 4,
+   "open_sky_20deg": {
+    "mean_wait_min": 1.7,
+    "p95_wait_min": 7.0,
+    "max_wait_min": 29.3,
+    "pct_time_in_contact": 52.0
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 29.2,
+    "p95_wait_min": 134.3,
+    "max_wait_min": 234.3,
+    "pct_time_in_contact": 10.6
+   }
+  },
+  {
+   "inclination_deg": 15,
+   "satellites": 36,
+   "planes": 6,
+   "open_sky_20deg": {
+    "mean_wait_min": 1.1,
+    "p95_wait_min": 5.3,
+    "max_wait_min": 11.0,
+    "pct_time_in_contact": 63.2
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 9.8,
+    "p95_wait_min": 46.0,
+    "max_wait_min": 116.0,
+    "pct_time_in_contact": 15.9
+   }
+  },
+  {
+   "inclination_deg": 30,
+   "satellites": 4,
+   "planes": 1,
+   "open_sky_20deg": {
+    "mean_wait_min": 241.3,
+    "p95_wait_min": 594.3,
+    "max_wait_min": 744.0,
+    "pct_time_in_contact": 3.9
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 320.1,
+    "p95_wait_min": 686.0,
+    "max_wait_min": 845.7,
+    "pct_time_in_contact": 0.8
+   }
+  },
+  {
+   "inclination_deg": 30,
+   "satellites": 6,
+   "planes": 2,
+   "open_sky_20deg": {
+    "mean_wait_min": 183.5,
+    "p95_wait_min": 487.3,
+    "max_wait_min": 611.3,
+    "pct_time_in_contact": 4.8
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 252.0,
+    "p95_wait_min": 573.0,
+    "max_wait_min": 682.0,
+    "pct_time_in_contact": 1.1
+   }
+  },
+  {
+   "inclination_deg": 30,
+   "satellites": 8,
+   "planes": 2,
+   "open_sky_20deg": {
+    "mean_wait_min": 172.7,
+    "p95_wait_min": 472.3,
+    "max_wait_min": 563.3,
+    "pct_time_in_contact": 7.8
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 241.6,
+    "p95_wait_min": 561.3,
+    "max_wait_min": 665.0,
+    "pct_time_in_contact": 1.5
+   }
+  },
+  {
+   "inclination_deg": 30,
+   "satellites": 12,
+   "planes": 3,
+   "open_sky_20deg": {
+    "mean_wait_min": 44.6,
+    "p95_wait_min": 180.7,
+    "max_wait_min": 273.3,
+    "pct_time_in_contact": 11.7
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 99.9,
+    "p95_wait_min": 272.0,
+    "max_wait_min": 375.7,
+    "pct_time_in_contact": 2.3
+   }
+  },
+  {
+   "inclination_deg": 30,
+   "satellites": 18,
+   "planes": 3,
+   "open_sky_20deg": {
+    "mean_wait_min": 39.2,
+    "p95_wait_min": 170.7,
+    "max_wait_min": 262.7,
+    "pct_time_in_contact": 17.5
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 92.7,
+    "p95_wait_min": 263.3,
+    "max_wait_min": 364.7,
+    "pct_time_in_contact": 3.4
+   }
+  },
+  {
+   "inclination_deg": 30,
+   "satellites": 24,
+   "planes": 4,
+   "open_sky_20deg": {
+    "mean_wait_min": 28.4,
+    "p95_wait_min": 135.0,
+    "max_wait_min": 208.3,
+    "pct_time_in_contact": 23.4
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 75.2,
+    "p95_wait_min": 226.3,
+    "max_wait_min": 302.3,
+    "pct_time_in_contact": 4.6
+   }
+  },
+  {
+   "inclination_deg": 30,
+   "satellites": 36,
+   "planes": 6,
+   "open_sky_20deg": {
+    "mean_wait_min": 6.0,
+    "p95_wait_min": 28.7,
+    "max_wait_min": 82.7,
+    "pct_time_in_contact": 35.1
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 34.7,
+    "p95_wait_min": 122.7,
+    "max_wait_min": 184.0,
+    "pct_time_in_contact": 6.9
+   }
+  },
+  {
+   "inclination_deg": 53,
+   "satellites": 4,
+   "planes": 1,
+   "open_sky_20deg": {
+    "mean_wait_min": 287.6,
+    "p95_wait_min": 611.3,
+    "max_wait_min": 719.0,
+    "pct_time_in_contact": 2.4
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 340.4,
+    "p95_wait_min": 669.7,
+    "max_wait_min": 770.7,
+    "pct_time_in_contact": 0.5
+   }
+  },
+  {
+   "inclination_deg": 53,
+   "satellites": 6,
+   "planes": 2,
+   "open_sky_20deg": {
+    "mean_wait_min": 263.7,
+    "p95_wait_min": 577.7,
+    "max_wait_min": 647.7,
+    "pct_time_in_contact": 2.9
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 312.8,
+    "p95_wait_min": 633.7,
+    "max_wait_min": 715.3,
+    "pct_time_in_contact": 0.6
+   }
+  },
+  {
+   "inclination_deg": 53,
+   "satellites": 8,
+   "planes": 2,
+   "open_sky_20deg": {
+    "mean_wait_min": 254.7,
+    "p95_wait_min": 568.3,
+    "max_wait_min": 639.0,
+    "pct_time_in_contact": 4.7
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 304.1,
+    "p95_wait_min": 623.7,
+    "max_wait_min": 690.7,
+    "pct_time_in_contact": 0.9
+   }
+  },
+  {
+   "inclination_deg": 53,
+   "satellites": 12,
+   "planes": 3,
+   "open_sky_20deg": {
+    "mean_wait_min": 60.6,
+    "p95_wait_min": 174.7,
+    "max_wait_min": 248.7,
+    "pct_time_in_contact": 7.1
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 103.7,
+    "p95_wait_min": 233.3,
+    "max_wait_min": 300.3,
+    "pct_time_in_contact": 1.4
+   }
+  },
+  {
+   "inclination_deg": 53,
+   "satellites": 18,
+   "planes": 3,
+   "open_sky_20deg": {
+    "mean_wait_min": 54.2,
+    "p95_wait_min": 166.3,
+    "max_wait_min": 230.3,
+    "pct_time_in_contact": 10.7
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 97.4,
+    "p95_wait_min": 224.7,
+    "max_wait_min": 282.0,
+    "pct_time_in_contact": 2.1
+   }
+  },
+  {
+   "inclination_deg": 53,
+   "satellites": 24,
+   "planes": 4,
+   "open_sky_20deg": {
+    "mean_wait_min": 79.5,
+    "p95_wait_min": 222.7,
+    "max_wait_min": 269.0,
+    "pct_time_in_contact": 14.1
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 121.1,
+    "p95_wait_min": 278.7,
+    "max_wait_min": 328.0,
+    "pct_time_in_contact": 2.8
+   }
+  },
+  {
+   "inclination_deg": 53,
+   "satellites": 36,
+   "planes": 6,
+   "open_sky_20deg": {
+    "mean_wait_min": 31.0,
+    "p95_wait_min": 112.3,
+    "max_wait_min": 150.7,
+    "pct_time_in_contact": 21.2
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 65.7,
+    "p95_wait_min": 168.3,
+    "max_wait_min": 209.7,
+    "pct_time_in_contact": 4.2
+   }
+  },
+  {
+   "inclination_deg": 97.6,
+   "satellites": 4,
+   "planes": 1,
+   "open_sky_20deg": {
+    "mean_wait_min": 302.3,
+    "p95_wait_min": 621.0,
+    "max_wait_min": 683.3,
+    "pct_time_in_contact": 1.9
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 347.1,
+    "p95_wait_min": 668.3,
+    "max_wait_min": 732.7,
+    "pct_time_in_contact": 0.4
+   }
+  },
+  {
+   "inclination_deg": 97.6,
+   "satellites": 6,
+   "planes": 2,
+   "open_sky_20deg": {
+    "mean_wait_min": 300.7,
+    "p95_wait_min": 619.7,
+    "max_wait_min": 681.3,
+    "pct_time_in_contact": 2.3
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 344.8,
+    "p95_wait_min": 666.3,
+    "max_wait_min": 716.0,
+    "pct_time_in_contact": 0.5
+   }
+  },
+  {
+   "inclination_deg": 97.6,
+   "satellites": 8,
+   "planes": 2,
+   "open_sky_20deg": {
+    "mean_wait_min": 292.3,
+    "p95_wait_min": 610.7,
+    "max_wait_min": 670.0,
+    "pct_time_in_contact": 3.8
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 336.5,
+    "p95_wait_min": 657.7,
+    "max_wait_min": 703.7,
+    "pct_time_in_contact": 0.8
+   }
+  },
+  {
+   "inclination_deg": 97.6,
+   "satellites": 12,
+   "planes": 3,
+   "open_sky_20deg": {
+    "mean_wait_min": 68.7,
+    "p95_wait_min": 167.7,
+    "max_wait_min": 195.3,
+    "pct_time_in_contact": 5.7
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 107.6,
+    "p95_wait_min": 215.7,
+    "max_wait_min": 245.0,
+    "pct_time_in_contact": 1.1
+   }
+  },
+  {
+   "inclination_deg": 97.6,
+   "satellites": 18,
+   "planes": 3,
+   "open_sky_20deg": {
+    "mean_wait_min": 62.6,
+    "p95_wait_min": 159.7,
+    "max_wait_min": 191.0,
+    "pct_time_in_contact": 8.5
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 100.3,
+    "p95_wait_min": 207.0,
+    "max_wait_min": 239.0,
+    "pct_time_in_contact": 1.7
+   }
+  },
+  {
+   "inclination_deg": 97.6,
+   "satellites": 24,
+   "planes": 4,
+   "open_sky_20deg": {
+    "mean_wait_min": 111.9,
+    "p95_wait_min": 264.7,
+    "max_wait_min": 292.7,
+    "pct_time_in_contact": 10.8
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 151.9,
+    "p95_wait_min": 311.7,
+    "max_wait_min": 341.7,
+    "pct_time_in_contact": 2.2
+   }
+  },
+  {
+   "inclination_deg": 97.6,
+   "satellites": 36,
+   "planes": 6,
+   "open_sky_20deg": {
+    "mean_wait_min": 56.2,
+    "p95_wait_min": 150.7,
+    "max_wait_min": 181.7,
+    "pct_time_in_contact": 16.2
+   },
+   "under_canopy_45deg": {
+    "mean_wait_min": 92.6,
+    "p95_wait_min": 198.0,
+    "max_wait_min": 217.0,
+    "pct_time_in_contact": 3.4
+   }
+  }
+ ],
+ "notes": [
+  "Wait = time until a satellite sees the sensor and a gateway at the same time (near-bent-pipe). Add on-board/ground processing (minutes) for end-to-end S3-03 latency.",
+  "45 deg minimum elevation stands in for under-canopy links: low-angle paths cross much more foliage.",
+  "Equatorial basin favours low inclination: 15-30 deg orbits spend far more time over 13S-9N than 53 deg or polar orbits."
+ ]
+}

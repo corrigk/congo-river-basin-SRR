@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BASINLINK SRR Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Text:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#F5F2EA; --surface:#FFFFFF; --surface-2:#FBF9F4; --ink:#1C1B17; --ink-2:#5B564C; --ink-3:#8A8476;
+  --line:#DED6C3; --line-strong:#B8AD90; --gold:#CFB991; --gold-deep:#8C6D22; --black:#0A0A0A;
+  --river:#2C5F74; --grid:#ECE7DC;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6;
+  --seq-0:#eef4fb; --seq-1:#cde2fb; --seq-2:#9ec5f4; --seq-3:#6da7ec; --seq-4:#3987e5; --seq-5:#256abf; --seq-6:#184f95; --seq-7:#0d366b;
+  --neu-0:#f1efe9; --neu-1:#e2ded3; --neu-2:#c9c3b4; --neu-3:#a59e8c; --neu-4:#7c7566; --neu-5:#57524a;
+  --critical:#d03b3b; --good:#0ca30c; --warning:#fab219;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#14120E; --surface:#1E1B16; --surface-2:#24211B; --ink:#F3EFE4; --ink-2:#B9B1A0; --ink-3:#8D8676;
+    --line:#3A362C; --line-strong:#544E3C; --gold:#DFC79A; --gold-deep:#E2C889; --black:#000; --river:#7FB2C4; --grid:#2C2922;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9;
+    --seq-0:#1b2430; --seq-1:#1c2f45; --seq-2:#1c3d62; --seq-3:#184f95; --seq-4:#256abf; --seq-5:#3987e5; --seq-6:#6da7ec; --seq-7:#b7d3f6;
+    --neu-0:#23211c; --neu-1:#2d2a24; --neu-2:#3b3830; --neu-3:#55504a; --neu-4:#7d776c; --neu-5:#aaa395;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#14120E; --surface:#1E1B16; --surface-2:#24211B; --ink:#F3EFE4; --ink-2:#B9B1A0; --ink-3:#8D8676;
+  --line:#3A362C; --line-strong:#544E3C; --gold:#DFC79A; --gold-deep:#E2C889; --black:#000; --river:#7FB2C4; --grid:#2C2922;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9;
+  --seq-0:#1b2430; --seq-1:#1c2f45; --seq-2:#1c3d62; --seq-3:#184f95; --seq-4:#256abf; --seq-5:#3987e5; --seq-6:#6da7ec; --seq-7:#b7d3f6;
+  --neu-0:#23211c; --neu-1:#2d2a24; --neu-2:#3b3830; --neu-3:#55504a; --neu-4:#7d776c; --neu-5:#aaa395;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif}
+header{background:var(--black);color:#fff;padding:14px 20px 0;border-bottom:4px solid var(--gold)}
+header .kick{font:700 12px Inter;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+header h1{font:800 30px/1.05 "Big Shoulders Text","Arial Narrow",Arial,sans-serif;margin:2px 0 10px;letter-spacing:.01em}
+header h1 span{color:var(--gold)}
+nav{display:flex;gap:2px;overflow-x:auto}
+nav button{font:600 13px Inter;background:transparent;color:#d8d3c7;border:0;padding:10px 14px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button[aria-selected="true"]{color:#fff;border-bottom-color:var(--gold)}
+nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+main{max-width:1320px;margin:0 auto;padding:18px 16px 60px}
+section[role=tabpanel]{display:none}
+section[role=tabpanel].on{display:block}
+h2{font:700 24px/1.1 "Big Shoulders Text","Arial Narrow",Arial,sans-serif;margin:0 0 4px}
+h3{font:700 17px/1.2 "Big Shoulders Text","Arial Narrow",Arial,sans-serif;margin:0 0 6px;letter-spacing:.02em}
+.lede{color:var(--ink-2);margin:0 0 14px;max-width:880px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:14px}
+.grid2e{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:900px){.grid2,.grid2e{grid-template-columns:1fr}}
+.controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:12px}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg button{font:600 12px Inter;border:0;background:var(--surface);color:var(--ink-2);padding:6px 10px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--black);color:#fff}
+:root[data-theme="dark"] .seg button[aria-pressed="true"]{background:var(--gold);color:#000}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{background:var(--gold);color:#000}}
+label.ctl{font:600 12px Inter;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+input[type=range]{accent-color:var(--gold-deep);width:220px}
+.mapwrap{position:relative}
+canvas#map{width:100%;height:auto;display:block;border-radius:8px;background:var(--surface-2);touch-action:none}
+.tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.15);display:none;z-index:20;max-width:280px}
+.tip b{font-size:14px}
+.tip .k{color:var(--ink-2)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-2);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.legend i.line{height:2px;width:16px;vertical-align:3px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0}
+.stat{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.stat .v{font:800 26px/1 "Big Shoulders Text","Arial Narrow",Arial,sans-serif}
+.stat .l{font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
+.why{border-left:3px solid var(--gold);padding:2px 0 2px 10px;margin:8px 0;color:var(--ink)}
+.why small{color:var(--ink-2)}
+.tag{display:inline-block;font:600 10px Inter;text-transform:uppercase;letter-spacing:.08em;padding:2px 6px;border-radius:4px;background:var(--neu-1);color:var(--ink-2)}
+.tag.assume{background:#f6e7c4;color:#6b4f00}
+:root[data-theme="dark"] .tag.assume{background:#4a3b12;color:#f2d896}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tag.assume{background:#4a3b12;color:#f2d896}}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--ink-2);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+svg text{fill:var(--ink-2);font:11px Inter}
+svg .ax{stroke:var(--line-strong)}
+svg .gl{stroke:var(--grid)}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.flow button{font:700 15px/1.15 "Big Shoulders Text","Arial Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.03em;border:0;border-radius:10px;padding:16px 10px;min-height:76px;cursor:pointer;color:#fff;text-align:center}
+.flow button[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
+.flow .arrow{display:none}
+.note{font-size:12px;color:var(--ink-2)}
+.pill{font:600 11px Inter;padding:2px 8px;border-radius:999px;border:1px solid var(--line-strong)}
+.sensrow input[type=range]{width:140px}
+.theme{position:absolute;right:16px;top:14px;background:transparent;border:1px solid #555;color:#ddd;border-radius:6px;font:600 12px Inter;padding:5px 9px;cursor:pointer}
+header{position:relative}
+</style>
+</head>
+<body>
+<header>
+  <div class="kick">AAE 351 · System Requirements Review · RFP S-3</div>
+  <h1>BASINLINK <span>&amp;</span> BASINCAST — design rationale prototype</h1>
+  <button class="theme" id="themeBtn" aria-label="Toggle dark mode">◐ Theme</button>
+  <nav role="tablist" aria-label="Sections">
+    <button role="tab" aria-selected="true" aria-controls="t-flow" id="tab-flow">1 · Function flow</button>
+    <button role="tab" aria-selected="false" aria-controls="t-map" id="tab-map">2 · ConOps map</button>
+    <button role="tab" aria-selected="false" aria-controls="t-stations" id="tab-stations">3 · Station optimizer</button>
+    <button role="tab" aria-selected="false" aria-controls="t-sensors" id="tab-sensors">4 · Sensor network</button>
+    <button role="tab" aria-selected="false" aria-controls="t-comms" id="tab-comms">5 · Space &amp; backhaul</button>
+    <button role="tab" aria-selected="false" aria-controls="t-budget" id="tab-budget">6 · Cost &amp; resilience</button>
+  </nav>
+</header>
+<main>
+
+<!-- 1 FLOW -->
+<section role="tabpanel" id="t-flow" class="on" aria-labelledby="tab-flow">
+  <h2>From any detection to a confirmed warning</h2>
+  <p class="lede">Our Level 1 functional flow, generalized from flooding to every hazard S-3 carries. Pick a hazard to relabel the first box; click a function to see who performs it and which requirement it answers.</p>
+  <div class="controls"><span class="note">Hazard:</span><div class="seg" id="hazSeg"></div></div>
+  <div class="flow" id="flow"></div>
+  <div class="grid2" style="margin-top:14px">
+    <div class="card" id="fnDetail"></div>
+    <div class="card">
+      <h3>Latency budgets</h3>
+      <div class="controls"><div class="seg" id="latSeg"><button aria-pressed="true" data-v="threshold">Threshold</button><button aria-pressed="false" data-v="objective">Objective</button></div><span class="tag assume">Proposed allocation, TBR</span></div>
+      <div id="latChart"></div>
+      <p class="note">S3-03 covers detect → COP (F1–F3). S3-05 covers authorized alert → audible (F6–F7). Processing and authorization (F4–F5) belong to the agencies and sit outside S-3 timing.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2 MAP -->
+<section role="tabpanel" id="t-map" aria-labelledby="tab-map">
+  <h2>What we build, and where</h2>
+  <p class="lede">Main hub in Kinshasa, three regional databases, ranger stations where they reach the most people, and community receivers everywhere else. Hover anything; click a database node to see why it sits there.</p>
+  <div class="controls">
+    <div class="seg" id="viewSeg"><button aria-pressed="true" data-v="pop">Population</button><button aria-pressed="false" data-v="cov">Station coverage</button></div>
+    <div class="seg yearSeg"></div>
+    <div class="seg modeSeg"></div>
+    <label class="ctl">Stations <input type="range" min="0" max="400" step="1" class="nSlider" aria-label="Number of ranger stations"><b class="nOut"></b></label>
+  </div>
+  <div class="controls" id="layerBox"></div>
+  <div class="grid2">
+    <div class="card mapwrap"><canvas id="map" width="1000" height="1000" aria-label="Map of the Congo River Basin"></canvas><div class="legend" id="mapLegend"></div>
+      <p class="note">Basin outline and population are <b>modeled proxies</b> for this prototype (see data notes). Replace with HydroBASINS and WorldPop before the review.</p></div>
+    <div class="card" id="mapSide"></div>
+  </div>
+</section>
+
+<!-- 3 STATIONS -->
+<section role="tabpanel" id="t-stations" aria-labelledby="tab-stations">
+  <h2>How many ranger stations? Finding the sweet spot</h2>
+  <p class="lede">Each added station goes where it covers the most not-yet-covered people (greedy maximal-coverage siting). Coverage climbs fast, then flattens while cost keeps rising. The knee marks the best value.</p>
+  <div class="controls">
+    <div class="seg yearSeg"></div>
+    <div class="seg modeSeg"></div>
+    <label class="ctl">Stations <input type="range" min="0" max="400" step="1" class="nSlider" aria-label="Number of ranger stations"><b class="nOut"></b></label>
+  </div>
+  <div class="stats" id="stStats"></div>
+  <div class="grid2">
+    <div class="card"><h3>People covered vs. number of stations</h3><div id="covChart"></div><div class="legend" id="covLegend"></div></div>
+    <div class="card"><h3>What "covered" means</h3><div id="modeExplain"></div>
+      <h3 style="margin-top:12px">Station cost (15 years, no salaries)</h3><div id="stCost"></div></div>
+  </div>
+  <div class="grid2e" style="margin-top:14px">
+    <div class="card"><h3>River sites: does micro-hydro pay?</h3>
+      <label class="ctl">Installed micro-hydro cost <input type="range" id="hydroKw" min="1500" max="8000" step="100" value="5000"><b id="hydroKwOut"></b></label>
+      <div id="hydroChart"></div><p class="note" id="hydroNote"></p></div>
+    <div class="card"><h3>Station kit</h3><div id="kitTable"></div></div>
+  </div>
+</section>
+
+<!-- 4 SENSORS -->
+<section role="tabpanel" id="t-sensors" aria-labelledby="tab-sensors">
+  <h2>The sensor network S-3 has to carry</h2>
+  <p class="lede">Sensors belong to the agencies that use them; S-3 supplies their radios and the network. Adjust counts and see whether the mix meets S3-02 (≥10,000 terminals at ≥2 kB/day, objective ≥100,000 at ≥50 kB/day).</p>
+  <div class="stats" id="snStats"></div>
+  <div class="grid2">
+    <div class="card"><h3>Terminals by type</h3><div id="snTable"></div></div>
+    <div class="card"><h3>Against S3-02</h3><div id="snChart"></div><div class="legend" id="snLegend"></div>
+      <h3 style="margin-top:14px">Community receivers (S3-07)</h3><div id="rcv"></div></div>
+  </div>
+</section>
+
+<!-- 5 COMMS -->
+<section role="tabpanel" id="t-comms" aria-labelledby="tab-comms">
+  <h2>Space and backhaul: build, buy, or both</h2>
+  <p class="lede">Orbit simulation of LEO constellations at 550 km over the basin: how long a sensor waits until a satellite sees it and a gateway at the same time. That wait is most of the S3-03 budget.</p>
+  <div class="controls"><div class="seg" id="skySeg"><button aria-pressed="true" data-v="open_sky_20deg">Open sky (20° mask)</button><button aria-pressed="false" data-v="under_canopy_45deg">Under canopy (45° mask)</button></div></div>
+  <div class="grid2">
+    <div class="card"><h3>95th-percentile wait vs. number of satellites</h3><div id="leoChart"></div><div class="legend" id="leoLegend"></div></div>
+    <div class="card"><h3>What the model says</h3><div id="leoTake"></div></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Options compared <span class="tag">Notional baseline, trade study pending</span></h3><div id="optTable"></div></div>
+</section>
+
+<!-- 6 BUDGET -->
+<section role="tabpanel" id="t-budget" aria-labelledby="tab-budget">
+  <h2>Cost against the $400M cap, and what fails gracefully</h2>
+  <p class="lede">The budget follows the station slider. Over the cap is allowed here; the point is to see by how much.</p>
+  <div class="controls"><div class="seg yearSeg"></div><div class="seg modeSeg"></div>
+    <label class="ctl">Stations <input type="range" min="0" max="400" step="1" class="nSlider" aria-label="Number of ranger stations"><b class="nOut"></b></label></div>
+  <div class="card"><h3>15-year life-cycle cost</h3><div id="budChart"></div><div class="legend" id="budLegend"></div><p class="note" id="budNote"></p></div>
+  <div class="card" style="margin-top:14px"><h3>Resilience: knock something out</h3><div class="controls"><div class="seg" id="failSeg"></div></div><div id="failOut"></div></div>
+</section>
+
+</main>
+<div class="tip" id="tip" role="status"></div>
+<script>
+const D = /*__DATA__*/null;
+</script>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt=(n,d=0)=>n==null?"–":Number(n).toLocaleString("en-US",{maximumFractionDigits:d,minimumFractionDigits:d});
+const fmtM=n=>"$"+fmt(n,n<10?1:0)+"M";
+const el=(t,a={},...kids)=>{const e=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==="text")e.textContent=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v)}kids.forEach(k=>e.append(k));return e};
+const NS="http://www.w3.org/2000/svg";
+const sv=(t,a={},parent)=>{const e=document.createElementNS(NS,t);for(const[k,v]of Object.entries(a))e.setAttribute(k,v);if(parent)parent.append(e);return e};
+const tip=$("#tip");
+function showTip(ev,nodes){tip.replaceChildren(...nodes);tip.style.display="block";const x=Math.min(ev.clientX+14,innerWidth-300),y=Math.min(ev.clientY+14,innerHeight-tip.offsetHeight-8);tip.style.left=x+"px";tip.style.top=y+"px"}
+function hideTip(){tip.style.display="none"}
+const row=(k,v)=>el("div",{},el("span",{class:"k",text:k+" "}),el("b",{text:v}));
+
+/* ---------------- state ---------------- */
+const S={year:2041,mode:"mix",n:0,view:"pop",layers:{rivers:true,roads:false,countries:true,infra:true,db:true,stations:true,pa:false,sensors:false},haz:"flood",fn:"F1",lat:"threshold",sky:"open_sky_20deg",fail:null};
+const MODES={radio:{name:"Radio reach",color:"--s1",short:"Radio"},response:{name:"1-hour response",color:"--s2",short:"1-hour"},speaker:{name:"Loudspeaker",color:"--s3",short:"Speaker"},mix:{name:"Mix",color:"--s4",short:"Mix"}};
+const YEARS=D.pop.years;
+const run=()=>D.st.runs[S.mode+"_"+S.year];
+S.n=run().sweet_spot_knee;
+
+/* decode first-covered arrays lazily */
+const firstCache={};
+function firstCovered(key){if(firstCache[key])return firstCache[key];const b=atob(D.st.runs[key].first_covered_b64);const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return firstCache[key]=new Uint16Array(u.buffer)}
+
+/* ---------------- tabs & theme ---------------- */
+$$("nav button").forEach(b=>b.addEventListener("click",()=>{$$("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));$$("section[role=tabpanel]").forEach(s=>s.classList.toggle("on",s.id===b.getAttribute("aria-controls")));renderAll()}));
+document.addEventListener("keydown",e=>{if(/^[1-6]$/.test(e.key)&&!e.target.closest("input")){$$("nav button")[+e.key-1].click()}});
+$("#themeBtn").addEventListener("click",()=>{const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches;r.dataset.theme=dark?"light":"dark";renderAll()});
+
+/* ---------------- shared controls ---------------- */
+function segBuild(container,items,get,set){container.replaceChildren(...items.map(([v,l])=>el("button",{"aria-pressed":String(get()===v),"data-v":v,text:l,onclick:()=>{set(v);syncControls();renderAll()}})))}
+function syncControls(){
+  $$(".yearSeg").forEach(c=>segBuild(c,YEARS.map((y,i)=>[y,i?("+"+(y-YEARS[0])+" yr"):String(y)]),()=>S.year,v=>S.year=v));
+  $$(".modeSeg").forEach(c=>segBuild(c,Object.entries(MODES).map(([k,m])=>[k,m.short]),()=>S.mode,v=>{S.mode=v}));
+  $$(".nSlider").forEach(s=>{s.value=S.n});$$(".nOut").forEach(o=>o.textContent=S.n);
+}
+$$(".nSlider").forEach(s=>s.addEventListener("input",()=>{S.n=+s.value;$$(".nSlider").forEach(x=>x.value=S.n);$$(".nOut").forEach(o=>o.textContent=S.n);renderAll()}));
+
+/* ================= 1. FUNCTION FLOW ================= */
+const FN_COL=["#C99A2E","#C88A2A","#C47B2E","#B86E36","#A9663E","#9A6B57","#8F7769","#8A8276"];
+function renderFlow(){
+  const F=D.fn;
+  segBuild($("#hazSeg"),F.hazards.map(h=>[h.id,h.name]),()=>S.haz,v=>S.haz=v);
+  const order=["F1","F2","F3","F4","F8","F7","F6","F5"]; // serpentine like the team's slide
+  const box=$("#flow");box.replaceChildren();
+  order.forEach(id=>{const f=F.functions.find(x=>x.id===id);const i=+id.slice(1)-1;
+    let label=f.name;if(id==="F1"){const h=F.hazards.find(h=>h.id===S.haz);label="DETECT "+(S.haz==="flood"?"rising water":h.name.toLowerCase())}
+    box.append(el("button",{style:`background:${FN_COL[i]}`,"aria-pressed":String(S.fn===id),onclick:()=>{S.fn=id;renderFlow()}},el("div",{style:"font:600 11px Inter;opacity:.85",text:id}),document.createTextNode(label)))});
+  const f=F.functions.find(x=>x.id===S.fn);const d=$("#fnDetail");
+  const hz=F.hazards.find(h=>h.id===S.haz);
+  d.replaceChildren(el("h3",{text:f.id+" · "+f.name}),el("p",{text:f.description}),
+    S.fn==="F1"?el("p",{class:"why"},el("b",{text:hz.name+": "}),document.createTextNode(hz.detect_example)):"",
+    el("p",{},el("b",{text:"Performed by: "}),document.createTextNode(f.performed_by.join(" · "))),
+    el("p",{},el("b",{text:"In → out: "}),document.createTextNode(f.inputs+" → "+f.outputs)),
+    el("p",{},el("b",{text:"Traces to: "}),document.createTextNode(f.traces.join(", "))),
+    el("p",{},el("b",{text:"Time allocated: "}),document.createTextNode(f.latency_min.threshold==null?f.latency_min.budget:`${f.latency_min.threshold} min threshold / ${f.latency_min.objective} min objective (${f.latency_min.budget})`)),
+    el("h3",{style:"margin-top:10px",text:"Draft L1 requirements from this function"}),
+    ...(()=>{const L=F.derived_L1_drafts.filter(r=>r.function===f.id);return L.length?L.map(r=>el("p",{class:"why"},el("b",{text:r.id+" ("+r.parent+") "}),document.createTextNode(r.text+" "),el("small",{text:"Verify: "+r.verify}))):[el("p",{class:"note",text:f.latency_min.threshold==null?"No S-3 requirement allocated: this is an agency function.":"No draft yet. Add the team's own L1 requirement for this function here."})]})());
+  // latency chart
+  segBuild($("#latSeg"),[["threshold","Threshold"],["objective","Objective"]],()=>S.lat,v=>S.lat=v);
+  const W=520,H=150,c=$("#latChart");c.replaceChildren();const s=sv("svg",{viewBox:`0 0 ${W} ${H}`,width:"100%",role:"img","aria-label":"Latency budget bars"},c);
+  const budgets=[["S3-03",["F1","F2","F3"]],["S3-05",["F6","F7"]]];
+  budgets.forEach(([rid,fns],bi)=>{const B=F.latency_budgets[rid];const tot=B[S.lat+"_min"];const y=24+bi*62;const x0=70,x1=W-20;
+    sv("text",{x:0,y:y+14},s).textContent=rid;
+    sv("text",{x:0,y:y+28,style:"font-size:10px"},s).textContent="≤ "+tot+" min";
+    let acc=0;fns.forEach(id=>{const f=F.functions.find(z=>z.id===id);const v=f.latency_min[S.lat];const x=x0+(acc/tot)*(x1-x0),w=(v/tot)*(x1-x0);
+      const r=sv("rect",{x:x+1,y,width:Math.max(w-2,1),height:24,rx:4,fill:FN_COL[+id.slice(1)-1]},s);
+      r.addEventListener("pointermove",ev=>showTip(ev,[el("div",{},el("b",{text:v+" min"})),el("div",{class:"k",text:id+" "+f.name})]));r.addEventListener("pointerleave",hideTip);
+      if(w>44){const t=sv("text",{x:x+w/2,y:y+16,"text-anchor":"middle",style:"fill:#fff;font-weight:600"},s);t.textContent=id+" · "+v}
+      acc+=v});
+  });
+}
+
+/* ================= 2. MAP ================= */
+const BB={lon0:11.3,lon1:34.6,lat0:-14.2,lat1:10.2};
+const cv=$("#map"),ctx=cv.getContext("2d");
+function sizeCanvas(){const w=cv.clientWidth||900;const h=w*(BB.lat1-BB.lat0)/(BB.lon1-BB.lon0);const dpr=devicePixelRatio||1;cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+"px";ctx.setTransform(dpr,0,0,dpr,0,0);return[w,h]}
+let MW=900,MH=940;
+const px=(lon,lat)=>[(lon-BB.lon0)/(BB.lon1-BB.lon0)*MW,(BB.lat1-lat)/(BB.lat1-BB.lat0)*MH];
+const P=D.pop, CI=P.cells.i, NX=P.nx, RES=P.res_deg;
+const CLON=CI.map(i=>P.lon0+(i%NX)*RES), CLAT=CI.map(i=>P.lat0+Math.floor(i/NX)*RES);
+const DENS_CLASSES=[1,5,15,40,100,300,1000];
+const densClass=d=>{let k=0;while(k<DENS_CLASSES.length&&d>=DENS_CLASSES[k])k++;return k};
+function drawGeo(fc,stroke,width,fill){for(const f of fc.features){const g=f.geometry;const polys=g.type==="Polygon"?[g.coordinates]:g.type==="MultiPolygon"?g.coordinates:null;const lines=g.type==="LineString"?[g.coordinates]:g.type==="MultiLineString"?g.coordinates:null;
+  ctx.beginPath();if(polys){for(const p of polys)for(const ring of p){ring.forEach(([x,y],i)=>{const[a,b]=px(x,y);i?ctx.lineTo(a,b):ctx.moveTo(a,b)});ctx.closePath()}}
+  if(lines){for(const l of lines){l.forEach(([x,y],i)=>{const[a,b]=px(x,y);i?ctx.lineTo(a,b):ctx.moveTo(a,b)})}}
+  if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke()}}}
+let hitList=[];
+function drawMap(){
+  [MW,MH]=sizeCanvas();ctx.clearRect(0,0,MW,MH);hitList=[];
+  const pop=P.pop[String(S.year)], km2=P.cells.km2;
+  const seq=[0,1,2,3,4,5,6,7].map(i=>css("--seq-"+i)), neu=[0,1,2,3,4,5].map(i=>css("--neu-"+i));
+  const cw=RES/(BB.lon1-BB.lon0)*MW+0.6, ch=RES/(BB.lat1-BB.lat0)*MH+0.6;
+  const key=S.mode+"_"+S.year, fc=S.view==="cov"&&S.mode!=="speaker"?firstCovered(key):null;
+  const modeCol=css(MODES[S.mode].color);
+  for(let k=0;k<CI.length;k++){const d=pop[k]/km2[k];const c=densClass(d);const[x,y]=px(CLON[k]-RES/2,CLAT[k]+RES/2);
+    if(S.view==="pop"){ctx.fillStyle=seq[c]}
+    else{const cov=fc&&fc[k]<S.n;if(cov){ctx.fillStyle=modeCol;ctx.globalAlpha=0.6+0.05*c}else{ctx.fillStyle=neu[Math.min(c,5)];ctx.globalAlpha=1}}
+    ctx.fillRect(x,y,cw,ch);ctx.globalAlpha=1}
+  if(S.layers.countries)drawGeo(D.countries,css("--line-strong"),0.8);
+  drawGeo(D.basin,css("--ink"),1.6);
+  if(S.layers.roads)drawGeo(D.roads,css("--s2"),0.7);
+  if(S.layers.rivers){drawGeo(D.rivers,css("--river"),1.1);drawGeo(D.lakes,null,0,css("--river"))}
+  if(S.layers.pa){for(const a of D.pa.areas){const[x,y]=px(a.lon,a.lat);const r=a.approx_radius_km/111/(BB.lon1-BB.lon0)*MW;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.strokeStyle=css("--s6");ctx.setLineDash([3,3]);ctx.lineWidth=1.4;ctx.stroke();ctx.setLineDash([]);hitList.push({x,y,r:Math.max(r,8),tip:()=>[el("b",{text:a.name}),row("Protected area,",a.country),el("div",{class:"k",text:"Approximate outline"})]})}}
+  if(S.layers.sensors){const cols={gauge:"--s1",rain:"--s7",tag:"--s6",camera:"--s3",acoustic:"--s2",fire:"--critical",water_q:"--s5"};for(const t of D.sn.types){if(!t.sample_points.length)continue;ctx.fillStyle=css(cols[t.id]||"--ink");for(const[la,lo]of t.sample_points.slice(0,300)){const[x,y]=px(lo,la);ctx.fillRect(x-1.2,y-1.2,2.4,2.4)}}}
+  // stations
+  if(S.layers.stations&&S.n>0){const st=run().stations.slice(0,S.n);for(const s of st){const[x,y]=px(s.lon,s.lat);ctx.beginPath();
+      if(s.type==="river"){ctx.arc(x,y,3.6,0,7)}else if(s.type==="road"){ctx.rect(x-3.2,y-3.2,6.4,6.4)}else{ctx.moveTo(x,y-4.4);ctx.lineTo(x+4,y+3);ctx.lineTo(x-4,y+3);ctx.closePath()}
+      ctx.fillStyle=css("--ink");ctx.fill();ctx.strokeStyle=css("--surface");ctx.lineWidth=1.2;ctx.stroke();
+      if(S.view==="cov"&&S.mode!=="speaker"&&S.mode!=="response"){/* radio ring */}
+      hitList.push({x,y,r:7,tip:()=>[el("b",{text:"Ranger station · "+s.type+" access"}),row("Adds",fmt(s.gain)+" people"),row("Coverage so far",fmt(s.cum_pct,1)+"%"),row("Cost so far",fmtM(s.cum_cost_musd)),el("div",{class:"k",text:s.hydro_ok?"River site: micro-hydro option":""})]})}}
+  if(S.layers.infra){for(const it of D.infra.items){const[x,y]=px(it.lon,it.lat);if(x<0||x>MW)continue;ctx.beginPath();ctx.arc(x,y,4.5,0,7);ctx.fillStyle=it.type==="conflict"?css("--critical"):css("--surface");ctx.fill();ctx.strokeStyle=it.type==="conflict"?css("--critical"):css("--ink");ctx.lineWidth=1.5;ctx.stroke();
+      hitList.push({x,y,r:8,tip:()=>[el("b",{text:it.name}),el("div",{class:"k",text:it.type.replace("_"," ")})]})}}
+  if(S.layers.db){const rec=D.db.recommended;D.db.candidates.filter(c=>rec.includes(c.name)).forEach(c=>{const[x,y]=px(c.lon,c.lat);const main=c.name==="Kinshasa";const r=main?9:7;
+      ctx.fillStyle=css("--gold");ctx.strokeStyle=css("--black");ctx.lineWidth=2;ctx.beginPath();ctx.rect(x-r,y-r,2*r,2*r);ctx.fill();ctx.stroke();
+      ctx.font="700 13px 'Big Shoulders Text',sans-serif";ctx.fillStyle=css("--ink");ctx.strokeStyle=css("--surface");ctx.lineWidth=3;const lab=(main?"HUB · ":"DB · ")+c.name;ctx.strokeText(lab,x+r+4,y+4);ctx.fillText(lab,x+r+4,y+4);
+      hitList.push({x,y,r:14,db:c.name,tip:()=>[el("b",{text:(main?"Main hub":"Regional database")+" · "+c.name}),el("div",{class:"k",text:"Click for the siting rationale"})]})})}
+  // legend
+  const lg=$("#mapLegend");lg.replaceChildren();
+  if(S.view==="pop"){lg.append(el("span",{text:"People per km²: "}));["<1","1–5","5–15","15–40","40–100","100–300","300–1k","1k+"].forEach((t,i)=>lg.append(el("span",{},el("i",{style:`background:${seq[i]}`}),document.createTextNode(t))))}
+  else{lg.append(el("span",{},el("i",{style:`background:${modeCol}`}),document.createTextNode("Covered ("+MODES[S.mode].name+")")),el("span",{},el("i",{style:`background:${neu[3]}`}),document.createTextNode("Not covered (darker = more people)")))}
+  lg.append(el("span",{text:"■ road site  ● river site  ▲ remote site  ◼ gold = database node"}));
+}
+function renderLayers(){const names={rivers:"Rivers",roads:"Major roads",countries:"Borders",infra:"Existing infrastructure",db:"Hub & databases",stations:"Ranger stations",pa:"Protected areas",sensors:"Sensors (sample)"};
+  $("#layerBox").replaceChildren(el("span",{class:"note",text:"Layers:"}),...Object.entries(names).map(([k,l])=>{const id="ly-"+k;const cb=el("input",{type:"checkbox",id});cb.checked=S.layers[k];cb.addEventListener("change",()=>{S.layers[k]=cb.checked;drawMap()});return el("label",{class:"ctl",for:id},cb,document.createTextNode(l))}));
+  segBuild($("#viewSeg"),[["pop","Population"],["cov","Station coverage"]],()=>S.view,v=>S.view=v)}
+function nearestHit(mx,my){let best=null,bd=1e9;for(const h of hitList){const d=Math.hypot(h.x-mx,h.y-my);if(d<h.r&&d<bd){bd=d;best=h}}return best}
+cv.addEventListener("pointermove",ev=>{const r=cv.getBoundingClientRect();const mx=ev.clientX-r.left,my=ev.clientY-r.top;const h=nearestHit(mx,my);
+  if(h){cv.style.cursor=h.db?"pointer":"default";showTip(ev,h.tip());return}cv.style.cursor="default";
+  const lon=BB.lon0+mx/MW*(BB.lon1-BB.lon0),lat=BB.lat1-my/MH*(BB.lat1-BB.lat0);const gi=Math.round((lat-P.lat0)/RES)*NX+Math.round((lon-P.lon0)/RES);const k=CIDX.get(gi);
+  if(k==null){hideTip();return}const p=P.pop[String(S.year)][k];const nodes=[el("b",{text:fmt(p)+" people"}),row("Density",fmt(p/P.cells.km2[k],1)+" /km²"),row("Country",P.cells.country[k]),row("To river / road",fmt(P.cells.river_km[k])+" / "+fmt(P.cells.road_km[k])+" km")];
+  if(S.view==="cov"&&S.mode!=="speaker"){const f=firstCovered(S.mode+"_"+S.year)[k];nodes.push(row("Covered",f<S.n?("yes, by station #"+(f+1)):(f<65535?"from station #"+(f+1):"not within 400 stations")))}showTip(ev,nodes)});
+cv.addEventListener("pointerleave",hideTip);
+cv.addEventListener("click",ev=>{const r=cv.getBoundingClientRect();const h=nearestHit(ev.clientX-r.left,ev.clientY-r.top);if(h&&h.db){S.db=h.db;renderMapSide()}});
+const CIDX=new Map(CI.map((g,k)=>[g,k]));
+function renderMapSide(){const side=$("#mapSide");const db=D.db;const name=S.db||"Kinshasa";const c=db.candidates.find(x=>x.name===name);
+  const best=db.best_by_count;
+  side.replaceChildren(el("h3",{text:(name==="Kinshasa"?"Main hub":"Regional database")+" · "+name}),el("p",{text:c.notes}),
+    el("p",{class:"why"},el("b",{text:"Why four nodes, and why these? "}),document.createTextNode(`With Kinshasa alone, the average basin resident is ${fmt(db.kinshasa_only_mean_km)} km from a node. Adding nodes cuts that to ${fmt(best[2].mean_km)} km (2), ${fmt(best[3].mean_km)} km (3) and ${fmt(best[4].mean_km)} km (4), and each extra node is a full replica that can run the alert chain alone. Returns flatten after four, which is why we stop there.`)),
+    el("p",{class:"why"},el("b",{text:"Rules used: "}),document.createTextNode(`nodes at least ${db.min_sep_km} km apart (no single flood, outage or conflict hits two); none within 150 km of areas under armed-group control (Goma, Bukavu, so Bujumbura drops out); cities of 400k+ for staff, power and fibre. Brazzaville is too close to Kinshasa to be an independent backup.`)),
+    el("h3",{style:"margin-top:10px",text:"Best sets of four (2041 population)"}),
+    (()=>{const t=el("table");t.append(el("tr",{},el("th",{text:"Nodes"}),el("th",{class:"n",text:"Avg km"}),el("th",{class:"n",text:"% ≤500 km"})));db.top_sets_of_4.slice(0,5).forEach((r,i)=>t.append(el("tr",{},el("td",{text:(i?"":"★ ")+r.nodes.slice(1).join(", ")}),el("td",{class:"n",text:fmt(r.mean_km)}),el("td",{class:"n",text:fmt(r.pct_pop_within_500km,1)}))));return t})(),
+    el("p",{class:"note",text:"The top sets are within about 10 km of each other, so the final pick can weigh things the distance metric ignores, such as putting a node in Bangui (CAR) for cross-border authority."}));
+}
+
+/* ================= 3. STATIONS ================= */
+function lineChart(container,{series,xMin=0,xMax,yMax,yLabel,xLabel,cursorX,markers=[],yTicks,xTicks,log=false,refs=[],xFmt=v=>v}){
+  const W=640,H=320,m={l:46,r:84,t:12,b:36};const c=container;c.replaceChildren();
+  const s=sv("svg",{viewBox:`0 0 ${W} ${H}`,width:"100%",role:"img","aria-label":yLabel+" vs "+xLabel},c);
+  const yMin=log?1:0;const X=v=>m.l+(v-xMin)/(xMax-xMin)*(W-m.l-m.r);const Y=v=>log?H-m.b-(Math.log10(Math.max(v,1))-Math.log10(yMin))/(Math.log10(yMax)-Math.log10(yMin))*(H-m.t-m.b):H-m.b-v/yMax*(H-m.t-m.b);
+  yTicks.forEach(t=>{sv("line",{x1:m.l,x2:W-m.r,y1:Y(t),y2:Y(t),class:"gl"},s);const tx=sv("text",{x:m.l-6,y:Y(t)+4,"text-anchor":"end"},s);tx.textContent=t});
+  xTicks.forEach(t=>{const tx=sv("text",{x:X(t),y:H-m.b+16,"text-anchor":"middle"},s);tx.textContent=xFmt(t)});
+  sv("line",{x1:m.l,x2:W-m.r,y1:H-m.b,y2:H-m.b,class:"ax"},s);
+  const xl=sv("text",{x:(m.l+W-m.r)/2,y:H-4,"text-anchor":"middle"},s);xl.textContent=xLabel;
+  const yl=sv("text",{x:12,y:(m.t+H-m.b)/2,"text-anchor":"middle",transform:`rotate(-90 12 ${(m.t+H-m.b)/2})`},s);yl.textContent=yLabel;
+  refs.forEach(r=>{sv("line",{x1:m.l,x2:W-m.r,y1:Y(r.y),y2:Y(r.y),stroke:r.color,"stroke-dasharray":"5 4","stroke-width":1.5},s);const t=sv("text",{x:m.l+6,y:Y(r.y)-5,style:`font-weight:600;fill:${css("--ink")}`},s);t.textContent=r.label});
+  const labs=[];series.forEach(se=>{const d=se.pts.map(([x,y],i)=>(i?"L":"M")+X(x).toFixed(1)+","+Y(y).toFixed(1)).join("");sv("path",{d,fill:"none",stroke:se.color,"stroke-width":se.bold?2.6:2,"stroke-linejoin":"round",opacity:se.dim?.35:1},s);
+    const last=se.pts[se.pts.length-1];labs.push({x:X(last[0])+5,y:Y(last[1])+4,t:se.label})});
+  labs.sort((a,b)=>a.y-b.y);for(let i=1;i<labs.length;i++)if(labs[i].y-labs[i-1].y<13)labs[i].y=labs[i-1].y+13;
+  labs.forEach(l=>{const lt=sv("text",{x:l.x,y:l.y,style:`font-weight:600;fill:${css("--ink")}`},s);lt.textContent=l.t});
+  markers.forEach(mk=>{sv("circle",{cx:X(mk.x),cy:Y(mk.y),r:5.5,fill:mk.color,stroke:css("--surface"),"stroke-width":2},s);if(mk.label){const t=sv("text",{x:X(mk.x)+8,y:Y(mk.y)-8,style:`font-weight:600;fill:${css("--ink")}`},s);t.textContent=mk.label}});
+  if(cursorX!=null){sv("line",{x1:X(cursorX),x2:X(cursorX),y1:m.t,y2:H-m.b,stroke:css("--ink"),"stroke-width":1.2},s)}
+  const hl=sv("line",{y1:m.t,y2:H-m.b,stroke:css("--ink-3"),"stroke-width":1,opacity:0},s);
+  const hit=sv("rect",{x:m.l,y:m.t,width:W-m.l-m.r,height:H-m.t-m.b,fill:"transparent"},s);
+  hit.addEventListener("pointermove",ev=>{const r=s.getBoundingClientRect();const fx=(ev.clientX-r.left)/r.width*W;const xv=xMin+(fx-m.l)/(W-m.l-m.r)*(xMax-xMin);
+    hl.setAttribute("x1",fx);hl.setAttribute("x2",fx);hl.setAttribute("opacity",1);
+    const nodes=[el("div",{class:"k",text:xLabel+": "+xFmt(Math.round(xv))})];series.forEach(se=>{let best=se.pts[0];for(const p of se.pts)if(Math.abs(p[0]-xv)<Math.abs(best[0]-xv))best=p;nodes.push(el("div",{},el("i",{style:`display:inline-block;width:12px;height:2px;background:${se.color};vertical-align:3px;margin-right:6px`}),el("b",{text:se.fmt?se.fmt(best[1]):fmt(best[1],1)}),el("span",{class:"k",text:" "+se.label})))});showTip(ev,nodes)});
+  hit.addEventListener("pointerleave",()=>{hl.setAttribute("opacity",0);hideTip()});
+  return {X,Y,s};
+}
+function renderStations(){
+  const R=run(),st=R.stations,n=S.n,cur=n?st[n-1]:null,k=R.sweet_spot_knee,kn=st[k-1];
+  $("#stStats").replaceChildren(
+    statTile(n?fmt(cur.cum_pct,1)+"%":"0%","People covered ("+MODES[S.mode].short+", "+S.year+")"),
+    statTile(n?fmtM(cur.cum_cost_musd):"$0","15-yr station cost"),
+    statTile(String(k),"Sweet spot (knee)"),
+    statTile(fmt(kn.cum_pct,1)+"% · "+fmtM(kn.cum_cost_musd),"At the sweet spot"),
+    statTile(String(R.sweet_spot_marginal_0p1pct),"Last station adding ≥0.1%"));
+  const series=Object.keys(MODES).map(md=>{const r=D.st.runs[md+"_"+S.year];return{label:MODES[md].short,color:css(MODES[md].color),bold:md===S.mode,dim:md!==S.mode,pts:[[0,0],...r.stations.map((s,i)=>[i+1,s.cum_pct])],fmt:v=>fmt(v,1)+"%"}});
+  lineChart($("#covChart"),{series,xMax:400,yMax:80,yLabel:"% of basin population covered",xLabel:"Ranger stations",cursorX:n,yTicks:[0,20,40,60,80],xTicks:[0,100,200,300,400],
+    markers:[{x:k,y:kn.cum_pct,color:css(MODES[S.mode].color),label:"sweet spot · "+k}]});
+  $("#covLegend").replaceChildren(...Object.keys(MODES).map(md=>el("span",{},el("i",{class:"line",style:`background:${css(MODES[md].color)}`}),document.createTextNode(MODES[md].name))));
+  const C=D.cost;const ex={radio:`Within ${C.radio.radius_km} km of the station tower's radio (VHF to handhelds). This is the reach of the station's own network; the satellite layer covers everywhere.`,
+    response:`Reachable by a ranger team within ${C.travel.limit_min} minutes: boat at ${C.travel.boat_kmh} km/h on rivers, vehicle at ${C.travel.road_kmh} km/h on roads, ${C.travel.foot_kmh} km/h on foot in forest.`,
+    speaker:`Within ${C.loudspeaker.intelligible_radius_km} km of the tower loudspeaker (3.2 kW class array reaches 70 dB at about 4,200 ft). Even 400 stations reach only about 5% of people by loudspeaker, which is why every village also needs a community receiver.`,
+    mix:`Covered by radio OR reachable within an hour; the siting score weights radio ${D.st.mix_weights.radio}, response ${D.st.mix_weights.response}, loudspeaker ${D.st.mix_weights.speaker}.`};
+  $("#modeExplain").replaceChildren(...Object.keys(MODES).map(md=>el("p",{class:md===S.mode?"why":"note"},el("b",{text:MODES[md].name+": "}),document.createTextNode(ex[md]))),el("span",{class:"tag assume",text:"Ranges and speeds are assumptions"}));
+  const sc=D.st.station_cost_15yr;const t=el("table");t.append(el("tr",{},el("th",{text:"Site type"}),el("th",{class:"n",text:"Capex"}),el("th",{class:"n",text:"15-yr O&M"}),el("th",{class:"n",text:"Total"})));
+  for(const[ty,v]of Object.entries(sc))t.append(el("tr",{},el("td",{text:ty}),el("td",{class:"n",text:"$"+fmt(v.capex/1000)+"k"}),el("td",{class:"n",text:"$"+fmt(v.opex_15yr/1000)+"k"}),el("td",{class:"n",text:"$"+fmt(v.total/1000)+"k"})));
+  $("#stCost").replaceChildren(t,el("p",{class:"note",text:"Remote sites cost more to haul and build. Staff salaries are excluded for now."}));
+  renderHydro();renderKit();
+}
+const statTile=(v,l)=>el("div",{class:"stat"},el("div",{class:"v",text:v}),el("div",{class:"l",text:l}));
+function hydroCost(perKw){const st=D.cost.station,h=st.hydro_option,mult=st.logistics_multiplier.river,life=D.cost.life_years,pct=st.opex.maintenance_pct_of_capex_per_year;
+  const solarItem=st.capex_items.find(i=>i.id==="solar").usd;
+  const solar=solarItem*mult*(1+pct*life)+st.opex.battery_replacement_usd;
+  const hyd=(3*perKw+h.reduced_solar_capex_usd)*mult*(1+pct*life)+h.battery_replacement_usd+h.extra_opex_usd_per_year*life;return[solar,hyd]}
+function renderHydro(){const sl=$("#hydroKw");const v=+sl.value;$("#hydroKwOut").textContent="$"+fmt(v)+"/kW";
+  const xs=[];for(let k=1500;k<=8000;k+=250)xs.push(k);
+  const sol=xs.map(x=>[x,hydroCost(x)[0]/1000]),hyd=xs.map(x=>[x,hydroCost(x)[1]/1000]);
+  let be=xs.find(x=>hydroCost(x)[1]>hydroCost(x)[0]);
+  const ch=lineChart($("#hydroChart"),{series:[{label:"Solar",color:css("--s4"),pts:sol,fmt:v=>"$"+fmt(v)+"k"},{label:"Hydro",color:css("--s1"),pts:hyd,fmt:v=>"$"+fmt(v)+"k"}],
+    xMin:1500,xMax:8000,yMax:150,yLabel:"15-yr power cost per station ($k)",xLabel:"Micro-hydro installed cost ($/kW)",cursorX:v,yTicks:[0,50,100,150],xTicks:[2000,4000,6000,8000],xFmt:x=>"$"+fmt(x/1000)+"k"});
+  const[a,b]=hydroCost(v);$("#hydroNote").textContent=`At $${fmt(v)}/kW a river station's power system costs $${fmt(b/1000)}k over 15 years vs $${fmt(a/1000)}k solar-only (${b<a?"saves":"costs"} $${fmt(Math.abs(a-b)/1000)}k). Break-even is about $${fmt(be)}/kW. Reference: the 13.8 MW Matebe plant in DRC came in near $1,430/kW, but micro plants cost several times more per kW. The stronger case for hydro is steady power through the rainy season, when solar output drops.`}
+$("#hydroKw").addEventListener("input",renderHydro);
+function renderKit(){const st=D.cost.station;const t=el("table");t.append(el("tr",{},el("th",{text:"Item"}),el("th",{class:"n",text:"Planning $"})));
+  st.capex_items.forEach(i=>t.append(el("tr",{},el("td",{text:i.name}),el("td",{class:"n",text:"$"+fmt(i.usd/1000,1)+"k"}))));
+  Object.entries(st.access_kit).forEach(([k,v])=>t.append(el("tr",{},el("td",{text:v.name+" ("+k+" sites)"}),el("td",{class:"n",text:"$"+fmt(v.usd/1000,1)+"k"}))));
+  $("#kitTable").replaceChildren(t,el("p",{},el("span",{class:"tag assume",text:"Assumptions unless noted"}),document.createTextNode(" Speaker and Starlink figures reference published specs and prices.")))}
+
+/* ================= 4. SENSORS ================= */
+const SN_COL={gauge:"--s1",rain:"--s7",tag:"--s6",camera:"--s3",acoustic:"--s2",fire:"--critical",water_q:"--s5",ranger:"--s4"};
+const snCount={};D.sn.types.forEach(t=>snCount[t.id]=t.baseline_count);
+function renderSensors(){
+  const T=D.sn.types,R=D.sn.s3_02;
+  const tot=T.reduce((a,t)=>a+snCount[t.id],0),bytes=T.reduce((a,t)=>a+snCount[t.id]*t.bytes_per_day,0),capex=T.reduce((a,t)=>a+snCount[t.id]*t.unit_usd,0),repl=T.reduce((a,t)=>a+snCount[t.id]*t.unit_usd*Math.max(0,Math.ceil(15/t.life_years)-1),0);
+  const avg=bytes/Math.max(tot,1);
+  $("#snStats").replaceChildren(statTile(fmt(tot),"Terminals"),statTile(fmt(bytes/1e6,1)+" MB","Data per day"),statTile(fmt(avg/1000,1)+" kB","Average per terminal per day"),statTile(fmtM(capex/1e6),"Sensor hardware (user agencies)"),statTile(fmtM(repl/1e6),"Replacements over 15 yr"));
+  const t=el("table");t.append(el("tr",{},el("th",{text:"Type"}),el("th",{text:"Count"}),el("th",{class:"n",text:"Unit $"}),el("th",{class:"n",text:"Bytes/day"}),el("th",{text:"Placed where"})));
+  T.forEach(s=>{const inp=el("input",{type:"range",min:0,max:Math.max(s.baseline_count*4,100),step:Math.max(10,Math.round(s.baseline_count/50)),value:snCount[s.id],"aria-label":s.name+" count"});const out=el("b",{text:fmt(snCount[s.id])});
+    inp.addEventListener("input",()=>{snCount[s.id]=+inp.value;renderSensors()});
+    t.append(el("tr",{class:"sensrow"},el("td",{},el("i",{style:`display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:${css(SN_COL[s.id])}`}),document.createTextNode(s.name)),el("td",{},inp,el("br"),out),el("td",{class:"n",text:"$"+fmt(s.unit_usd)}),el("td",{class:"n",text:fmt(s.bytes_per_day)}),el("td",{class:"note",text:s.placement_rule})))});
+  $("#snTable").replaceChildren(t,el("p",{},el("span",{class:"tag assume",text:"Counts, costs and data rates are planning assumptions"})));
+  // stacked bar vs thresholds
+  const W=520,H=150,c=$("#snChart");c.replaceChildren();const s=sv("svg",{viewBox:`0 0 ${W} ${H}`,width:"100%",role:"img","aria-label":"Terminals against S3-02"},c);
+  const xMax=tot>=R.objective_terminals*0.5?Math.max(R.objective_terminals,tot)*1.08:Math.max(R.threshold_terminals,tot)*1.6,X=v=>60+v/xMax*(W-80);
+  [["Terminals",tot,R.threshold_terminals,R.objective_terminals,"terminals"]].forEach(([lab],bi)=>{const y=30;let acc=0;sv("text",{x:0,y:y+16},s).textContent=lab;
+    T.forEach(sn=>{const v=snCount[sn.id];if(!v)return;const r=sv("rect",{x:X(acc)+1,y,width:Math.max(X(acc+v)-X(acc)-2,1),height:26,rx:3,fill:css(SN_COL[sn.id])},s);r.addEventListener("pointermove",ev=>showTip(ev,[el("b",{text:fmt(v)}),el("div",{class:"k",text:sn.name})]));r.addEventListener("pointerleave",hideTip);acc+=v})});
+  if(R.objective_terminals>xMax){const t=sv("text",{x:W-4,y:14,"text-anchor":"end",style:"font-weight:600"},s);t.textContent="Objective 100k →"}
+  [[R.threshold_terminals,"Threshold 10k"],[R.objective_terminals,"Objective 100k"]].filter(([v])=>v<=xMax).forEach(([v,l])=>{sv("line",{x1:X(v),x2:X(v),y1:18,y2:66,stroke:css("--ink"),"stroke-dasharray":"4 3"},s);const tx=sv("text",{x:X(v),y:14,"text-anchor":"middle",style:"font-weight:600"},s);tx.textContent=l});
+  const ok1=tot>=R.threshold_terminals&&avg>=R.threshold_bytes_per_day,ok2=tot>=R.objective_terminals&&avg>=R.objective_bytes_per_day;
+  const msg=sv("text",{x:0,y:100,style:`font-weight:600;fill:${css("--ink")}`},s);msg.textContent=(ok1?"✔ Meets":"✖ Below")+" S3-02 threshold · "+(ok2?"✔ meets":"✖ below")+" objective";
+  const m2=sv("text",{x:0,y:120},s);m2.textContent=`Average ${fmt(avg)} bytes/terminal/day vs ≥2,000 threshold, ≥50,000 objective`;
+  $("#snLegend").replaceChildren(...T.map(sn=>el("span",{},el("i",{style:`background:${css(SN_COL[sn.id])}`}),document.createTextNode(sn.id))));
+  const rc=D.sn.community_receivers[String(S.year)];
+  $("#rcv").replaceChildren(el("p",{},el("b",{text:fmt(rc.receivers)+" receivers"}),document.createTextNode(` for ${S.year}: one per village of about ${D.sn.receiver_rule.people_per_receiver_rural} rural people and one per ${fmt(D.sn.receiver_rule.people_per_receiver_urban)} urban residents at schools, markets and churches. That is ${fmtM(rc.cost_threshold_usd/1e6)} at the $25 threshold or ${fmtM(rc.cost_objective_usd/1e6)} at the $10 objective, each with a hand crank.`)),el("p",{class:"note",text:"Receivers carry most of the spoken warnings; station loudspeakers cover the town around each tower and the stations verify delivery."}));
+}
+
+/* ================= 5. COMMS ================= */
+function renderComms(){
+  segBuild($("#skySeg"),[["open_sky_20deg","Open sky (20° mask)"],["under_canopy_45deg","Under canopy (45° mask)"]],()=>S.sky,v=>S.sky=v);
+  const L=D.leo.results;const incs=[15,30,53,97.6],cols=["--s1","--s2","--s3","--s4"];
+  const series=incs.map((inc,i)=>({label:inc+"°"+(inc>90?" (polar)":""),color:css(cols[i]),bold:inc===15,pts:L.filter(r=>r.inclination_deg===inc).map(r=>[r.satellites,r[S.sky].p95_wait_min]),fmt:v=>fmt(v,1)+" min"}));
+  lineChart($("#leoChart"),{series,xMax:36,yMax:1000,log:true,yLabel:"p95 wait (min, log)",xLabel:"Satellites",yTicks:[1,10,100,1000],xTicks:[4,8,12,18,24,36],refs:[{y:30,label:"S3-03 T ≤30",color:css("--ink")},{y:5,label:"Objective ≤5",color:css("--ink-3")}]});
+  $("#leoLegend").replaceChildren(...incs.map((inc,i)=>el("span",{},el("i",{class:"line",style:`background:${css(cols[i])}`}),document.createTextNode(inc+"° inclination"))));
+  const r24=L.find(r=>r.inclination_deg===15&&r.satellites===24),r36=L.find(r=>r.inclination_deg===15&&r.satellites===36);
+  $("#leoTake").replaceChildren(
+    el("p",{class:"why"},el("b",{text:"Low inclination wins. "}),document.createTextNode("The basin straddles the equator (13°S–9°N). Satellites in 15° orbits pass over it on every orbit; polar or 53° orbits spend most of their time elsewhere.")),
+    el("p",{class:"why"},el("b",{text:"About 24 satellites meet the threshold in the open. "}),document.createTextNode(`At 15°, 24 satellites in 4 planes give a p95 wait of ${r24.open_sky_20deg.p95_wait_min} min, inside the 18-min share of S3-03. Reaching the 5-min objective takes about 36 (p95 ${r36.open_sky_20deg.p95_wait_min} min).`)),
+    el("p",{class:"why"},el("b",{text:"Under canopy, LEO alone fails. "}),document.createTextNode(`With a 45° mask the same 24 satellites give a p95 of ${r24.under_canopy_45deg.p95_wait_min} min. That is the case for ranger-station towers as canopy-top relays: sensors talk to the tower in seconds, and the tower talks to the satellite from open sky.`)),
+    el("p",{class:"why"},el("b",{text:"Broadcast goes to GEO. "}),document.createTextNode("One geostationary payload covers the whole basin continuously, so alerts reach every receiver in seconds (S3-05) with a fixed, no-pointing antenna (S3-07). AfriStar did L-band radio over Africa this way from 1998.")),
+    el("p",{class:"note",text:"Model: circular orbits at 550 km, Earth rotation, 4 gateways at the database nodes, 2-day run. Some non-monotonic points reflect simple phasing choices, not physics."}));
+  const t=el("table");t.append(el("tr",{},el("th",{text:"Option"}),el("th",{text:"Serves"}),el("th",{text:"Latency"}),el("th",{text:"15-yr cost"}),el("th",{text:"For"}),el("th",{text:"Against"})));
+  D.comms.options.forEach(o=>{const inBase=D.comms.notional_baseline.includes(o.id);const cost=o.cost_15yr_musd!=null?fmtM(o.cost_15yr_musd):o.cost_15yr_musd_per_100_stations!=null?fmtM(o.cost_15yr_musd_per_100_stations)+" per 100 sites":o.cost_15yr_musd_10k_terminals!=null?fmtM(o.cost_15yr_musd_10k_terminals)+" (10k) · "+fmtM(o.cost_15yr_musd_100k_terminals)+" (100k)":"–";
+    t.append(el("tr",{},el("td",{},el("b",{text:o.name}),el("br"),inBase?el("span",{class:"tag",text:"in baseline"}):""),el("td",{text:o.serves.join("; ")}),el("td",{text:o.latency}),el("td",{},document.createTextNode(cost),el("div",{class:"note",text:o.cost_basis})),el("td",{text:o.pros.join("; ")}),el("td",{text:o.cons.join("; ")})))});
+  $("#optTable").replaceChildren(t);
+}
+
+/* ================= 6. BUDGET & RESILIENCE ================= */
+function renderBudget(){
+  const R=run(),n=S.n,stCost=n?R.stations[n-1].cum_cost_musd:0;const rc=D.sn.community_receivers[String(S.year)];
+  const lines=[["LEO IoT constellation",265,"--s1"],["GEO broadcast payload",80,"--s7"],["Ranger stations ("+n+")",stCost,"--s2"],["Community receivers",rc.cost_threshold_usd/1e6,"--s3"],["Commercial backhaul",(n+4)*(389+50*180)/1e6,"--s4"]];
+  const total=lines.reduce((a,l)=>a+l[1],0),cap=D.cost.budget.lcc_cap_usd/1e6;
+  const W=1200,H=130,c=$("#budChart");c.replaceChildren();const s=sv("svg",{viewBox:`0 0 ${W} ${H}`,width:"100%",role:"img","aria-label":"Budget stack"},c);
+  const xMax=Math.max(cap,total)*1.08,X=v=>10+v/xMax*(W-30);let acc=0;
+  lines.forEach(([l,v,col])=>{if(v<=0)return;const r=sv("rect",{x:X(acc)+1,y:40,width:Math.max(X(acc+v)-X(acc)-2,1),height:34,rx:4,fill:css(col)},s);r.addEventListener("pointermove",ev=>showTip(ev,[el("b",{text:fmtM(v)}),el("div",{class:"k",text:l})]));r.addEventListener("pointerleave",hideTip);acc+=v});
+  sv("line",{x1:X(cap),x2:X(cap),y1:24,y2:92,stroke:css("--critical"),"stroke-width":2,"stroke-dasharray":"5 3"},s);const ct=sv("text",{x:X(cap),y:18,"text-anchor":"middle",style:`font-weight:700;fill:${css("--ink")}`},s);ct.textContent="$400M cap";
+  const tt=sv("text",{x:X(total),y:110,"text-anchor":"end",style:`font-weight:700;fill:${css("--ink")}`},s);tt.textContent="Total "+fmtM(total)+(total>cap?" · over by "+fmtM(total-cap):" · under by "+fmtM(cap-total));
+  $("#budLegend").replaceChildren(...lines.map(([l,v,col])=>el("span",{},el("i",{style:`background:${css(col)}`}),document.createTextNode(l+" "+fmtM(v)))));
+  $("#budNote").textContent="Excludes staff salaries and the sensors themselves (owned by user agencies). LEO and GEO lines are anchored to Kinéis and CHIRP but are assumptions; treat the whole stack as ±30%.";
+  const F=[["hub","Kinshasa hub offline"],["sat","Lose 1 of 24 satellites"],["grid","Grid and cell towers down"],["station","Flood takes out a station"],["geo","GEO payload lost"]];
+  segBuild($("#failSeg"),F,()=>S.fail,v=>S.fail=S.fail===v?null:v);
+  const msgs={hub:["Mbuji-Mayi, Kisangani or Kalemie takes over.","Every node holds a full replica (L1-04) and has its own gateway, so detection, the COP and the CAP-to-broadcast chain keep running. The national agency authorizes from wherever it is, over any surviving link."],
+    sat:["Wait grows slightly; threshold still met.","Losing one of 24 satellites opens a gap in one plane. Open-sky p95 wait moves toward the 18-satellite figure in the model; the on-orbit spare and the next replenishment close it."],
+    grid:["Nothing in the alert chain needs the grid.","Stations run on solar, micro-hydro where available, and hand crank; receivers are solar or crank; all long-haul links are satellite. This is the scenario S-3 exists for (MO-3)."],
+    station:["Its area falls back to receivers and neighbouring stations.","Community receivers still get the broadcast directly from GEO. Verification for that area slows until a neighbouring team or an A-2 drone confirms. Removing one station drops coverage by only that station's marginal people (see the optimizer)."],
+    geo:["Alerts fall back to LEO, stations and phones.","Rangers get text over LEO; station loudspeakers broadcast locally; direct-to-cell text reaches phones where available. Spoken coverage of remote villages drops until a backup host is found, so a second hosted payload or a lease option is a trade worth costing."]};
+  $("#failOut").replaceChildren(S.fail?el("div",{},el("p",{class:"why"},el("b",{text:msgs[S.fail][0]+" "}),document.createTextNode(msgs[S.fail][1]))):el("p",{class:"note",text:"Pick a failure to see how the system degrades."}));
+}
+
+/* ---------------- render ---------------- */
+function renderAll(){syncControls();const on=$("section.on").id;
+  if(on==="t-flow")renderFlow();if(on==="t-map"){renderLayers();drawMap();renderMapSide()}if(on==="t-stations")renderStations();if(on==="t-sensors")renderSensors();if(on==="t-comms")renderComms();if(on==="t-budget")renderBudget()}
+addEventListener("resize",()=>{if($("#t-map").classList.contains("on"))drawMap()});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",renderAll);
+renderAll();
+</script>
+</body>
+</html>
