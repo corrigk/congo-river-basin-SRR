@@ -1,7 +1,10 @@
 // RFP S-3 BASINLINK & BASINCAST: system of record for the SRR page.
 // Requirement text and numbers are copied exactly from the team brief. Do not round, alter or add figures here.
-// Anything we inferred (traceability, interface roles, latency sub-allocations) is flagged `tbr: true` or
+// Anything we inferred (traceability, latency sub-allocations) is flagged `tbr: true` or
 // lives under a key whose name says so, and the page labels it on screen.
+
+import FUNCTIONS from '../../analysis/data/functions.json';
+export { FUNCTIONS };
 
 export const RFP = {
   id: 'S-3',
@@ -94,88 +97,32 @@ export const CONSTRAINTS = [
   { k: 'interop', text: 'Interoperate with Iridium SBD, Argos, ICARUS where practical' },
 ];
 
-// Key trades: open and unresolved. `drives` lists requirements each trade most affects (our reading, TBR).
-export const TRADES = [
-  { k: 'orbit', q: 'One orbit vs hybrid',
-    options: ['Single orbit regime (LEO, MEO or GEO)', 'Hosted payload', 'Hybrid of the above'],
-    drives: ['S3-01', 'S3-03', 'S3-05', 'S3-10'] },
-  { k: 'freq', q: 'Frequency vs foliage loss, rain fade, and antenna size',
-    options: ['Lower frequency: better canopy penetration, larger antennas', 'Higher frequency: smaller antennas, more rain fade and foliage loss'],
-    drives: ['S3-01', 'S3-04', 'S3-07', 'S3-10'] },
-  { k: 'relay', q: 'Store-and-forward vs inter-satellite links vs bent pipe',
-    options: ['Store-and-forward', 'Inter-satellite links', 'Bent pipe to a gateway in view'],
-    drives: ['S3-03', 'S3-09'] },
-  { k: 'receiver', q: 'Broadcast receivers vs direct-to-phone',
-    options: ['Dedicated broadcast receivers', 'Direct-to-phone'],
-    drives: ['S3-05', 'S3-07'] },
-  { k: 'payload', q: 'Shared vs separate payloads for uplink and broadcast',
-    options: ['One shared payload', 'Separate uplink and broadcast payloads'],
-    drives: ['S3-02', 'S3-05', 'S3-08'] },
-];
-
 // Open items to be resolved (TBR) that the page flags.
 export const TBR = [
   { k: 'cost', text: 'Life-cycle cost cap of ≤$400M over 15 years including replenishment.', owner: 'RFP' },
   { k: 'latency', text: 'Latency sub-allocations inside S3-03 and S3-05 are a proposed allocation, not requirements.', owner: 'S-3 team' },
   { k: 'a1', text: 'S-3 as primary comms layer and A-1 as a complementary regional relay layer.', owner: 'S-3 and A-1 teams' },
-  { k: 'icd', text: 'Every interface on the Interfaces tab: what is carried, direction and format.', owner: 'S-3 and each partner team' },
+  { k: 'icd', text: 'Partner interfaces (S-1, S-2, A-1 to A-4): what S-3 carries, in which direction and in what format.', owner: 'S-3 and each partner team' },
   { k: 'trace', text: 'Mapping of requirements to mission objectives and to the out / in gap.', owner: 'S-3 team' },
-  { k: 'orbit', text: 'No orbit or architecture selected. The page is orbit-neutral until the trade study closes.', owner: 'S-3 team' },
+  { k: 'orbit', text: 'Architecture is a notional baseline (own LEO IoT, GEO broadcast, station relays, commercial backhaul); the trade study is pending.', owner: 'S-3 team' },
+  { k: 'gauges', text: 'River-gauge sites are rule-based (modeled proxy) until the GRDC station list is obtained.', owner: 'S-3 team' },
   { k: 'map', text: 'Map positions of gauges, gateways, agencies, receivers and partner assets are illustrative.', owner: 'S-3 team' },
 ];
 
-// Latency budget. Totals are the S3-03 and S3-05 requirement values; the segments are a PROPOSED ALLOCATION, TBR.
+// Latency budget for the scenario walkthrough, taken from the functional flow (analysis/data/functions.json):
+// S3-03 is split across F1-F3 and S3-05 across F6-F7. Totals are the requirement values; the split is a
+// PROPOSED ALLOCATION, TBR (the page says so).
+const fnSeg = id => {
+  const f = FUNCTIONS.functions.find(x => x.id === id);
+  return { k: id, label: `${id} ${f.name.charAt(0)}${f.name.slice(1).toLowerCase()}`, t: f.latency_min.threshold, o: f.latency_min.objective };
+};
+const BUD = FUNCTIONS.latency_budgets;
 export const LATENCY = {
-  uplink: {
-    req: 'S3-03', title: 'Uplink leg', from: 'Gauge triggers', to: 'Message in the COP',
-    total: { t: 30, o: 5 },
-    segments: [
-      { k: 'wait',   label: 'Terminal wait for satellite and transmit', t: 15, o: 2.5 },
-      { k: 'relay',  label: 'Space relay and downlink to gateway',      t: 10, o: 1.5 },
-      { k: 'ground', label: 'Ground processing to COP',                  t: 5,  o: 1.0 },
-    ],
-  },
-  alert: {
-    req: 'S3-05', title: 'Alert leg', from: 'Agency authorizes', to: 'Audible at the receiver',
-    total: { t: 10, o: 3 },
-    segments: [
-      { k: 'cap',       label: 'CAP ingest and validation',            t: 1, o: 0.5 },
-      { k: 'target',    label: 'Geo-targeting, translation, speech',  t: 2, o: 0.5 },
-      { k: 'up',        label: 'Uplink to broadcast satellite',       t: 2, o: 0.5 },
-      { k: 'broadcast', label: 'Broadcast and receiver audible',      t: 5, o: 1.5 },
-    ],
-  },
+  uplink: { req: 'S3-03', title: 'Uplink leg', from: 'Detection', to: 'Message in the COP',
+    total: { t: BUD['S3-03'].threshold_min, o: BUD['S3-03'].objective_min }, segments: BUD['S3-03'].functions.map(fnSeg) },
+  alert: { req: 'S3-05', title: 'Alert leg', from: 'Agency authorizes', to: 'Audible at the receiver',
+    total: { t: BUD['S3-05'].threshold_min, o: BUD['S3-05'].objective_min }, segments: BUD['S3-05'].functions.map(fnSeg) },
 };
-
-// The other RFPs. Table values are verbatim from the brief; `carry` and `dir` are our proposed interface, TBR.
-// dir: 'to' = S-3 delivers to them, 'from' = S-3 carries their data, 'both' = two-way.
-export const SYSTEMS = [
-  { id: 'S-1', name: 'RADAR-RAPID', platform: 'LEO SAR smallsats', gap: 'Revisit and latency through cloud',
-    driving: 'Priority-area revisit ≤12 h / ≤3 h', gapTypes: 'Data, system',
-    dir: 'to', carry: 'Gauge trigger reaches the COP over BASINLINK; the COP cues an S-1 revisit of the priority area.' },
-  { id: 'S-2', name: 'DEEP CANOPY', platform: 'Large L/P-band SAR', gap: 'Disturbance under canopy, biomass, peatland',
-    driving: '≥0.1 ha / ≥0.05 ha, every ≤7 d / ≤3 d', gapTypes: 'Data',
-    dir: 'from', carry: 'Under-canopy disturbance detections become alerts and tasking that S-3 carries to rangers.' },
-  { id: 'A-1', name: 'SKY STATION', platform: 'Stratospheric HAPS', gap: 'No watch between passes; comms lost in conflict',
-    driving: '≥30 d / ≥90 d on station at ≥18 km', gapTypes: 'Data, integration',
-    dir: 'both', overlap: true,
-    carry: 'Overlap on “comms lost in conflict”. S-3 is the primary basin-wide layer; A-1 is a complementary regional relay. Each backs up the other. Assumption, TBR with the A-1 team.' },
-  { id: 'A-2', name: 'RANGER WING', platform: 'Dock-based VTOL UAS', gap: 'Alerts never confirmed in time',
-    driving: 'Alert-to-overhead ≤45 / ≤20 min', gapTypes: 'System',
-    dir: 'both', clock: 'A-2’s ≤45 min clock starts when our alert is delivered.',
-    carry: 'S-3 delivers the alert and tasking to the dock; A-2 returns overhead confirmation over the two-way link.' },
-  { id: 'A-3', name: 'RIVER LIFT', platform: 'Flood mapping and medical airlift', gap: 'Reactive flood response, cut-off communities',
-    driving: '≥50 kg / ≥500 kg at ≥150 km / ≥300 km', gapTypes: 'System',
-    dir: 'both', carry: 'Dispatch commands and acknowledgments to crews over two-way terminals; requests from cut-off communities back to the COP.' },
-  { id: 'A-4', name: 'STORM SOUNDER', platform: 'Atmospheric sounding', gap: 'Missing vertical weather profiles',
-    driving: '1 profile per 250 km cell every ≤12 / ≤6 h', gapTypes: 'Data',
-    dir: 'from', carry: 'Balloon and sonde payloads uplink through BASINLINK like any other sensor terminal.' },
-];
-export const S3_ROW = {
-  id: 'S-3', name: 'BASINLINK', platform: 'Comms, orbit open', gap: 'Sensor data can’t get out; warnings never reach people',
-  driving: 'Message ≤30 / ≤5 min; alert ≤10 / ≤3 min', gapTypes: 'Integration, system',
-};
-export const systemBy = Object.fromEntries(SYSTEMS.map(s => [s.id, s]));
 
 // The SoS nine-stage loop (from the ConOps), with the S-3 role at each stage.
 // `s3` = 'primary' (S-3 carries the stage), 'supports' or null.

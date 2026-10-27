@@ -9,10 +9,12 @@ import { createOffline } from './s3/offline.js';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
-// Brief v2: the six analysis sections are the main tabs (keys 1-6). The earlier views stay reachable from the
-// "More" menu until they are folded into Function flow and a Requirements tab.
+// Brief v2: the six analysis sections are tabs 1-6 and Requirements is tab 7. The scenario walkthrough is a mode
+// of Function flow; the Requirements tab has three views (mission & gap, Level 0, decomposition).
 const SECTION_TABS = ['flow', 'map', 'stations', 'sensors', 'comms', 'budget'];
-const TABS = [...SECTION_TABS, 'overview', 'requirements', 'scenario', 'interfaces', 'trades', 'decomposition'];
+const REQ_VIEWS = ['overview', 'requirements', 'decomposition'];
+const TABS = [...SECTION_TABS, ...REQ_VIEWS, 'scenario'];
+const tabFor = v => (REQ_VIEWS.includes(v) ? 'requirements' : v === 'scenario' ? 'flow' : v);
 
 // ---------- static chrome ----------
 $('#brand-mark').innerHTML = MARK;
@@ -21,15 +23,13 @@ $('[data-act="help"]').innerHTML = ICON.help;
 $('[data-act="present"]').innerHTML = ICON.present;
 $('#view-overview').innerHTML = V.overviewView();
 $('#view-requirements').innerHTML = V.requirementsView();
-$('#view-interfaces').innerHTML = V.interfacesView();
-$('#view-trades').innerHTML = V.tradesView();
 $('#sc-card').innerHTML = V.scenarioCard();
 $('#lt-card').innerHTML = V.latencyCard();
 $('#help').innerHTML = V.helpView();
 
 // ---------- state ----------
 // tab, mode ('t' threshold | 'o' objective), scenario + step, side panel, highlighted requirement.
-const state = { tab: 'flow', mode: 't', sc: 'A', step: 0, panel: null, hl: null, dsel: null, dsrr: null };
+const state = { tab: 'flow', mode: 't', sc: 'A', step: 0, panel: null, hl: null, dsel: null, dsrr: null, fn: null };
 
 // ---------- map ----------
 const panel = $('#panel');
@@ -115,6 +115,7 @@ function readHash() {
   const [tab, sc, step] = location.hash.slice(1).split('/');
   if (TABS.includes(tab)) state.tab = tab;
   if (tab === 'decomposition') { state.dsel = sc ? decodeURIComponent(sc) : null; return; }
+  if (tab === 'flow') { state.fn = /^F\d$/.test(sc || '') ? sc : null; return; }
   if (V.scenarioBy[sc]) state.sc = sc;
   const n = +step;
   if (n >= 1 && n <= V.scenarioBy[state.sc].steps.length) state.step = n - 1;
@@ -130,10 +131,12 @@ addEventListener('hashchange', () => { readHash(); render(); });
 function render() {
   app.dataset.view = state.tab;
   app.dataset.mode = state.mode;
-  for (const b of $$('.more-menu [data-view]')) b.setAttribute('aria-current', b.dataset.view === state.tab ? 'page' : 'false');
-  $('.more-btn').classList.toggle('is-on', !SECTION_TABS.includes(state.tab));
+  const sub = REQ_VIEWS.includes(state.tab);
+  $('#req-subnav').hidden = !sub;
+  app.classList.toggle('has-subnav', sub);
+  for (const b of $$('#req-subnav [data-view]')) b.setAttribute('aria-current', b.dataset.view === state.tab ? 'page' : 'false');
   for (const t of $$('.tabs [role="tab"]')) {
-    const on = t.dataset.view === state.tab;
+    const on = t.dataset.view === tabFor(state.tab);
     t.setAttribute('aria-selected', on);
     t.tabIndex = on ? 0 : -1;
   }
@@ -168,8 +171,11 @@ function renderDecomposition() {
 // From a decomposition block to the matching place on this page.
 function goSrr(kind, ref) {
   if (kind === 'scenario') { const sc = ref[0], i = +ref.slice(1) - 1; if (V.scenarioBy[sc]) setScenario(sc, i); return; }
-  if (kind === 'interface') { setTab('interfaces'); openPanel({ type: 'system', k: ref }); return; }
-  if (kind === 'trade') { setTab('trades'); $(`#trade-${ref}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  if (kind === 'interface') { // the first scenario step that exercises this partner interface
+    for (const s of V.SCENARIOS) { const i = s.steps.findIndex(st => st.interfaces?.some(x => x.id === ref)); if (i >= 0) { setScenario(s.id, i); return; } }
+    setTab('flow'); return;
+  }
+  if (kind === 'trade') { setTab('comms'); return; } // the options compared / notional baseline
   if (kind === 'srr-req') { setTab('requirements'); openPanel({ type: 'req', k: ref }); }
 }
 
@@ -206,7 +212,6 @@ function renderPanel() {
   let html = '';
   if (state.tab === 'scenario') html = V.stepPanel(V.scenarioBy[state.sc], state.step);
   else if (state.panel?.type === 'req') html = V.reqPanel(state.panel.k);
-  else if (state.panel?.type === 'system') html = V.systemPanel(state.panel.k);
   const key = state.tab === 'scenario' ? `step:${state.sc}:${state.step}` : state.panel ? `${state.panel.type}:${state.panel.k}` : '';
   if (html && panel.dataset.k !== key) {
     panel.classList.remove('is-swap');
@@ -221,13 +226,10 @@ function renderPanel() {
   app.classList.toggle('has-panel', !!html);
 }
 
-// Selected requirement / system glows wherever it appears; steps that cite the highlighted requirement are marked.
+// The selected requirement glows wherever it appears; steps that cite the highlighted requirement are marked.
 function renderHighlights() {
   const req = state.panel?.type === 'req' ? state.panel.k : state.hl;
   for (const el of $$('[data-req], [data-req-row]')) el.classList.toggle('is-hl', (el.dataset.req || el.dataset.reqRow) === req);
-  const sys = state.panel?.type === 'system' ? state.panel.k : null;
-  for (const el of $$('[data-system]')) el.classList.toggle('is-hl', el.dataset.system === sys);
-  $('#view-interfaces').classList.toggle('has-sel', !!sys);
   const s = V.scenarioBy[state.sc];
   for (const b of $$('.sc-step')) {
     const hit = !!state.hl && s.steps[+b.dataset.step].reqs.includes(state.hl);
@@ -243,7 +245,11 @@ function renderHighlights() {
 let analysis = null;
 function renderAnalysis() {
   if (!SECTION_TABS.includes(state.tab)) return;
-  (analysis ||= import('./s3/v2/sections.js')).then(m => { if (SECTION_TABS.includes(state.tab)) m.renderSection(state.tab, $(`#view-${state.tab}`)); });
+  (analysis ||= import('./s3/v2/sections.js')).then(m => {
+    if (!SECTION_TABS.includes(state.tab)) return;
+    if (state.fn) { m.S.fn = state.fn; state.fn = null; } // arrived from a scenario step's function chip
+    m.renderSection(state.tab, $(`#view-${state.tab}`));
+  });
 }
 let resizeT;
 addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (['map', 'budget'].includes(state.tab)) renderAnalysis(); }, 200); });
@@ -270,7 +276,7 @@ function openPanel(p) {
 }
 
 function moveInk() {
-  const t = $(`.tabs [role="tab"][data-view="${state.tab}"]`) || $('.more-btn'), ink = $('.tabs-ink');
+  const t = $(`.tabs [role="tab"][data-view="${tabFor(state.tab)}"]`), ink = $('.tabs-ink');
   if (t) Object.assign(ink.style, { width: `${t.offsetWidth}px`, transform: `translateX(${t.offsetLeft - 4}px)` });
 }
 addEventListener('resize', () => { moveInk(); if (state.tab === 'decomposition') decomp?.resize(); });
@@ -295,7 +301,7 @@ function fullscreen() {
 
 // ---------- events ----------
 document.addEventListener('click', e => {
-  const t = e.target.closest('button, [data-system], [data-act], [data-req-row]');
+  const t = e.target.closest('button, [data-act], [data-req-row]');
   if (!t) return;
   const d = t.dataset;
   if (d.act) {
@@ -306,12 +312,12 @@ document.addEventListener('click', e => {
       case 'close': state.panel = null; render(); return;
       case 'help': toggleHelp(); return;
       case 'fullscreen': fullscreen(); return;
-      case 'more': { const m = $('.more-menu'); m.hidden = !m.hidden; t.setAttribute('aria-expanded', !m.hidden); return; }
       case 'preload': offline.preload(); return;
       case 'present': setPresent(!app.classList.contains('is-present')); return;
     }
   }
-  if (d.view) { $('.more-menu').hidden = true; setTab(d.view); return; }
+  if (d.view) { setTab(d.view === 'requirements' && t.getAttribute('role') === 'tab' && REQ_VIEWS.includes(state.tab) ? state.tab : d.view); return; }
+  if (d.fn) { location.hash = `#flow/${d.fn}`; return; }
   if (d.mode) { setMode(d.mode); return; }
   if (d.map) { pickMap(d.map); return; }
   if (d.orbit) { groundMap?.setOrbit(d.orbit); pref.setOrbit(d.orbit); return; }
@@ -320,21 +326,14 @@ document.addEventListener('click', e => {
   if (d.step) { goStep(+d.step); return; }
   if (d.decomp) { state.dsrr = d.decomp; state.panel = null; setTab('decomposition'); return; }
   if (d.goto) { const [sc, i] = d.goto.split(':'); state.hl = state.panel?.type === 'req' ? state.panel.k : state.hl; state.panel = null; setScenario(sc, +i); return; }
-  if (d.trade) { setTab('trades'); $(`#trade-${d.trade}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
   if (d.req) {
     // On the scenario map a requirement toggles its highlight; elsewhere it opens the requirement panel.
     if (state.tab === 'scenario') { state.hl = state.hl === d.req ? null : d.req; renderHighlights(); return; }
     openPanel({ type: 'req', k: d.req }); return;
   }
   if (d.reqRow) { openPanel({ type: 'req', k: d.reqRow }); return; }
-  if (d.system) { if (state.tab !== 'interfaces') setTab('interfaces'); openPanel({ type: 'system', k: d.system }); return; }
 });
-// SVG interface nodes are focusable groups: Enter / Space activates them like buttons.
-document.addEventListener('keydown', e => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('g[data-system]')) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
-}, true);
 document.addEventListener('pointerdown', e => {
-  if (!e.target.closest('.more')) { $('.more-menu').hidden = true; $('.more-btn').setAttribute('aria-expanded', 'false'); }
   const h = $('#help');
   if (!h.hidden && !h.contains(e.target) && !e.target.closest('[data-act="help"]')) h.hidden = true;
 });
@@ -343,7 +342,7 @@ document.addEventListener('pointerdown', e => {
 document.addEventListener('keydown', e => {
   if (e.target.closest?.('input, textarea, select') || e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key, lk = k.toLowerCase();
-  const onControl = e.target.closest?.('button, summary, a, [role="tab"], g[data-system]');
+  const onControl = e.target.closest?.('button, summary, a, [role="tab"]');
   if ((k === ' ' || k === 'Enter') && onControl) return;
   if ((k === 'ArrowRight' || k === 'ArrowLeft') && e.target.closest?.('[role="tab"]')) {
     e.preventDefault();
@@ -353,6 +352,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (/^[1-6]$/.test(k)) { setTab(SECTION_TABS[+k - 1]); return; }
+  if (k === '7') { setTab(REQ_VIEWS.includes(state.tab) ? state.tab : 'requirements'); return; }
   if (state.tab === 'scenario' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); goStep(state.step + 1); return; }
   if (state.tab === 'scenario' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); goStep(state.step - 1); return; }
   if (lk === 'r') { reset(); return; }
@@ -371,6 +371,7 @@ document.addEventListener('keydown', e => {
     else if (state.panel) { state.panel = null; render(); }
     else if (state.tab === 'decomposition' && state.dsel) { state.dsel = null; render(); }
     else if (state.hl) { state.hl = null; renderHighlights(); }
+    else if (state.tab === 'scenario') setTab('flow');
   }
 });
 

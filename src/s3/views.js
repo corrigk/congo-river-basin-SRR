@@ -1,6 +1,6 @@
 // HTML for the S-3 SRR views. Everything renders from src/s3/content.js and src/s3/scenarios.json.
 // Threshold / objective values are both rendered (.v-t / .v-o); CSS shows the one #app[data-mode] selects.
-import { RFP, GAP, MOS, REQS, reqBy, HEADLINES, CONSTRAINTS, TRADES, TBR, LATENCY, SYSTEMS, S3_ROW, systemBy, STAGES, stageBy } from './content.js';
+import { RFP, GAP, MOS, REQS, reqBy, HEADLINES, CONSTRAINTS, TBR, LATENCY, FUNCTIONS, STAGES, stageBy } from './content.js';
 import SC from './scenarios.json';
 import { ICON } from '../icons.js';
 
@@ -18,7 +18,6 @@ const MO_USERS = { 'MO-1': 'Gauge, sensor and wildlife-tag owners; rangers', 'MO
 
 // Every scenario step that cites a requirement, for "where it applies".
 export const stepsForReq = id => SCENARIOS.flatMap(s => s.steps.map((st, i) => ({ s, st, i })).filter(x => x.st.reqs.includes(id)));
-const tradesForReq = id => TRADES.filter(t => t.drives.includes(id));
 
 const reqChip = id => `<button class="chip chip-req" data-req="${id}"><b>${id}</b><span>${esc(reqBy[id].name)}</span>${ICON.arrow}</button>`;
 const moPill = id => `<span class="pill pill-mo" title="${esc(moBy[id].text)}">${id}</span>`;
@@ -118,8 +117,16 @@ export function requirementsView() {
     </div>
     <p class="s3-foot">${tbrTag('Proposed')} The “Traces to” column is our traceability, TBR. Requirement text and values are verbatim.</p>
 
-    <div class="pv-section">Constraints</div>
-    <ul class="s3-cons">${CONSTRAINTS.map(c => `<li>${esc(c.text)}${c.tbr ? ` ${tbrTag()}` : ''}</li>`).join('')}</ul>
+    <div class="rq-cols">
+      <section>
+        <div class="pv-section">Constraints</div>
+        <ul class="s3-cons">${CONSTRAINTS.map(c => `<li>${esc(c.text)}${c.tbr ? ` ${tbrTag()}` : ''}</li>`).join('')}</ul>
+      </section>
+      <section>
+        <div class="pv-section">Open items (TBR)</div>
+        <ol class="tbr-list">${TBR.map(t => `<li><span>${esc(t.text)}</span><small>${esc(t.owner)}</small></li>`).join('')}</ol>
+      </section>
+    </div>
   </div>`;
 }
 
@@ -139,13 +146,13 @@ export function reqPanel(id) {
     <h3 class="p-h">Where it applies</h3>
     <div class="p-chips">${uses.length ? uses.map(({ s, st, i }) => `
       <button class="chip chip-step" data-goto="${s.id}:${i}"><b>${s.id}${i + 1}</b><span>${esc(st.title)}<small>${esc(s.title)}</small></span>${ICON.arrow}</button>`).join('')
-      : '<p class="p-text">Applies across the whole service rather than at one scenario step.</p>'}</div>
-    ${tradesForReq(id).length ? `<h3 class="p-h">Open trades that drive it</h3><div class="p-stake">${tradesForReq(id).map(t => `<button class="stake" data-trade="${t.k}">${esc(t.q)}</button>`).join('')}</div>` : ''}`;
+      : '<p class="p-text">Applies across the whole service rather than at one scenario step.</p>'}</div>`;
 }
 
 // ---------- 3. Scenario (chrome over the map) ----------
 export function scenarioCard() {
   return `
+    <button class="sc-back" data-view="flow">${ICON.prev}<span>Function flow</span></button>
     <div class="sc-pick" role="group" aria-label="Scenario">
       ${SCENARIOS.map(s => `<button data-scenario="${s.id}" aria-pressed="false" aria-label="Scenario ${s.id}: ${esc(s.title)}" title="${esc(s.title)}"><b>${s.id}</b><span>${esc(s.title)}</span></button>`).join('')}
     </div>
@@ -183,9 +190,17 @@ export function stepPanel(s, i) {
       <div class="p-reqs">${st.reqs.map(id => `<button class="p-req" data-req="${id}"><b>${id}</b><span>${esc(reqBy[id].name)}</span><em>${tv(reqBy[id].t, reqBy[id].o)}</em></button>`).join('')}</div>` : ''}
     ${lat ? `<p class="p-text p-latnote">${ICON.flow}<span>Counts against the <b>${lat.title.toLowerCase()}</b> budget below (${lat.req}).</span></p>` : ''}
     ${st.mo.length ? `<h3 class="p-h">Mission objective</h3><ul class="p-mos">${st.mo.map(m => `<li><b>${m}</b><span>${esc(moBy[m].text)}</span></li>`).join('')}</ul>` : ''}
-    ${st.interfaces?.length ? `<h3 class="p-h">Interfaces ${tbrTag()}</h3><ul class="p-ifs">${st.interfaces.map(x => `<li><button class="pill pill-rfp" data-system="${x.id}">${x.id}</button><span>${esc(x.note)}</span></li>`).join('')}</ul>` : ''}
+    ${st.fn?.length ? `<h3 class="p-h">Functions in this step</h3><div class="p-fns">${st.fn.map(fnChip).join('')}</div>` : ''}
+    ${st.interfaces?.length ? `<h3 class="p-h">Partner interfaces ${tbrTag()}</h3><ul class="p-ifs">${st.interfaces.map(x => `<li><span class="pill pill-rfp">${x.id}</span><span>${esc(x.note)}</span></li>`).join('')}</ul>` : ''}
     ${st.note ? `<p class="p-note">${esc(st.note)}</p>` : ''}
-    <p class="p-foot">Map positions are illustrative. Orbit and architecture are open: no constellation is drawn.</p>`;
+    <p class="p-foot">Map positions are illustrative. The scenario map draws no constellation; the notional baseline is in Space &amp; backhaul.</p>`;
+}
+
+// A function from the Level 1 flow (F1-F8 link back to it; continuous functions C1, C2 are labels).
+function fnChip(id) {
+  const f = FUNCTIONS.functions.find(x => x.id === id) || FUNCTIONS.continuous_functions.find(x => x.id === id);
+  const label = `<b>${id}</b><span>${esc(f ? f.name : '')}</span>`;
+  return id.startsWith('F') ? `<button class="chip chip-fn" data-fn="${id}">${label}${ICON.arrow}</button>` : `<span class="chip chip-fn is-static">${label}</span>`;
 }
 
 // Latency budget: both legs, both modes rendered; CSS picks the mode, JS marks the active segments.
@@ -213,115 +228,10 @@ export function latencyCard() {
     <p class="lt-foot">Totals are the ${LATENCY.uplink.req} and ${LATENCY.alert.req} requirement values. The split into segments is our proposed allocation, not a requirement.</p>`;
 }
 
-// ---------- 4. Interfaces ----------
-// A national-agency node joins the six partner RFPs: it is where CAP alerts come from and confirmations go.
-const AGENCY = { id: 'NA', name: 'National agencies & COP', dir: 'both', stakeholder: true,
-  carry: 'CAP alerts in from the agency that holds the authority to warn; delivery confirmations and priority sensor messages back out.' };
-const RING = [...SYSTEMS, AGENCY];
-const DIR_LABEL = { to: 'S-3 → them', from: 'them → S-3', both: 'two-way' };
-
-export function interfacesView() {
-  const W = 760, H = 520, cx = W / 2, cy = H / 2 + 6, rx = 300, ry = 196;
-  const pos = RING.map((s, i) => {
-    const a = -Math.PI / 2 + (i * 2 * Math.PI) / RING.length;
-    return { s, x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) };
-  });
-  const edge = ({ s, x, y }) => {
-    const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy), ux = dx / d, uy = dy / d;
-    const x1 = cx + ux * 78, y1 = cy + uy * 62, x2 = x - ux * 64, y2 = y - uy * 34;
-    const start = s.dir === 'from' || s.dir === 'both' ? 'url(#if-arr)' : '';
-    const end = s.dir === 'to' || s.dir === 'both' ? 'url(#if-arr)' : '';
-    return `<line class="if-edge is-${s.dir}${s.overlap ? ' is-overlap' : ''}" data-system="${s.id}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-start="${start}" marker-end="${end}"/>`;
-  };
-  const node = ({ s, x, y }) => `
-    <g class="if-node${s.stakeholder ? ' is-stake' : ''}${s.overlap ? ' is-overlap' : ''}" data-system="${s.id}" transform="translate(${x},${y})" tabindex="0" role="button" aria-label="${esc(s.stakeholder ? s.name : `${s.id} ${s.name}`)}">
-      <rect x="-70" y="-30" width="140" height="60" rx="12"/>
-      <text class="if-id" y="${s.stakeholder ? -4 : -6}">${s.stakeholder ? 'Agencies' : s.id}</text>
-      <text class="if-nm" y="13">${esc(s.stakeholder ? '& COP · not an RFP' : s.name)}</text>
-    </g>`;
-  return `
-  <div class="pv-inner s3-page">
-    ${pageHead('Interfaces', 'S-3 and the system of systems', 'S-3 is the shared comms layer. Each partner’s latency clock starts or stops at one of our interfaces. Select a system for what we carry and in which direction.')}
-    <div class="if-wrap">
-      <svg class="if-svg" viewBox="0 0 ${W} ${H}" role="group" aria-label="Interface diagram: S-3 in the centre, partner systems around it">
-        <defs><marker id="if-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z"/></marker></defs>
-        ${pos.map(edge).join('')}
-        ${pos.map(node).join('')}
-        <g class="if-core" transform="translate(${cx},${cy})">
-          <ellipse rx="86" ry="66"/>
-          <text class="if-id" y="-12">S-3</text><text class="if-nm" y="8">BASINLINK</text><text class="if-nm" y="24">&amp; BASINCAST</text>
-        </g>
-      </svg>
-      <div class="if-legend">
-        <span><i class="if-l-to"></i>S-3 delivers to them</span>
-        <span><i class="if-l-from"></i>S-3 carries their data</span>
-        <span><i class="if-l-both"></i>Two-way</span>
-        <span><i class="if-l-ov"></i>Overlap, TBR</span>
-      </div>
-    </div>
-    <p class="s3-foot">${tbrTag()} Interface content and directions are our proposal, to be agreed with each team.</p>
-
-    <div class="pv-section">The seven RFPs</div>
-    <div class="sys-table" role="table" aria-label="Where S-3 sits among the other teams">
-      <div class="sys-row sys-head" role="row"><span role="columnheader">RFP</span><span role="columnheader">Platform</span><span role="columnheader">Core gap</span><span role="columnheader">Driving requirement (T / O)</span><span role="columnheader">Gap types</span></div>
-      ${[...SYSTEMS.slice(0, 2), S3_ROW, ...SYSTEMS.slice(2)].map(s => `
-      <div class="sys-row${s.id === 'S-3' ? ' is-s3' : ''}" role="row">
-        ${s.id === 'S-3' ? `<span class="sys-id" role="rowheader"><b>${s.id}</b> ${s.name}</span>` : `<button class="sys-id" data-system="${s.id}" role="rowheader"><b>${s.id}</b> ${s.name}</button>`}
-        <span role="cell">${esc(s.platform)}</span><span role="cell">${esc(s.gap)}</span><span role="cell">${esc(s.driving)}</span><span role="cell">${esc(s.gapTypes)}</span>
-      </div>`).join('')}
-    </div>
-  </div>`;
-}
-
-export function systemPanel(id) {
-  const s = id === 'NA' ? AGENCY : systemBy[id];
-  const steps = SCENARIOS.flatMap(sc => sc.steps.map((st, i) => ({ sc, st, i })).filter(x => x.st.interfaces?.some(f => f.id === id)));
-  return `
-    ${head(`<span>${s.stakeholder ? 'Stakeholder' : 'Partner RFP'}</span><i></i><span>${DIR_LABEL[s.dir]}</span>`, s.stakeholder ? esc(s.name) : `${s.id} <small>${esc(s.name)}</small>`)}
-    ${s.stakeholder ? '' : `
-    <div class="p-kv">
-      <div><span>Platform</span><b>${esc(s.platform)}</b></div>
-      <div><span>Core gap</span><b>${esc(s.gap)}</b></div>
-      <div><span>Driving requirement (T / O)</span><b>${esc(s.driving)}</b></div>
-      <div><span>Gap types</span><b>${esc(s.gapTypes)}</b></div>
-    </div>`}
-    <div class="p-block req"><div class="p-block-top"><span class="lbl">What S-3 carries · ${DIR_LABEL[s.dir]}</span>${tbrTag()}</div><p>${esc(s.carry)}</p></div>
-    ${s.clock ? `<div class="p-block"><div class="p-block-top"><span class="lbl">Clock handoff</span></div><p>${esc(s.clock)}</p></div>` : ''}
-    ${steps.length ? `<h3 class="p-h">In the scenarios</h3><div class="p-chips">${steps.map(({ sc, st, i }) => `<button class="chip chip-step" data-goto="${sc.id}:${i}"><b>${sc.id}${i + 1}</b><span>${esc(st.title)}<small>${esc(sc.title)}</small></span>${ICON.arrow}</button>`).join('')}</div>` : ''}`;
-}
-
-// ---------- 5. Trades & open items ----------
-export function tradesView() {
-  return `
-  <div class="pv-inner s3-page">
-    ${pageHead('Open trades · TBR', 'Trades &amp; open items', 'No orbit or architecture is selected. These trades are open, and each one moves the requirements listed under it.')}
-    <div class="tr-grid">
-      ${TRADES.map((t, i) => `
-      <article class="tr-card" id="trade-${t.k}" data-trade-card="${t.k}">
-        <div class="tr-top"><span class="tr-n">T${i + 1}</span><span class="tr-open">Open</span></div>
-        <h3>${esc(t.q)}</h3>
-        <ul>${t.options.map(o => `<li>${esc(o)}</li>`).join('')}</ul>
-        <div class="tr-drives"><span>Drives ${tbrTag('Proposed')}</span>${t.drives.map(r => `<button class="pill pill-req" data-req="${r}">${r}</button>`).join('')}</div>
-      </article>`).join('')}
-    </div>
-
-    <div class="tr-cols">
-      <section>
-        <div class="pv-section">To be resolved (TBR)</div>
-        <ol class="tbr-list">${TBR.map(t => `<li><span>${esc(t.text)}</span><small>${esc(t.owner)}</small></li>`).join('')}</ol>
-      </section>
-      <section>
-        <div class="pv-section">Constraints</div>
-        <ul class="s3-cons">${CONSTRAINTS.map(c => `<li>${esc(c.text)}${c.tbr ? ` ${tbrTag()}` : ''}</li>`).join('')}</ul>
-      </section>
-    </div>
-  </div>`;
-}
-
 // ---------- help ----------
 export function helpView() {
   const rows = [
-    ['1 – 6', 'Switch tab'], ['→ &nbsp;PgDn &nbsp;Space', 'Next scenario step'], ['← &nbsp;PgUp', 'Previous step'], ['R', 'Reset scenario'],
+    ['1 – 7', 'Switch tab'], ['→ &nbsp;PgDn &nbsp;Space', 'Next scenario step'], ['← &nbsp;PgUp', 'Previous step'], ['R', 'Reset scenario'],
     ['T', 'Threshold / objective'], ['M', 'Next map: globe · ground · schematic'], ['G', 'Ground view'], ['O', 'Satellite: pass overhead / fixed in sky'], ['P', 'Presenter mode'], ['F', 'Fullscreen'], ['Esc', 'Close panel'], ['?', 'This help'],
   ];
   return `<div class="help-head"><span>Keyboard</span><button class="icon-btn" data-act="help" aria-label="Close shortcuts">${ICON.close}</button></div>

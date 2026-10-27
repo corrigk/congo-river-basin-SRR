@@ -123,3 +123,15 @@
   .v2-title { font-size: 30px; }
   .ctl input[type=range] { width: 140px; }
 }
+
+/* walkthrough entry points (the scenario mode of Function flow) */
+.v2-walk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 14px 0 0; }
+.v2-play { display: inline-flex; align-items: center; gap: 10px; padding: 9px 16px 9px 12px; border-radius: 11px; background: var(--gold); color: var(--ink); text-decoration: none; font-weight: 600; font-size: 13.5px; }
+.v2-play:hover { background: var(--gold-hi); }
+.v2-play small { display: block; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .75; }
+.v2-play-i { font-size: 13px; }
+.v2-steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.v2-steplink { display: inline-flex; align-items: baseline; gap: 6px; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--line-2); color: var(--text); text-decoration: none; font-size: 12.5px; }
+.v2-steplink b { font-family: var(--display); font-style: italic; font-weight: 800; color: var(--river); }
+.v2-steplink span { color: var(--muted); }
+.v2-steplink:hover { border-color: var(--gold); }

@@ -8,6 +8,7 @@
 import './v2.css';
 import { D, DEFAULT_N, YEARS, MODES, stations as loadStations, grid as loadGrid } from './data.js';
 import { createMap, DENS_LABELS } from './mapcanvas.js';
+import SC from '../scenarios.json';
 import { el, css, fmt, fmtM, seg, slider, tag, stat, chartBlock, card, lineChart, stackBars } from './ui.js';
 
 export const S = {
@@ -52,6 +53,8 @@ function flow(ctx) {
       el('span', { class: 'v2-fn-id', text: id }), el('span', { text: label }));
   }));
   const L = (F.derived_L1_drafts || []).filter(r => r.function === f.id), lt = f.latency_min;
+  // Scenario walkthrough steps that exercise this function (the walkthrough is a mode of this section).
+  const inSteps = SC.scenarios.flatMap(s => s.steps.map((st, i) => ({ s, st, i })).filter(x => x.st.fn?.includes(f.id)));
   const detail = card(`${f.id} · ${f.name}`,
     el('p', { text: f.description }),
     S.fn === 'F1' ? el('p', { class: 'why' }, el('b', { text: `${hz.name}: ` }), hz.detect_example) : null,
@@ -62,7 +65,10 @@ function flow(ctx) {
     el('h4', { text: 'Draft Level 1 requirements from this function' }),
     L.length ? L.map(r => el('p', { class: 'why' }, el('b', { text: `${r.id} (${r.parent}) ` }), `${r.text} `, el('small', { text: `Verify: ${r.verify}` })))
       : el('p', { class: 'note', text: lt.threshold == null ? 'No S-3 requirement allocated: this is an agency function.' : "No draft yet. Add the team's own Level 1 requirement for this function." }),
-    L.length ? tag('Draft suggestions; the team owns its L1 to L3 requirements') : null);
+    L.length ? tag('Draft suggestions; the team owns its L1 to L3 requirements') : null,
+    inSteps.length ? el('h4', { text: 'See it in the walkthrough' }) : null,
+    inSteps.length ? el('div', { class: 'v2-steps' }, inSteps.map(({ s, st, i }) => el('a', { class: 'v2-steplink', href: `#scenario/${s.id}/${i + 1}` },
+      el('b', { text: `${s.id}${i + 1}` }), el('span', { text: `${st.title} · ${s.title}` })))) : null);
 
   // Latency budgets: S3-03 covers F1–F3, S3-05 covers F6–F7; each bar is drawn against its own total.
   const budgets = [['S3-03', ['F1', 'F2', 'F3']], ['S3-05', ['F6', 'F7']]].map(([rid, fns]) => {
@@ -81,6 +87,11 @@ function flow(ctx) {
       'Our Level 1 functional flow, generalized from flooding to every hazard S-3 carries. Pick a hazard to relabel the first box; select a function to see who performs it and which requirement it answers.'),
     el('div', { class: 'v2-controls' }, el('span', { class: 'note', text: 'Hazard:' }), seg(F.hazards.map(h => [h.id, h.name]), S.haz, v => { S.haz = v; ctx.full(); }, 'Hazard')),
     boxes,
+    el('div', { class: 'v2-walk' },
+      el('a', { class: 'v2-play', href: '#scenario/A/1' }, el('span', { class: 'v2-play-i', 'aria-hidden': 'true', text: '▶' }),
+        el('span', {}, el('small', { text: 'Walk through it on the map' }), `${SC.scenarios[0].title}, step by step`)),
+      el('span', { class: 'note', text: 'Same chain, other cases:' }),
+      SC.scenarios.slice(1).map(s => el('a', { class: 'v2-steplink', href: `#scenario/${s.id}/1` }, el('b', { text: s.id }), el('span', { text: s.title })))),
     el('div', { class: 'v2-grid2' }, detail, lat),
     el('h3', { class: 'v2-sub', text: 'Continuous functions' }),
     el('div', { class: 'v2-cont' }, F.continuous_functions.map(c => el('div', { class: 'v2-cont-i' }, el('b', { text: `${c.id} · ${c.name}` }), el('span', { text: c.description }), el('small', { text: c.traces.join(', ') })))),
