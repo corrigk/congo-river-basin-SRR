@@ -90,7 +90,7 @@ def line_points(geoms, step=0.03):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--worldpop", help="optional population raster (GeoTIFF, WGS84)")
+    ap.add_argument("--worldpop", nargs="+", help="optional population raster(s) (GeoTIFF, WGS84); several are summed, e.g. one per country")
     a = ap.parse_args()
 
     basin = shape(json.load(open(os.path.join(OUT, "basin.geojson")))["features"][0]["geometry"])
@@ -173,25 +173,26 @@ def main():
 
     if a.worldpop:
         import rasterio
-        from rasterio.windows import from_bounds
-        with rasterio.open(a.worldpop) as src:
-            arr = src.read(1, masked=True).filled(0)
-            T = src.transform
-            rows, cols = np.nonzero(arr > 0)
-            lon = T.c + (cols + 0.5) * T.a
-            lat = T.f + (rows + 0.5) * T.e
-            gi = np.floor((lat - ys[0] + RES / 2) / RES).astype(int)
-            gj = np.floor((lon - xs[0] + RES / 2) / RES).astype(int)
-            ok = (gi >= 0) & (gi < len(ys)) & (gj >= 0) & (gj < len(xs))
-            base = np.zeros(X.shape)
-            np.add.at(base, gi[ok] * len(xs) + gj[ok], arr[rows[ok], cols[ok]])
+        base = np.zeros(X.shape)
+        for path in a.worldpop:  # one raster per country: per-country files do not overlap, so sum them
+            with rasterio.open(path) as src:
+                arr = src.read(1, masked=True).filled(0)
+                T = src.transform
+                rows, cols = np.nonzero(arr > 0)
+                lon = T.c + (cols + 0.5) * T.a
+                lat = T.f + (rows + 0.5) * T.e
+                gi = np.floor((lat - ys[0] + RES / 2) / RES).astype(int)
+                gj = np.floor((lon - xs[0] + RES / 2) / RES).astype(int)
+                ok = (gi >= 0) & (gi < len(ys)) & (gj >= 0) & (gj < len(xs))
+                np.add.at(base, gi[ok] * len(xs) + gj[ok], arr[rows[ok], cols[ok]])
         raster_year = int(os.environ.get("WORLDPOP_YEAR", 2020))
         for y in YEARS:
             for i, k in enumerate(keys):
                 m = cid == i
                 f = nat_pop(k, y) / max(base[m].sum(), 1)
                 pop[y][m] = base[m] * f
-        mode = f"WorldPop raster ({os.path.basename(a.worldpop)}, {raster_year}) projected with UN national growth"
+        names = os.path.basename(a.worldpop[0]) if len(a.worldpop) == 1 else f"{len(a.worldpop)} country rasters"
+        mode = f"WorldPop {raster_year} 1 km UN-adjusted ({names}), scaled to UN national totals per year"
     else:
         mode = "modeled proxy (towns + river/road-weighted rural), calibrated to UN national totals"
 

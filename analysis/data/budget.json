@@ -3,9 +3,9 @@
  "lines_musd": {
   "LEO IoT constellation": 265,
   "GEO broadcast payload": 80,
-  "Ranger stations (sweet spot, mix, 2041)": 45.72,
-  "Community receivers (S3-07 threshold)": 9.1,
-  "Commercial backhaul": 0.9
+  "Ranger stations (sweet spot, mix, 2041)": 36.63,
+  "Community receivers (S3-07 threshold)": 9.0,
+  "Commercial backhaul": 0.8
  },
  "excluded": [
   "Staff salaries (set aside)",
@@ -14,17 +14,17 @@
  "sweet_spots": [
   {
    "run": "mix_2041",
-   "stations": 97,
-   "station_cost_musd": 45.72,
-   "pct_people_covered": 46.55
+   "stations": 78,
+   "station_cost_musd": 36.63,
+   "pct_people_covered": 40.61
   },
   {
    "run": "radio_2041",
-   "stations": 101,
-   "station_cost_musd": 49.05,
-   "pct_people_covered": 48.47
+   "stations": 74,
+   "station_cost_musd": 36.0,
+   "pct_people_covered": 41.49
   }
  ],
- "total_musd": 400.7,
- "over_cap_musd": 0.7
+ "total_musd": 391.4,
+ "over_cap_musd": -8.6
 }

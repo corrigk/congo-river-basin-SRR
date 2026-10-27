@@ -41,17 +41,37 @@ PA = [  # name, lat, lon, country, radius_km (rough size for placement only)
     ("Mahale Mountains NP", -6.2, 29.9, "Tanzania", 30), ("Gombe Stream NP", -4.7, 29.6, "Tanzania", 8),
     ("Kasanka NP", -12.6, 30.2, "Zambia", 15),
 ]
-pa = [{"name": n, "lat": a, "lon": b, "country": c, "approx_radius_km": r} for n, a, b, c, r in PA]
-json.dump({"_note": "APPROXIMATE centroids and sizes for display and sensor placement only. Replace with WDPA polygons (protectedplanet.net) in production.",
-           "areas": pa}, open(os.path.join(OUT, "protected_areas.json"), "w"), indent=1)
+WDPA = os.path.join(HERE, "..", "raw", "wdpa", "protected_areas_wdpa.geojson")  # from prep_wdpa.py
+if os.path.exists(WDPA):
+    # Real WDPA polygons. near_pa(k) keeps the centroid version's meaning, scaled to a 50 km reference
+    # radius: k = 1 inside, k = 1.4 up to 20 km outside the boundary, k = 0.8 at least 10 km inside it.
+    import shapely
+    from shapely.geometry import shape
+    from shapely.ops import unary_union
+    W = json.load(open(WDPA, encoding="utf-8"))
+    pa_union = unary_union([shape(f["geometry"]) for f in W["features"]])
 
+    def near_pa(maxk=1.0):
+        d = (maxk - 1.0) * 50 / 111.32
+        return shapely.contains_xy(pa_union if d == 0 else pa_union.buffer(d), lon, lat)
 
-def near_pa(maxk=1.0):
-    m = np.zeros(len(idx), bool)
-    for p in pa:
-        d = np.hypot((lon - p["lon"]) * math.cos(math.radians(p["lat"])), lat - p["lat"]) * 111.32
-        m |= d <= p["approx_radius_km"] * maxk
-    return m
+    pa = [{k: f["properties"][k] for k in ("name", "lat", "lon", "country", "desig", "iucn", "area_km2_in_basin", "wdpaid")}
+          | {"geometry": f["geometry"]} for f in W["features"]]
+    json.dump({"_note": f"WDPA polygons ({W['release']} release), nationally designated terrestrial protected areas of "
+                        f"at least 100 km2 inside the basin, clipped and simplified (0.02 deg). Used for display and sensor placement.",
+               "source": "wdpa", "release": W["release"], "areas": pa},
+              open(os.path.join(OUT, "protected_areas.json"), "w"), separators=(",", ":"))
+else:
+    pa = [{"name": n, "lat": a, "lon": b, "country": c, "approx_radius_km": r} for n, a, b, c, r in PA]
+    json.dump({"_note": "APPROXIMATE centroids and sizes for display and sensor placement only. Replace with WDPA polygons (protectedplanet.net) in production.",
+               "source": "approximate", "areas": pa}, open(os.path.join(OUT, "protected_areas.json"), "w"), indent=1)
+
+    def near_pa(maxk=1.0):
+        m = np.zeros(len(idx), bool)
+        for p in pa:
+            d = np.hypot((lon - p["lon"]) * math.cos(math.radians(p["lat"])), lat - p["lat"]) * 111.32
+            m |= d <= p["approx_radius_km"] * maxk
+        return m
 
 
 MINING = [("Kolwezi", -10.72, 25.47), ("Likasi", -10.98, 26.73), ("Lubumbashi", -11.66, 27.48),

@@ -72,6 +72,7 @@ def write(name, obj):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--basin", help="optional authoritative basin polygon (GeoJSON)")
+    ap.add_argument("--basin-name", default="user-supplied", help="where the --basin outline comes from (recorded in basin.geojson)")
     a = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
 
@@ -86,7 +87,7 @@ def main():
         with open(a.basin) as f:
             gj = json.load(f)
         basin = unary_union([shape(x["geometry"]) for x in gj.get("features", [gj])])
-        source = "user-supplied"
+        source = a.basin_name
     else:
         import shapely
         pts = []
@@ -115,9 +116,8 @@ def main():
     basin_area = area_km2(basin)
     print(f"basin area {basin_area/1e6:.2f} M km2 ({source})")
     write("basin.geojson", fc([{"type": "Feature", "geometry": round_geom(basin, 3),
-                                "properties": {"name": "Congo River Basin", "area_km2": round(basin_area),
-                                               "source": source,
-                                               "replace_with": "HydroBASINS level 3 Congo polygon (hydrosheds.org) or the repo's existing outline"}}]))
+                                "properties": {"name": "Congo River Basin", "area_km2": round(basin_area), "source": source}
+                                | ({} if a.basin else {"replace_with": "HydroBASINS level 3 Congo polygon (hydrosheds.org) or the repo's existing outline"})}]))
 
     # rivers clipped to basin, simplified
     rv = []

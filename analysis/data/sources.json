@@ -1,29 +1,113 @@
 {
-  "_note": "Sources used for sourced values. Everything else in the data files is labeled as an assumption.",
-  "sources": {
-    "rfp": {"title": "RFP S-3 BASINLINK & BASINCAST (class document)", "url": null},
-    "natural_earth": {"title": "Natural Earth 10m vectors (rivers, lakes, roads, countries, populated places)", "url": "https://github.com/nvkelso/natural-earth-vector"},
-    "geonames": {"title": "GeoNames cities >= 15,000 (via geonamescache)", "url": "https://www.geonames.org/"},
-    "worldometers_africa": {"title": "Worldometers: Countries in Africa by population (2026, UN WPP)", "url": "https://www.worldometers.info/population/countries-in-africa-by-population/"},
-    "worldometers_drc": {"title": "Worldometers: DR Congo population and UN medium-variant forecast", "url": "https://www.worldometers.info/world-population/democratic-republic-of-the-congo-population/"},
-    "worldometers_cities": {"title": "Worldometers: Largest cities in DR Congo (UN World Urbanization Prospects 2025)", "url": "https://www.worldometers.info/population/largest-cities-in-democratic-republic-of-the-congo/"},
-    "raxio": {"title": "Raxio inaugurates $30M DRC data center (Connecting Africa, Aug 2024)", "url": "https://www.connectingafrica.com/data-centers/raxio-inaugurates-30m-drc-data-center"},
-    "raxio_expansion": {"title": "Raxio Group to expand data centres in DR Congo", "url": "https://communicationsafrica.com/internet/raxio-group-to-expand-data-centres-in-dr-congo"},
-    "oadc": {"title": "OADC launches first data centre in DRC", "url": "https://www.osiris.sn/oadc-lance-son-premier-centre-de-donnees-en-rdc-en-partenariat-avec-texaf.html"},
-    "wacs": {"title": "West Africa Cable System (Wikipedia)", "url": "https://en.wikipedia.org/wiki/West_Africa_Cable_System"},
-    "m23": {"title": "AFC/M23 say they will not withdraw from Goma, Bukavu (New Times, Jan 2026)", "url": "https://allafrica.com/stories/202601270016.html"},
-    "starlink_drc_license": {"title": "Starlink secures operating license in DRC (Space in Africa, May 2025)", "url": "https://spaceinafrica.com/2025/05/03/starlink-secures-operating-license-in-drc-set-to-launch-services/"},
-    "starlink_drc_price": {"title": "Starlink live in DRC (Connecting Africa, June 2025)", "url": "https://www.connectingafrica.com/connectivity/starlink-live-in-drc"},
-    "starlink_car": {"title": "Starlink goes live in the Central African Republic (Space in Africa, March 2026)", "url": "https://spaceinafrica.com/2026/03/16/starlink-goes-live-in-the-central-african-republic/"},
-    "airtel_dtc": {"title": "Airtel Africa partners with SpaceX on direct-to-cell (Space in Africa, Dec 2025)", "url": "https://spaceinafrica.com/2025/12/17/airtel-africa-partners-with-spacex-to-bring-satellite-to-mobile-connectivity-across-africa/"},
-    "kineis": {"title": "Kineis raises EUR 100M to finance IoT constellation (Via Satellite, Feb 2020)", "url": "https://www.satellitetoday.com/iiot/2020/02/04/french-company-kineis-raises-100m-euro-to-finance-iot-constellation/"},
-    "rideshare": {"title": "Satellite ridesharing market analysis 2026 (New Space Economy)", "url": "https://newspaceeconomy.ca/2026/02/27/satellite-ridesharing-market-analysis-2026/"},
-    "hosted_payload": {"title": "Hosted payload (Wikipedia; CHIRP cost)", "url": "https://en.wikipedia.org/wiki/Hosted_payload"},
-    "afristar": {"title": "AfriStar (Wikipedia)", "url": "https://en.wikipedia.org/wiki/AfriStar"},
-    "iridium_sbd": {"title": "Iridium SBD service plan (Satmodo)", "url": "https://www.satmodo.com/iridium-short-burst-data-service-12-kb-included-2-49-kb-26-99-month"},
-    "gsma_iot": {"title": "GSMA: Expanding the Internet of Things everywhere (Dec 2024)", "url": "https://www.gsma.com/get-involved/gsma-foundry/wp-content/uploads/2024/12/Expanding-the-Internet-of-Things-Everywhere.pdf"},
-    "fedsig_modulator": {"title": "Federal Signal Modulator high-powered speaker array (spec)", "url": "https://www.fedsig.com/product/modulator-high-powered-speaker-array/"},
-    "darley_siren": {"title": "Sentry 15V2T outdoor warning siren (Darley, list price)", "url": "https://shop.darley.com/product/sentry-siren-15v2t-15-hp-onephase-outdoor-warning-siren-with-weatherproof-housing/01t2E00000QZcjTQAT"},
-    "matebe": {"title": "Buffett-financed small hydro project opens in DRC (Renewable Energy World, 2015)", "url": "https://www.renewableenergyworld.com/hydro-power/small-hydro-power/buffett-financed-13-6-mw-small-hydro-project-opens-in-drc/"}
+ "_note": "Sources used for sourced values. Everything else in the data files is labeled as an assumption.",
+ "sources": {
+  "rfp": {
+   "title": "RFP S-3 BASINLINK & BASINCAST (class document)",
+   "url": null
+  },
+  "natural_earth": {
+   "title": "Natural Earth 10m vectors (rivers, lakes, roads, countries, populated places)",
+   "url": "https://github.com/nvkelso/natural-earth-vector"
+  },
+  "geonames": {
+   "title": "GeoNames cities >= 15,000 (via geonamescache)",
+   "url": "https://www.geonames.org/"
+  },
+  "worldometers_africa": {
+   "title": "Worldometers: Countries in Africa by population (2026, UN WPP)",
+   "url": "https://www.worldometers.info/population/countries-in-africa-by-population/"
+  },
+  "worldometers_drc": {
+   "title": "Worldometers: DR Congo population and UN medium-variant forecast",
+   "url": "https://www.worldometers.info/world-population/democratic-republic-of-the-congo-population/"
+  },
+  "worldometers_cities": {
+   "title": "Worldometers: Largest cities in DR Congo (UN World Urbanization Prospects 2025)",
+   "url": "https://www.worldometers.info/population/largest-cities-in-democratic-republic-of-the-congo/"
+  },
+  "raxio": {
+   "title": "Raxio inaugurates $30M DRC data center (Connecting Africa, Aug 2024)",
+   "url": "https://www.connectingafrica.com/data-centers/raxio-inaugurates-30m-drc-data-center"
+  },
+  "raxio_expansion": {
+   "title": "Raxio Group to expand data centres in DR Congo",
+   "url": "https://communicationsafrica.com/internet/raxio-group-to-expand-data-centres-in-dr-congo"
+  },
+  "oadc": {
+   "title": "OADC launches first data centre in DRC",
+   "url": "https://www.osiris.sn/oadc-lance-son-premier-centre-de-donnees-en-rdc-en-partenariat-avec-texaf.html"
+  },
+  "wacs": {
+   "title": "West Africa Cable System (Wikipedia)",
+   "url": "https://en.wikipedia.org/wiki/West_Africa_Cable_System"
+  },
+  "m23": {
+   "title": "AFC/M23 say they will not withdraw from Goma, Bukavu (New Times, Jan 2026)",
+   "url": "https://allafrica.com/stories/202601270016.html"
+  },
+  "starlink_drc_license": {
+   "title": "Starlink secures operating license in DRC (Space in Africa, May 2025)",
+   "url": "https://spaceinafrica.com/2025/05/03/starlink-secures-operating-license-in-drc-set-to-launch-services/"
+  },
+  "starlink_drc_price": {
+   "title": "Starlink live in DRC (Connecting Africa, June 2025)",
+   "url": "https://www.connectingafrica.com/connectivity/starlink-live-in-drc"
+  },
+  "starlink_car": {
+   "title": "Starlink goes live in the Central African Republic (Space in Africa, March 2026)",
+   "url": "https://spaceinafrica.com/2026/03/16/starlink-goes-live-in-the-central-african-republic/"
+  },
+  "airtel_dtc": {
+   "title": "Airtel Africa partners with SpaceX on direct-to-cell (Space in Africa, Dec 2025)",
+   "url": "https://spaceinafrica.com/2025/12/17/airtel-africa-partners-with-spacex-to-bring-satellite-to-mobile-connectivity-across-africa/"
+  },
+  "kineis": {
+   "title": "Kineis raises EUR 100M to finance IoT constellation (Via Satellite, Feb 2020)",
+   "url": "https://www.satellitetoday.com/iiot/2020/02/04/french-company-kineis-raises-100m-euro-to-finance-iot-constellation/"
+  },
+  "rideshare": {
+   "title": "Satellite ridesharing market analysis 2026 (New Space Economy)",
+   "url": "https://newspaceeconomy.ca/2026/02/27/satellite-ridesharing-market-analysis-2026/"
+  },
+  "hosted_payload": {
+   "title": "Hosted payload (Wikipedia; CHIRP cost)",
+   "url": "https://en.wikipedia.org/wiki/Hosted_payload"
+  },
+  "afristar": {
+   "title": "AfriStar (Wikipedia)",
+   "url": "https://en.wikipedia.org/wiki/AfriStar"
+  },
+  "iridium_sbd": {
+   "title": "Iridium SBD service plan (Satmodo)",
+   "url": "https://www.satmodo.com/iridium-short-burst-data-service-12-kb-included-2-49-kb-26-99-month"
+  },
+  "gsma_iot": {
+   "title": "GSMA: Expanding the Internet of Things everywhere (Dec 2024)",
+   "url": "https://www.gsma.com/get-involved/gsma-foundry/wp-content/uploads/2024/12/Expanding-the-Internet-of-Things-Everywhere.pdf"
+  },
+  "fedsig_modulator": {
+   "title": "Federal Signal Modulator high-powered speaker array (spec)",
+   "url": "https://www.fedsig.com/product/modulator-high-powered-speaker-array/"
+  },
+  "darley_siren": {
+   "title": "Sentry 15V2T outdoor warning siren (Darley, list price)",
+   "url": "https://shop.darley.com/product/sentry-siren-15v2t-15-hp-onephase-outdoor-warning-siren-with-weatherproof-housing/01t2E00000QZcjTQAT"
+  },
+  "matebe": {
+   "title": "Buffett-financed small hydro project opens in DRC (Renewable Energy World, 2015)",
+   "url": "https://www.renewableenergyworld.com/hydro-power/small-hydro-power/buffett-financed-13-6-mw-small-hydro-project-opens-in-drc/"
+  },
+  "hydrosheds": {
+   "title": "HydroSHEDS HydroBASINS level 6 (Africa), dissolved to the Congo basin outline (Lehner & Grill 2013)",
+   "url": "https://www.hydrosheds.org/products/hydrobasins"
+  },
+  "worldpop_2020": {
+   "title": "WorldPop 2020 population counts, 1 km, UN-adjusted, per country (CC BY 4.0). WorldPop (www.worldpop.org), University of Southampton, doi:10.5258/SOTON/WP00671",
+   "url": "https://hub.worldpop.org/geodata/listing?id=75"
+  },
+  "wdpa": {
+   "title": "UNEP-WCMC and IUCN (2026), Protected Planet: The World Database on Protected Areas (WDPA) and World Database on OECMs (WDOECM) [Online], October 2026, Cambridge, UK: UNEP-WCMC and IUCN. Non-commercial use.",
+   "url": "https://www.protectedplanet.net"
   }
+ }
 }
