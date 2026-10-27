@@ -1,66 +1,59 @@
 # Congo River Basin SRR: RFP S-3 BASINLINK & BASINCAST
 
 Live demo for our System Requirements Review. It narrows the Congo Basin system-of-systems ConOps to what
-**RFP S-3** (space-based communications for sensors, responders and communities) must accomplish, which requirements
-drive it, and which gaps it closes. Flooding is one worked example; the same comms layer serves every hazard.
+**RFP S-3** (space-based communications for sensors, responders and communities) must do, how we would build it,
+what it costs, and which requirements drive it. Flooding is the worked example; the same comms layer serves every hazard.
 
-**Live:** https://corrigk.github.io/congo-river-basin-SRR/ · presenter link: https://corrigk.github.io/congo-river-basin-SRR/?present#scenario/A/1
+**Live:** https://corrigk.github.io/congo-river-basin-SRR/ · presenter link: https://corrigk.github.io/congo-river-basin-SRR/?present#flow
 
-It is a concept visualization, not a live system. Requirement text and numbers are verbatim from the RFP; anything
-we inferred (traceability, interface roles, latency sub-allocations, map positions) is labelled *Proposed*, *TBR* or
-*illustrative* on the page. The page is orbit-neutral: no orbit or architecture is shown as decided.
+It is a concept visualization, not a live system. Requirement text and numbers are verbatim from the RFP (Appendix A
+of `docs/brief-v2.md`). Everything else carries a visible label on the page: **Assumption**, **Modeled proxy**,
+**Proposed allocation, TBR** or **Notional baseline, trade study pending**. The Sources drawer (**S**) lists every
+citation and explains the labels.
 
 ## Tabs
 
 | Key | Tab | What it shows |
 | --- | --- | --- |
-| 1 | **S-3 Overview** | Core gap (data out, warnings in), headline requirements, mission objectives, S-3's role in the nine-stage loop, scenarios |
-| 2 | **Requirements** | The ten Level 0 requirements with a threshold / objective toggle; select one for what it traces to and where it applies |
-| 3 | **Scenario** | Click-to-advance scenarios on the map with the latency budget; A flood warning chain, B routine collection, C degraded operations, D non-flood hazard |
-| 4 | **Interfaces** | S-3 in the centre, partner RFPs around it, what we carry and in which direction |
-| 5 | **Trades & Open Items** | Open trades, TBR list, constraints |
-| 6 | **Decomposition** | The requirements decomposition (MO → Level 4) from [congo-srr-requirements](https://corrigk.github.io/congo-srr-requirements/): thread tree or radial, click a block to light its thread, segment filter. Each S3-xx requirement panel has a "Show in the requirements decomposition" link, and blocks link back to scenario steps, interfaces, trades and RFP requirements. |
+| 1 | **Function flow** | The Level 1 functional flow (F1–F8) for any hazard, who performs each function, which requirement it serves, the latency budget, and **Play**: the click-through scenarios on the map (A flood warning chain, B routine collection, C degraded operations, D non-flood hazard) |
+| 2 | **ConOps map** | 2D map: population or station coverage by year, hub and regional databases (with the siting rationale), ranger stations, infrastructure, protected areas, sensors |
+| 3 | **Stations** | Ranger-station optimizer: coverage against station count, the sweet spot (78), hydro break-even, station kit |
+| 4 | **Sensors** | Sensor network by type, placement, and the S3-02 terminals / data check |
+| 5 | **Space & backhaul** | LEO revisit, GEO broadcast, backhaul options (Starlink in the notional baseline) |
+| 6 | **Cost & resilience** | 15-year life-cycle cost against the $400M cap, and what happens when the hub, a satellite, the grid or a station fails |
+| 7 | **Requirements** | Mission & gap, the ten Level 0 requirements (threshold / objective), and the decomposition MO → L4 |
+
+The station slider, year and coverage mode are shared by the map, optimizer and budget. Every chart has a
+**Table** button.
 
 ## Presenting
 
 | Key | Action |
 | --- | --- |
-| 1 – 6 | Switch tab |
+| 1 – 7 | Switch tab |
 | → · PgDn · Space | Next scenario step (clickers work) |
 | ← · PgUp | Previous step |
 | R | Reset the scenario to step 1 |
+| Esc | Close panel; in a scenario, back to Function flow |
 | T | Threshold / objective values everywhere |
-| M | Next map: 3D globe · ground view · schematic |
-| G | Ground view |
-| O | Ground view satellite: pass overhead (LEO/MEO) / fixed in sky (GEO) |
-| P | Presenter mode: projector contrast, larger type, no keyboard hints (remembered) |
-| F · ? · Esc | Fullscreen · shortcuts · close panel |
+| M · G · O | Next map (globe · ground · schematic) · ground view · satellite pass / fixed |
+| P | Presenter mode: larger type, higher contrast, no keyboard hints (remembered) |
+| L | Light / dark theme (follows the system setting until you pick one; remembered) |
+| S | Sources drawer |
+| F · ? | Fullscreen · shortcuts |
 
-**Deep links** open a view directly, so a slide can link straight to a step:
-`…/#overview`, `…/#requirements`, `…/#scenario/A/5`, `…/#interfaces`, `…/#trades`.
-Add `?present` to open in presenter mode and `?offline` to skip the online satellite imagery
-(`…/?present&offline#scenario/A/1`). Laid out for 1280×720 and up; also checked at 1024×768 and phone width.
+**Deep links** open a view directly, so a slide can link straight to it: `…/#flow/F2`, `…/#map`, `…/#stations`,
+`…/#budget`, `…/#requirements`, `…/#overview`, `…/#decomposition`, `…/#scenario/A/5`. Add `?present` for presenter
+mode and `?offline` to skip the online satellite imagery. Laid out for 1280×720 and up (also 1024 px and phone width).
 
 **Before presenting on a computer you don't control:** open the page once and wait for the badge in the top bar to
-read **Ready offline** (or click **Preload for offline**). After that the page and the 3D globe work with no network.
-If anything goes wrong, `srr-offline.html` is a single file with everything inside: copy it to a USB stick and
-double-click it (schematic map only).
-
-## Ground view
-
-The Scenario tab has three maps: the 3D globe, an eye-level **Ground** view, and the schematic. The ground view is an
-illustrative low-poly scene on an Ubangi riverbank (Three.js, self-hosted, about 130 kB compressed, cached offline):
-the river gauge under the canopy, the ranger station with its two-way terminal, the village's community receiver,
-a radio tower in the distance, and the satellite overhead. Every scenario step drives it from the same data as the maps:
-beams for links, the gauge alarm, the receiver playing the alert, the tower going dark in degraded operations, smoke at
-the incursion site, A-2's drone and A-1's platform. Nodes that are far away (gateway, COP, agency, other partners) are
-labelled "beyond the horizon".
-
-The **Satellite** toggle shows the open orbit trade instead of deciding it: *Pass overhead* (LEO/MEO; between passes
-the terminal shows "Waiting for a satellite pass", which is the "terminal wait" segment of the latency budget) or
-*Fixed in sky* (GEO). The scene is not to scale and time is compressed; the page says so.
+read **Ready offline** (about 30 seconds on slow Wi-Fi; or click **Preload for offline**). After that everything,
+including the 3D globe, works with no network. If anything goes wrong, `srr-offline.html` is one file with the whole
+page inside (about 4 MB): copy it to a USB stick and double-click it (schematic map only).
 
 ## Run it locally
+
+Node 20+.
 
 ```bash
 npm install
@@ -76,78 +69,84 @@ node scripts/serve.mjs --port 4181 --kbps 400 --latency 400   # imitate bad Wi-F
 node scripts/serve.mjs --port 4182 --block globemap            # imitate the globe failing to load
 ```
 
-All paths are relative (`base: './'`), so the same build works on GitHub Pages under the repo subpath, on
-`localhost`, and from any folder behind a static server. Opening `dist/index.html` straight from disk does not work
-(browsers block ES modules over `file://`); use `srr-offline.html` for that. Pushing to `main` deploys to GitHub Pages
-(`.github/workflows/deploy.yml`).
+Stop the server to imitate "network gone". Use a new port for a clean test: each port is its own origin with its own
+offline cache. Opening `dist/index.html` from disk does not work (browsers block ES modules over `file://`); use
+`srr-offline.html` for that. Pushing to `main` deploys to GitHub Pages (`.github/workflows/deploy.yml`).
 
-## Update the Decomposition tab
+## Rerun the analysis pipeline
 
-The requirements are edited in the separate [congo-srr-requirements](https://github.com/corrigk/congo-srr-requirements)
-repo. This page ships a snapshot of them (so the tab works offline and on a first visit) and, when online, shows the
-newer live baseline from the requirements site instead. To refresh the bundled snapshot after finalizing a baseline
-there (with both repos side by side):
+The numbers in sections 2–6 come from the Python pipeline in `analysis/` (inputs, commands and the real-data rerun
+notes are in [analysis/README.md](analysis/README.md)). After a rerun, rebuild the files the page loads:
 
 ```bash
-npm run sync:decomp
+npm run data:page      # analysis/data -> src/s3/v2/data (core, geo, grid, pop-<year>, stations-<year>)
 ```
 
-Then commit `src/s3/decomp/snapshot.json`. `src/s3/decomp/model.js` is a copy of that repo's `src/model.js`.
+Sections load only the files they need, so the first paint stays small. The station slider defaults to the sweet
+spot in `budget.json`, so it follows the data. Commit both `analysis/data` and `src/s3/v2/data`.
 
-## Add or edit a scenario
+## Edit functions and requirements
 
-Scenarios are data: `src/s3/scenarios.json`. No rendering code changes are needed.
-
-1. Add any new map points to `nodes` (`label`, `sub`, `kind`, `at: [lon, lat]`, and `rfp` for a partner system).
-   Kinds: `sensor`, `field`, `space`, `ground`, `authority`, `receiver`, `responder`, `outage`, `hazard`, `partner`.
-2. Append an object to `scenarios` with `id` (one letter), `title`, `pov`, `summary`, `reqs`, optional `latency: true`
-   (shows the budget bars), and `steps`.
-3. Each step has `title`, `text`, optional `before` (the "today, without S-3" contrast), `reqs` (requirement IDs),
-   `mo`, `stages` (nine-stage keys), `show` (node IDs on the map), `links` (`[from, to, kind]`, kind
-   `up | down | two | cue | relay`), `focus` (nodes to frame), and optionally `state`, `area` (draw the S3-06 alert
-   footprint), `latency` (`{ leg, segments }`), `interfaces` (`[{ id, note }]`) and `note`.
-
-The selector, step list, panel, map and keyboard pick it up automatically. Requirement text lives in
-`src/s3/content.js`, the single source of truth for every number on the page.
+- **Functions (F1–F8)**: `analysis/data/functions.json`: names, performers, inputs and outputs, the requirement each
+  serves, and the latency allocation. The Function flow tab and the scenario latency budget both read it
+  (`latency_budgets` sets which functions make up S3-03 and S3-05). Run `npm run data:page` afterwards.
+- **Level 0 requirements, objectives, gap facts, constraints, TBR list**: `src/s3/content.js`, the single source of
+  truth for every RFP number on the page. Copy text exactly from the RFP.
+- **Scenarios**: `src/s3/scenarios.json`. Each step has `title`, `text`, `fn` (function IDs), `reqs`, `mo`, `stages`,
+  `show` and `links` (map nodes and beams), `focus`, and optionally `before`, `state`, `area`, `latency`, `note`.
+  New map points go in `nodes` (`label`, `sub`, `kind`, `at: [lon, lat]`). No rendering code changes are needed.
+- **Decomposition (MO → L4)**: edited in the separate [congo-srr-requirements](https://github.com/corrigk/congo-srr-requirements)
+  repo. This page ships a snapshot (so the tab works offline) and, when online, shows the newer live baseline. After
+  finalizing a baseline there, with both repos side by side: `npm run sync:decomp`, then commit
+  `src/s3/decomp/snapshot.json`.
 
 ## How the offline cache works
 
-- **First visit.** The page needs about 105 kB to render (HTML, one JS file, one CSS file, five fonts) and draws the
-  schematic map with no WebGL or network. The 3D globe (CesiumJS, about 1.5 MB compressed) loads afterwards in the
-  background and takes over when ready. All libraries and fonts are self-hosted; nothing loads from a CDN.
+- **First visit.** The page renders from one HTML, one JS and one CSS file plus fonts, with no WebGL or network
+  needed for the analysis tabs. The 3D globe (CesiumJS) loads afterwards in the background. All libraries and fonts
+  are self-hosted; nothing loads from a CDN.
 - **Service worker** (`dist/sw.js`, generated from `scripts/sw-template.js` by `scripts/sw-plugin.mjs` with the list
-  of files the build actually produced):
-  - on install it caches the **core** files (about 0.25 MB), so a second visit works offline;
-  - once the globe has loaded it caches the **globe** files too (about 7 MB uncompressed); **Preload for offline**
-    does the same on demand and shows progress;
+  of files the build produced):
+  - on install it caches the **core**: the page, the section code and all section data (about 3 MB), so a second
+    visit works offline on every tab;
+  - once the globe has loaded it caches the **globe** files too (about 7.5 MB); **Preload for offline** does the
+    same on demand and shows progress;
   - files are served cache-first; the page itself is served from cache and refreshed in the background, so a new
-    deploy shows up on the next reload.
+    deploy shows up on the next reload. A new build gets a new cache and the old one is deleted.
 - **Badge** (top bar): *Loading…* → *Preload for offline* (page cached, globe not yet) → *Ready offline* (everything).
+- **Partly cached globe.** If the connection drops while the globe is being saved and the server can't be reached,
+  the scenario starts on the schematic map and says "Offline and the globe is not cached" instead of showing an
+  empty globe.
 - **Imagery.** The globe always has Cesium's bundled Natural Earth II basemap. Esri World Imagery is layered on top
-  only after a probe tile loads, so with no internet the globe stays on the bundled basemap instead of failing. Esri
-  tiles are not bulk-cached, to stay within Esri's terms of use.
-- **Fallbacks.** No WebGL, or the globe fails to load: the schematic map stays, with a short notice. You can switch
-  maps at any time with **M**.
+  only after a probe tile loads; Esri tiles are not bulk-cached, to stay within Esri's terms of use.
+- **Other fallbacks.** No WebGL, or the globe fails to load: the schematic map stays, with a short notice.
+
+## Themes and accessibility
+
+Dark is the default; light follows the system setting or **L**. Colours are tokens in `src/style.css` (site) and
+`src/s3/v2/v2.css` (charts and map ramps, from the brief's prototype). The map and scenario stage (`.stage`) keep
+dark tokens in both themes. Text meets WCAG AA contrast in both themes; everything works by keyboard (including the
+database nodes on the map); charts have table views and the maps have text descriptions.
 
 ## Code map
 
-- `src/s3/content.js`: requirements, objectives, gap facts, constraints, trades, TBR list, latency budget, partner RFPs
-- `src/s3/scenarios.json`: scenario steps and map nodes
-- `src/s3/views.js`: HTML for every tab and panel
-- `src/main.js`: state, routing (`#scenario/A/5`), tabs, keyboard, map switching
-- `src/s3/schematic.js`: SVG schematic map (geometry precomputed by `scripts/build-schematic.mjs`)
-- `src/s3/groundmap.js`: ground view (Three.js), same `render(view)` API
-- `src/s3/globemap.js`: 3D globe adapter (same `render(view)` API), built on `src/globe.js`, `src/riverflow.js`, `src/fx.js`
-- `src/s3/offline.js`: service-worker registration and the offline badge
-- `src/style.css` (`:root` colour tokens, shared components) and `src/s3/s3.css`
+- `src/main.js`: state, routing, tabs, keyboard, theme, map switching
+- `src/s3/v2/sections.js`: the six analysis sections; `mapcanvas.js` (2D map), `ui.js` (charts, controls), `data.js` (loaders)
+- `src/s3/views.js`: Requirements views, scenario card and panels, Sources drawer, help
+- `src/s3/content.js`: RFP requirements and other fixed text; `src/s3/scenarios.json`: scenarios
+- `src/s3/globemap.js`, `src/globe.js`: 3D globe; `src/s3/groundmap.js`: ground view; `src/s3/schematic.js`: schematic map
+- `src/s3/decomp/`: decomposition tab; `src/s3/offline.js`: service worker registration and the badge
+- `analysis/`: data pipeline (Python); `scripts/`: page data, service worker, test server
 
-## Data
+## Data and licences
 
 | Layer | Source |
 | --- | --- |
-| Basin boundary, river network | HydroSHEDS HydroBASINS / HydroRIVERS (Africa) |
-| National borders | Natural Earth 50m |
+| Basin outline | HydroSHEDS HydroBASINS (Lehner & Grill 2013) |
+| Population | WorldPop 2020, 1 km, UN-adjusted (CC BY 4.0), projected with UN growth |
+| Protected areas | UNEP-WCMC and IUCN, WDPA, October 2026 (**non-commercial use only**; cited on the page) |
+| Rivers, roads, borders, places | Natural Earth (public domain), GeoNames |
 | Online imagery | Esri World Imagery (no token); offline: Cesium's bundled Natural Earth II |
 
-To regenerate `src/data/*.json` and the schematic geometry, see the header of `scripts/build-data.mjs`, then run
-`RAW=<folder> npm run data`.
+River-gauge sites are still a **modeled proxy** (rule-based) until the GRDC station list is obtained. All other
+citations are in `analysis/data/sources.json` and in the Sources drawer.
