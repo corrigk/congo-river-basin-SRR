@@ -555,3 +555,18 @@ button.sys-id:hover, .sys-id.is-hl { color: var(--gold); }
 @media (max-width: 1100px) { .dc-detail { width: 300px; } .dc-head { grid-template-columns: 1fr; } .dc-tools { justify-content: flex-start; } }
 @media (max-width: 860px) { .dc-body { flex-direction: column; padding: 0 12px 12px; } .dc-detail { width: auto; max-height: 40%; margin-top: 0; } .dc-title h2 { font-size: 30px; } }
 .dc-tools .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+
+/* ---------- brief v2 tab bar: six numbered sections + "More" for the earlier views ---------- */
+.t-n { display: inline-grid; place-items: center; width: 17px; height: 17px; margin-right: 6px; border-radius: 50%; font-size: 10.5px; font-weight: 600;
+  border: 1px solid currentColor; opacity: .7; }
+.tabs button[aria-selected="true"] .t-n { opacity: 1; }
+.more { position: relative; display: flex; }
+.more-btn { position: relative; z-index: 1; padding: 7px 12px; font-size: 13px; font-weight: 500; color: var(--muted); border-radius: 8px; white-space: nowrap; }
+.more-btn.is-on { color: var(--ink); }
+.more-btn:not(.is-on):hover { color: var(--text); }
+.more-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; display: flex; flex-direction: column; min-width: 220px; padding: 6px; }
+.more-menu button { text-align: left; padding: 7px 10px; border-radius: 7px; font-size: 13px; color: var(--muted); }
+.more-menu button:hover { background: rgba(255,255,255,.06); color: var(--text); }
+.more-menu button[aria-current="page"] { color: var(--gold); }
+.more-menu small { color: var(--faint); }
+@media (max-width: 1380px) { .brand-text { display: none; } }

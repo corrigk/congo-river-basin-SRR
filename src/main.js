@@ -9,7 +9,10 @@ import { createOffline } from './s3/offline.js';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
-const TABS = ['overview', 'requirements', 'scenario', 'interfaces', 'trades', 'decomposition'];
+// Brief v2: the six analysis sections are the main tabs (keys 1-6). The earlier views stay reachable from the
+// "More" menu until they are folded into Function flow and a Requirements tab.
+const SECTION_TABS = ['flow', 'map', 'stations', 'sensors', 'comms', 'budget'];
+const TABS = [...SECTION_TABS, 'overview', 'requirements', 'scenario', 'interfaces', 'trades', 'decomposition'];
 
 // ---------- static chrome ----------
 $('#brand-mark').innerHTML = MARK;
@@ -26,7 +29,7 @@ $('#help').innerHTML = V.helpView();
 
 // ---------- state ----------
 // tab, mode ('t' threshold | 'o' objective), scenario + step, side panel, highlighted requirement.
-const state = { tab: 'overview', mode: 't', sc: 'A', step: 0, panel: null, hl: null, dsel: null, dsrr: null };
+const state = { tab: 'flow', mode: 't', sc: 'A', step: 0, panel: null, hl: null, dsel: null, dsrr: null };
 
 // ---------- map ----------
 const panel = $('#panel');
@@ -127,6 +130,8 @@ addEventListener('hashchange', () => { readHash(); render(); });
 function render() {
   app.dataset.view = state.tab;
   app.dataset.mode = state.mode;
+  for (const b of $$('.more-menu [data-view]')) b.setAttribute('aria-current', b.dataset.view === state.tab ? 'page' : 'false');
+  $('.more-btn').classList.toggle('is-on', !SECTION_TABS.includes(state.tab));
   for (const t of $$('.tabs [role="tab"]')) {
     const on = t.dataset.view === state.tab;
     t.setAttribute('aria-selected', on);
@@ -140,6 +145,7 @@ function render() {
   renderScenario();
   renderHighlights();
   renderDecomposition();
+  renderAnalysis();
   writeHash();
 }
 
@@ -233,6 +239,15 @@ function renderHighlights() {
 }
 
 // ---------- actions ----------
+// ---------- brief v2 analysis sections (loaded with the first section opened) ----------
+let analysis = null;
+function renderAnalysis() {
+  if (!SECTION_TABS.includes(state.tab)) return;
+  (analysis ||= import('./s3/v2/sections.js')).then(m => { if (SECTION_TABS.includes(state.tab)) m.renderSection(state.tab, $(`#view-${state.tab}`)); });
+}
+let resizeT;
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (['map', 'budget'].includes(state.tab)) renderAnalysis(); }, 200); });
+
 function setTab(t) {
   if (!TABS.includes(t)) return;
   if (t !== state.tab) state.panel = null;
@@ -255,7 +270,7 @@ function openPanel(p) {
 }
 
 function moveInk() {
-  const t = $(`.tabs [data-view="${state.tab}"]`), ink = $('.tabs-ink');
+  const t = $(`.tabs [role="tab"][data-view="${state.tab}"]`) || $('.more-btn'), ink = $('.tabs-ink');
   if (t) Object.assign(ink.style, { width: `${t.offsetWidth}px`, transform: `translateX(${t.offsetLeft - 4}px)` });
 }
 addEventListener('resize', () => { moveInk(); if (state.tab === 'decomposition') decomp?.resize(); });
@@ -291,11 +306,12 @@ document.addEventListener('click', e => {
       case 'close': state.panel = null; render(); return;
       case 'help': toggleHelp(); return;
       case 'fullscreen': fullscreen(); return;
+      case 'more': { const m = $('.more-menu'); m.hidden = !m.hidden; t.setAttribute('aria-expanded', !m.hidden); return; }
       case 'preload': offline.preload(); return;
       case 'present': setPresent(!app.classList.contains('is-present')); return;
     }
   }
-  if (d.view) { setTab(d.view); return; }
+  if (d.view) { $('.more-menu').hidden = true; setTab(d.view); return; }
   if (d.mode) { setMode(d.mode); return; }
   if (d.map) { pickMap(d.map); return; }
   if (d.orbit) { groundMap?.setOrbit(d.orbit); pref.setOrbit(d.orbit); return; }
@@ -318,6 +334,7 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('g[data-system]')) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
 }, true);
 document.addEventListener('pointerdown', e => {
+  if (!e.target.closest('.more')) { $('.more-menu').hidden = true; $('.more-btn').setAttribute('aria-expanded', 'false'); }
   const h = $('#help');
   if (!h.hidden && !h.contains(e.target) && !e.target.closest('[data-act="help"]')) h.hidden = true;
 });
@@ -335,7 +352,7 @@ document.addEventListener('keydown', e => {
     next.focus(); setTab(next.dataset.view);
     return;
   }
-  if (/^[1-6]$/.test(k)) { setTab(TABS[+k - 1]); return; }
+  if (/^[1-6]$/.test(k)) { setTab(SECTION_TABS[+k - 1]); return; }
   if (state.tab === 'scenario' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); goStep(state.step + 1); return; }
   if (state.tab === 'scenario' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); goStep(state.step - 1); return; }
   if (lk === 'r') { reset(); return; }

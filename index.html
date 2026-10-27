@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230A0A0A' stroke='%23CFB991' stroke-width='2'/%3E%3Cpath d='M7 20.5c3-1 3.6-5.2 7-6.2s4.8 2.4 7.6 1.3c2-.8 2.6-3.1 3.4-4.6' fill='none' stroke='%237FCBEA' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
 </head>
 <body>
-  <div id="app" data-view="overview" data-mode="t" data-map="schematic">
+  <div id="app" data-view="flow" data-mode="t" data-map="schematic">
     <div id="map" class="map"><div class="map-sch"></div><div class="map-globe" aria-hidden="true"></div><div class="map-ground"></div></div>
 
     <header class="topbar">
@@ -22,12 +22,23 @@
       </div>
       <nav class="tabs" role="tablist" aria-label="View">
         <span class="tabs-ink"></span>
-        <button role="tab" id="tab-overview" data-view="overview" aria-controls="view-overview"><span class="t-long">S-3 </span>Overview</button>
-        <button role="tab" id="tab-requirements" data-view="requirements" aria-controls="view-requirements">Requirements</button>
-        <button role="tab" id="tab-scenario" data-view="scenario" aria-controls="view-scenario">Scenario</button>
-        <button role="tab" id="tab-interfaces" data-view="interfaces" aria-controls="view-interfaces">Interfaces</button>
-        <button role="tab" id="tab-trades" data-view="trades" aria-controls="view-trades">Trades<span class="t-long"> &amp; Open Items</span></button>
-        <button role="tab" id="tab-decomposition" data-view="decomposition" aria-controls="view-decomposition">Decomposition</button>
+        <button role="tab" id="tab-flow" data-view="flow" aria-controls="view-flow"><span class="t-n">1</span>Function flow</button>
+        <button role="tab" id="tab-map" data-view="map" aria-controls="view-map"><span class="t-n">2</span>ConOps map</button>
+        <button role="tab" id="tab-stations" data-view="stations" aria-controls="view-stations"><span class="t-n">3</span>Stations</button>
+        <button role="tab" id="tab-sensors" data-view="sensors" aria-controls="view-sensors"><span class="t-n">4</span>Sensors</button>
+        <button role="tab" id="tab-comms" data-view="comms" aria-controls="view-comms"><span class="t-n">5</span>Space<span class="t-long"> &amp; backhaul</span></button>
+        <button role="tab" id="tab-budget" data-view="budget" aria-controls="view-budget"><span class="t-n">6</span>Cost<span class="t-long"> &amp; resilience</span></button>
+        <div class="more">
+          <button class="more-btn" data-act="more" aria-haspopup="true" aria-expanded="false">More ▾</button>
+          <div class="more-menu glass" hidden>
+            <button data-view="overview">S-3 Overview</button>
+            <button data-view="requirements">Requirements</button>
+            <button data-view="scenario">Scenario walkthrough</button>
+            <button data-view="decomposition">Decomposition</button>
+            <button data-view="interfaces">Interfaces <small>(being removed)</small></button>
+            <button data-view="trades">Trades <small>(being removed)</small></button>
+          </div>
+        </div>
       </nav>
       <div class="top-right">
         <button class="offline" data-act="preload" data-state="loading" aria-live="polite"><i aria-hidden="true"></i><span>Loading…</span></button>
@@ -42,9 +53,15 @@
       </div>
     </header>
 
-    <section class="process-view" id="view-overview" role="tabpanel" aria-labelledby="tab-overview"></section>
-    <section class="process-view" id="view-requirements" role="tabpanel" aria-labelledby="tab-requirements"></section>
-    <section class="sc-view" id="view-scenario" role="tabpanel" aria-labelledby="tab-scenario">
+    <section class="process-view" id="view-flow" role="tabpanel" aria-labelledby="tab-flow"></section>
+    <section class="process-view" id="view-map" role="tabpanel" aria-labelledby="tab-map" hidden></section>
+    <section class="process-view" id="view-stations" role="tabpanel" aria-labelledby="tab-stations" hidden></section>
+    <section class="process-view" id="view-sensors" role="tabpanel" aria-labelledby="tab-sensors" hidden></section>
+    <section class="process-view" id="view-comms" role="tabpanel" aria-labelledby="tab-comms" hidden></section>
+    <section class="process-view" id="view-budget" role="tabpanel" aria-labelledby="tab-budget" hidden></section>
+    <section class="process-view" id="view-overview" role="tabpanel" aria-label="S-3 Overview" hidden></section>
+    <section class="process-view" id="view-requirements" role="tabpanel" aria-label="Requirements" hidden></section>
+    <section class="sc-view" id="view-scenario" role="tabpanel" aria-label="Scenario walkthrough" hidden>
       <aside class="sc-card glass" id="sc-card" aria-label="Scenario steps"></aside>
       <div class="lt-card glass" id="lt-card" aria-label="Latency budget"></div>
       <div class="map-switch glass" role="group" aria-label="Map (M)">
@@ -54,9 +71,9 @@
         <span class="map-status" aria-live="polite"></span>
       </div>
     </section>
-    <section class="process-view" id="view-interfaces" role="tabpanel" aria-labelledby="tab-interfaces"></section>
-    <section class="process-view" id="view-trades" role="tabpanel" aria-labelledby="tab-trades"></section>
-    <section class="dc-view" id="view-decomposition" role="tabpanel" aria-labelledby="tab-decomposition" hidden></section>
+    <section class="process-view" id="view-interfaces" role="tabpanel" aria-label="Interfaces" hidden></section>
+    <section class="process-view" id="view-trades" role="tabpanel" aria-label="Trades" hidden></section>
+    <section class="dc-view" id="view-decomposition" role="tabpanel" aria-label="Decomposition" hidden></section>
 
     <aside class="panel glass" id="panel" aria-label="Details"></aside>
     <div class="sr-only" id="announce" aria-live="polite"></div>

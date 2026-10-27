@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "serve": "node scripts/serve.mjs",
     "data": "node scripts/build-data.mjs && node scripts/build-mask.mjs && node scripts/build-extras.mjs && node scripts/build-schematic.mjs",
-    "sync:decomp": "node scripts/sync-decomposition.mjs"
+    "sync:decomp": "node scripts/sync-decomposition.mjs",
+    "data:page": "node scripts/build-page-data.mjs"
   },
   "keywords": [],
   "type": "module",
