@@ -2,6 +2,7 @@
 // Threshold / objective values are both rendered (.v-t / .v-o); CSS shows the one #app[data-mode] selects.
 import { RFP, GAP, MOS, REQS, reqBy, HEADLINES, CONSTRAINTS, TBR, LATENCY, FUNCTIONS, STAGES, stageBy } from './content.js';
 import SC from './scenarios.json';
+import SOURCES from '../../analysis/data/sources.json';
 import { ICON } from '../icons.js';
 
 export const SCENARIOS = SC.scenarios;
@@ -228,11 +229,32 @@ export function latencyCard() {
     <p class="lt-foot">Totals are the ${LATENCY.uplink.req} and ${LATENCY.alert.req} requirement values. The split into segments is our proposed allocation, not a requirement.</p>`;
 }
 
+// ---------- sources drawer ----------
+// Every citation in analysis/data/sources.json, plus what the on-page labels mean.
+const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
+export function sourcesPanel() {
+  const list = Object.values(SOURCES.sources);
+  const label = (cls, text, what) => `<li><span class="${cls}">${text}</span><span>${what}</span></li>`;
+  return `
+    ${head(`<span>Sources</span><i></i><span>${list.length} cited</span>`, 'Sources and labels')}
+    <p class="p-text">${esc(SOURCES._note)} Requirement text and numbers come from the RFP S-3 class document.</p>
+    <h3 class="p-h">What the labels mean</h3>
+    <ul class="src-labels">
+      ${label('vtag is-assume', 'Assumption', 'A planning value we chose. Not sourced; open to change.')}
+      ${label('vtag is-proxy', 'Modeled proxy', 'Placed or computed by a rule because the real data is not in hand yet.')}
+      ${label('vtag is-baseline', 'Notional baseline', 'The architecture we drew to size things. The trade study is pending.')}
+      ${label('tbr', 'TBR', 'To be resolved: a proposed allocation or open item, not a requirement.')}
+    </ul>
+    <h3 class="p-h">Cited sources</h3>
+    <ol class="src-list">${list.map(s => `<li><span>${esc(s.title)}</span>${s.url
+      ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(host(s.url))}<span class="sr-only"> (opens in a new tab)</span></a>` : ''}</li>`).join('')}</ol>`;
+}
+
 // ---------- help ----------
 export function helpView() {
   const rows = [
     ['1 – 7', 'Switch tab'], ['→ &nbsp;PgDn &nbsp;Space', 'Next scenario step'], ['← &nbsp;PgUp', 'Previous step'], ['R', 'Reset scenario'],
-    ['T', 'Threshold / objective'], ['M', 'Next map: globe · ground · schematic'], ['G', 'Ground view'], ['O', 'Satellite: pass overhead / fixed in sky'], ['P', 'Presenter mode'], ['F', 'Fullscreen'], ['Esc', 'Close panel'], ['?', 'This help'],
+    ['T', 'Threshold / objective'], ['M', 'Next map: globe · ground · schematic'], ['G', 'Ground view'], ['O', 'Satellite: pass overhead / fixed in sky'], ['P', 'Presenter mode'], ['L', 'Light / dark theme'], ['S', 'Sources'], ['F', 'Fullscreen'], ['Esc', 'Close panel'], ['?', 'This help'],
   ];
   return `<div class="help-head"><span>Keyboard</span><button class="icon-btn" data-act="help" aria-label="Close shortcuts">${ICON.close}</button></div>
     <dl>${rows.map(([k, v]) => `<dt>${k.split(' &nbsp;').map(x => `<kbd>${x}</kbd>`).join('')}</dt><dd>${v}</dd>`).join('')}</dl>`;

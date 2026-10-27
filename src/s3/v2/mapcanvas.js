@@ -48,6 +48,10 @@ export function createMap(container, opts = {}) {
 
   async function draw(state) {
     last = state;
+    // Screen readers get the map's state in words; the numbers behind it are in the cards and tables beside it.
+    const f = state.fail || {};
+    cv.setAttribute('aria-label', `Map of the Congo River Basin, ${state.year}: ${state.view === 'pop' ? 'population density' : `${MODES[state.mode].name} coverage`}, ${state.n} ranger stations, `
+      + `hub ${f.hub ? `${D.db.recommended[0]} offline, ${D.db.recommended[1]} acting` : D.db.recommended[0]}${f.station != null ? `, station #${f.station + 1} lost` : ''}.`);
     const [geo, grid, pop, st] = await Promise.all([loadGeo(), loadGrid(), loadPop(state.year), loadStations(state.year)]);
     if (state !== last) return; // a newer draw started while data was loading
     status.remove();
@@ -77,7 +81,7 @@ export function createMap(container, opts = {}) {
       ctx.globalAlpha = 1;
     }
     if (L.countries) drawGeo(geo.countries, css('--line-2'), 0.8);
-    drawGeo(geo.basin, css('--gold'), 1.6);
+    drawGeo(geo.basin, css('--accent'), 1.6);
     if (L.roads) drawGeo(geo.roads, css('--s2'), 0.7);
     if (L.rivers) { drawGeo(geo.rivers, css('--river'), 1.1); drawGeo(geo.lakes, null, 0, css('--river')); }
     if (L.pa) {
@@ -104,7 +108,7 @@ export function createMap(container, opts = {}) {
         else { ctx.moveTo(x, y - 4.4); ctx.lineTo(x + 4, y + 3); ctx.lineTo(x - 4, y + 3); ctx.closePath(); }
         const lost = fail.station === i;
         ctx.fillStyle = lost ? css('--critical') : css('--text');
-        ctx.fill(); ctx.strokeStyle = '#07080a'; ctx.lineWidth = 1.2; ctx.stroke();
+        ctx.fill(); ctx.strokeStyle = css('--bg'); ctx.lineWidth = 1.2; ctx.stroke();
         if (lost) cross(x, y, 9);
         hits.push({ x, y, r: 7, tip: () => [el('b', { text: `Ranger station #${i + 1} · ${s.type} access` }), kv('Adds', `${fmt(s.gain)} people`),
           kv('Coverage so far', `${fmt(s.cum_pct, 1)}%`), kv('Cost so far', fmtM(s.cum_cost_musd)), s.hydro_ok && s.type === 'river' ? el('div', { class: 'k', text: 'River site: micro-hydro option' }) : null,
@@ -117,7 +121,7 @@ export function createMap(container, opts = {}) {
         if (x < 0 || x > W) continue;
         ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 7);
         const conflict = it.type === 'conflict';
-        ctx.fillStyle = conflict ? css('--critical') : '#07080a'; ctx.fill();
+        ctx.fillStyle = conflict ? css('--critical') : css('--bg'); ctx.fill();
         ctx.strokeStyle = conflict ? css('--critical') : css('--text'); ctx.lineWidth = 1.5; ctx.stroke();
         hits.push({ x, y, r: 8, tip: () => [el('b', { text: it.name }), el('div', { class: 'k', text: it.type.replace(/_/g, ' ') })] });
       }
@@ -128,7 +132,7 @@ export function createMap(container, opts = {}) {
       D.db.candidates.filter(c => rec.includes(c.name)).forEach(c => {
         const [x, y] = px(c.lon, c.lat), main = c.name === rec[0], r = main ? 9 : 7;
         const down = fail.hub && main, act = c.name === acting;
-        ctx.fillStyle = down ? '#3a3a3a' : css('--gold'); ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+        ctx.fillStyle = down ? css('--neu-3') : css('--gold'); ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.rect(x - r, y - r, 2 * r, 2 * r); ctx.fill(); ctx.stroke();
         if (act) { ctx.beginPath(); ctx.arc(x, y, r + 7, 0, 7); ctx.strokeStyle = css('--data'); ctx.lineWidth = 2.5; ctx.stroke(); }
         if (down) cross(x, y, r + 4);
@@ -137,7 +141,7 @@ export function createMap(container, opts = {}) {
         const lab = `${down ? 'OFFLINE · ' : act ? 'ACTING HUB · ' : main ? 'HUB · ' : 'DB · '}${c.name}`;
         // The acting hub's longer label sits above its node so it clears neighbouring labels.
         const [lx, ly] = act ? [x - ctx.measureText(lab).width / 2, y - r - 11] : [x + r + 4, y + 4];
-        ctx.lineWidth = 3; ctx.strokeStyle = '#07080a'; ctx.strokeText(lab, lx, ly);
+        ctx.lineWidth = 3; ctx.strokeStyle = css('--bg'); ctx.strokeText(lab, lx, ly);
         ctx.fillStyle = down ? css('--critical') : act ? css('--data') : css('--text'); ctx.fillText(lab, lx, ly);
         hits.push({ x, y, r: 14, db: c.name, tip: () => [el('b', { text: `${main ? 'Main hub' : 'Regional database'} · ${c.name}` }), el('div', { class: 'k', text: opts.onDb ? 'Click for the siting rationale' : '' })] });
       });
@@ -171,5 +175,7 @@ export function createMap(container, opts = {}) {
     const r = cv.getBoundingClientRect(), h = nearest(ev.clientX - r.left, ev.clientY - r.top);
     if (h?.db && opts.onDb) opts.onDb(h.db);
   });
+  // Colours come from the theme tokens, so redraw when the theme changes (toggle or system setting).
+  addEventListener('srr-theme', () => last && cv.isConnected && draw(last));
   return { draw, redraw: () => last && draw(last) };
 }

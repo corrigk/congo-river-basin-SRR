@@ -15,9 +15,11 @@ export function createOffline(badge) {
       : state === 'partial' ? 'The page works offline; click to also cache the 3D globe (about 7 MB)' : label;
   };
 
-  if (!location.protocol.startsWith('http')) { set('file'); return { preload() {} }; } // opened from disk
-  if (import.meta.env.DEV) { set('dev'); return { preload() {} }; }
-  if (!('serviceWorker' in navigator)) { set('none'); return { preload() {} }; }
+  // status() resolves to { core, globe } (what is cached), or null where there is no offline cache.
+  const none = { preload() {}, status: async () => null };
+  if (!location.protocol.startsWith('http')) { set('file'); return none; } // opened from disk
+  if (import.meta.env.DEV) { set('dev'); return none; }
+  if (!('serviceWorker' in navigator)) { set('none'); return none; }
 
   set('loading');
   const ready = navigator.serviceWorker.register('./sw.js').then(() => navigator.serviceWorker.ready);
@@ -47,5 +49,5 @@ export function createOffline(badge) {
   }
 
   ready.then(() => ask('status')).then(show, () => {});
-  return { preload };
+  return { preload, status: () => ready.then(() => ask('status')) };
 }

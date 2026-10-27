@@ -1,5 +1,6 @@
 import './style.css';
 import './s3/s3.css';
+import './s3/v2/v2.css'; // tokens and labels (.vtag) used outside the sections too
 import { ICON, MARK } from './icons.js';
 import { LATENCY, GEO_TARGET_KM2 } from './s3/content.js';
 import * as V from './s3/views.js';
@@ -21,6 +22,7 @@ $('#brand-mark').innerHTML = MARK;
 $('[data-act="fullscreen"]').innerHTML = ICON.expand;
 $('[data-act="help"]').innerHTML = ICON.help;
 $('[data-act="present"]').innerHTML = ICON.present;
+$('[data-act="sources"]').innerHTML = ICON.book;
 $('#view-overview').innerHTML = V.overviewView();
 $('#view-requirements').innerHTML = V.requirementsView();
 $('#sc-card').innerHTML = V.scenarioCard();
@@ -83,15 +85,25 @@ function loadGround() {
     .catch(err => { console.warn('Ground view failed to load.', err); $('.map-switch [data-map="ground"]').disabled = true; groundLoading = null; });
 }
 function setMapStatus(s) {
-  const text = { loading: 'Loading 3D globe…', failed: '3D globe unavailable', none: 'No WebGL: schematic only', file: 'Offline file: schematic only', ready: '' }[s];
+  const text = { loading: 'Loading 3D globe…', failed: '3D globe unavailable', none: 'No WebGL: schematic only', file: 'Offline file: schematic only',
+    uncached: 'Offline and the globe is not cached: schematic only', ready: '' }[s];
   $('.map-status').textContent = text;
   $('.map-switch [data-map="globe"]').disabled = s !== 'ready';
   $('.map-switch [data-map="ground"]').disabled = s === 'none';
 }
 const hasWebGL = () => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } };
+// Can we reach the server? sw.js is never cached, so this goes to the network even with the service worker.
+const reachable = () => Promise.race([
+  fetch(`./sw.js?probe=${Date.now()}`, { cache: 'no-store' }).then(r => r.ok, () => false),
+  new Promise(r => setTimeout(() => r(false), 4000)),
+]);
 async function loadGlobe() {
   if (!hasWebGL()) { setMapStatus('none'); return; }
   setMapStatus('loading');
+  // Offline with only part of the globe cached (the connection dropped while it was being saved), the globe
+  // would come up as a black sphere. Stay on the schematic map; the globe returns once the files are cached.
+  const cached = await offline.status().catch(() => null);
+  if (cached && !cached.globe && !(await reachable())) { setMapStatus('uncached'); $('.map-switch [data-map="ground"]').disabled = true; return; }
   try {
     window.CESIUM_BASE_URL ??= './cesium/';
     const { createGlobeMap } = await import('./s3/globemap.js');
@@ -184,6 +196,7 @@ function renderScenario() {
   for (const b of $$('.sc-pick [data-scenario]')) b.setAttribute('aria-pressed', b.dataset.scenario === s.id);
   $('#sc-head').innerHTML = V.scenarioHead(s);
   $('#sc-steps').innerHTML = V.scenarioSteps(s, i);
+  $('#sc-steps .is-active')?.scrollIntoView({ block: 'nearest' }); // the list scrolls on short screens
   $('#sc-count').textContent = `Step ${i + 1} / ${s.steps.length}`;
   $('[data-act="step-prev"]').disabled = i === 0;
   $('[data-act="step-next"]').disabled = i === s.steps.length - 1;
@@ -212,6 +225,7 @@ function renderPanel() {
   let html = '';
   if (state.tab === 'scenario') html = V.stepPanel(V.scenarioBy[state.sc], state.step);
   else if (state.panel?.type === 'req') html = V.reqPanel(state.panel.k);
+  else if (state.panel?.type === 'sources') html = V.sourcesPanel();
   const key = state.tab === 'scenario' ? `step:${state.sc}:${state.step}` : state.panel ? `${state.panel.type}:${state.panel.k}` : '';
   if (html && panel.dataset.k !== key) {
     panel.classList.remove('is-swap');
@@ -223,6 +237,8 @@ function renderPanel() {
   }
   panel.dataset.k = html ? key : '';
   panel.classList.toggle('is-open', !!html);
+  panel.classList.toggle('stage', state.tab === 'scenario'); // over the map it keeps the dark stage tokens
+  $('[data-act="sources"]').setAttribute('aria-expanded', state.panel?.type === 'sources');
   app.classList.toggle('has-panel', !!html);
 }
 
@@ -289,6 +305,26 @@ function setPresent(on) {
   requestAnimationFrame(() => { moveInk(); map.refit?.(); });
 }
 
+// Theme: html[data-theme] when the presenter picked one (L), else the system setting. Modules that paint with
+// the tokens (the 2D map canvas) listen for 'srr-theme'.
+const systemLight = matchMedia('(prefers-color-scheme: light)');
+const isLight = () => (document.documentElement.dataset.theme || (systemLight.matches ? 'light' : 'dark')) === 'light';
+function syncTheme() {
+  const b = $('[data-act="theme"]'), light = isLight();
+  b.innerHTML = light ? ICON.moon : ICON.sun;
+  b.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+  $('meta[name="theme-color"]').content = light ? '#FAF8F2' : '#0A0A0A';
+  dispatchEvent(new Event('srr-theme'));
+}
+function toggleTheme() {
+  const next = isLight() ? 'dark' : 'light';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('srr-theme', next); } catch { /* no memory */ }
+  syncTheme();
+  $('#announce').textContent = `${next === 'light' ? 'Light' : 'Dark'} theme`;
+}
+systemLight.addEventListener('change', syncTheme);
+
 function toggleHelp() {
   const h = $('#help');
   h.hidden = !h.hidden;
@@ -314,6 +350,9 @@ document.addEventListener('click', e => {
       case 'fullscreen': fullscreen(); return;
       case 'preload': offline.preload(); return;
       case 'present': setPresent(!app.classList.contains('is-present')); return;
+      case 'theme': toggleTheme(); return;
+      case 'skip': { const v = $(`#view-${state.tab}`); v.tabIndex = -1; v.focus(); return; }
+      case 'sources': openPanel({ type: 'sources', k: 'all' }); return;
     }
   }
   if (d.view) { setTab(d.view === 'requirements' && t.getAttribute('role') === 'tab' && REQ_VIEWS.includes(state.tab) ? state.tab : d.view); return; }
@@ -365,6 +404,8 @@ document.addEventListener('keydown', e => {
   if (lk === 't') { setMode(state.mode === 't' ? 'o' : 't'); return; }
   if (lk === 'f') { fullscreen(); return; }
   if (lk === 'p') { setPresent(!app.classList.contains('is-present')); return; }
+  if (lk === 'l') { toggleTheme(); return; }
+  if (lk === 's' && state.tab !== 'scenario') { openPanel({ type: 'sources', k: 'all' }); return; }
   if (k === '?') { toggleHelp(); return; }
   if (k === 'Escape') {
     if (!$('#help').hidden) $('#help').hidden = true;
@@ -376,6 +417,7 @@ document.addEventListener('keydown', e => {
 });
 
 readHash();
+syncTheme();
 setPresent(new URLSearchParams(location.search).has('present') || pref.present());
 render();
 requestAnimationFrame(() => { moveInk(); app.classList.add('is-ready'); });

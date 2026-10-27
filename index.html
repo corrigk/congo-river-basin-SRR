@@ -6,11 +6,14 @@
   <meta name="theme-color" content="#0A0A0A" />
   <meta name="description" content="RFP S-3 BASINLINK & BASINCAST: System Requirements Review demo for the Congo River Basin system of systems." />
   <title>S-3 BASINLINK SRR</title>
+  <script>/* theme before first paint: the saved choice, else the system setting (see src/style.css) */
+    try { var t = localStorage.getItem('srr-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230A0A0A' stroke='%23CFB991' stroke-width='2'/%3E%3Cpath d='M7 20.5c3-1 3.6-5.2 7-6.2s4.8 2.4 7.6 1.3c2-.8 2.6-3.1 3.4-4.6' fill='none' stroke='%237FCBEA' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
 </head>
 <body>
+  <button class="skip" data-act="skip">Skip to content</button>
   <div id="app" data-view="flow" data-mode="t" data-map="schematic">
-    <div id="map" class="map"><div class="map-sch"></div><div class="map-globe" aria-hidden="true"></div><div class="map-ground"></div></div>
+    <div id="map" class="map stage"><div class="map-sch"></div><div class="map-globe" aria-hidden="true"></div><div class="map-ground"></div></div>
 
     <header class="topbar">
       <div class="brand">
@@ -37,6 +40,8 @@
           <button data-mode="o" aria-pressed="false">Objective</button>
         </div>
         <span class="divider"></span>
+        <button class="icon-btn" data-act="sources" title="Sources (S)" aria-label="Sources" aria-expanded="false" aria-controls="panel"></button>
+        <button class="icon-btn" data-act="theme" title="Light / dark (L)" aria-label="Switch to light theme"></button>
         <button class="icon-btn" data-act="present" title="Presenter mode (P)" aria-label="Presenter mode" aria-pressed="false"></button>
         <button class="icon-btn" data-act="fullscreen" title="Fullscreen (F)" aria-label="Fullscreen"></button>
         <button class="icon-btn" data-act="help" title="Shortcuts (?)" aria-label="Keyboard shortcuts"></button>
@@ -56,7 +61,7 @@
     </nav>
     <section class="process-view" id="view-overview" role="tabpanel" aria-label="Mission and gap" hidden></section>
     <section class="process-view" id="view-requirements" role="tabpanel" aria-labelledby="tab-requirements" hidden></section>
-    <section class="sc-view" id="view-scenario" role="tabpanel" aria-label="Scenario walkthrough" hidden>
+    <section class="sc-view stage" id="view-scenario" role="tabpanel" aria-label="Scenario walkthrough" hidden>
       <aside class="sc-card glass" id="sc-card" aria-label="Scenario steps"></aside>
       <div class="lt-card glass" id="lt-card" aria-label="Latency budget"></div>
       <div class="map-switch glass" role="group" aria-label="Map (M)">

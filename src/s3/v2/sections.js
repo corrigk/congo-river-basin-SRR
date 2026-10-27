@@ -5,7 +5,7 @@
 //
 // Each section builds its header and controls once, and puts everything that depends on a slider into
 // "slots" that refresh while the slider moves (rebuilding the slider itself mid-drag would break the drag).
-import './v2.css';
+import './v2.css'; // also imported by main.js; kept so the module stands alone
 import { D, DEFAULT_N, YEARS, MODES, stations as loadStations, grid as loadGrid } from './data.js';
 import { createMap, DENS_LABELS } from './mapcanvas.js';
 import SC from '../scenarios.json';
@@ -109,7 +109,13 @@ function mapSection(ctx) {
     return el('label', { class: 'ctl-check' }, cb, l);
   }));
   const holder = el('div', { class: 'v2-mapholder' });
-  const side = slot(() => dbSide());
+  // Database nodes are picked on the map or, by keyboard, with the buttons in the side card.
+  const pickDb = name => {
+    const keep = side.box.contains(document.activeElement);
+    S.db = name; side.refresh(); map.draw({ ...S });
+    if (keep) side.box.querySelector('.seg [aria-pressed="true"]')?.focus();
+  };
+  const side = slot(() => dbSide(pickDb));
   const seq = [...Array(8).keys()].map(i => css(`--seq-${i}`));
   const legend = el('div', { class: 'v2-legend' }, ...(S.view === 'pop'
     ? [el('span', { text: 'People per km²:' }), ...DENS_LABELS.map((t, i) => el('span', {}, el('i', { style: `background:${seq[i]}` }), t))]
@@ -117,27 +123,37 @@ function mapSection(ctx) {
     el('span', { text: '■ road site  ● river site  ▲ remote site  ◼ gold = database node' }));
   ctx.onQuick(() => map.draw({ ...S }));
   ctx.after(() => {
-    map = createMap(holder, { onDb: name => { S.db = name; side.refresh(); map.draw({ ...S }); }, maxHeight: () => Math.max(380, innerHeight - 290) });
+    map = createMap(holder, { onDb: pickDb, maxHeight: () => fitHeight(holder, 64) });
     map.draw({ ...S });
   });
   return [
     head('Section 2 · ConOps map', 'What we build, and where',
       `Main hub in ${D.db.recommended[0]}, ${D.db.recommended.length - 1} regional databases, ranger stations where they reach the most people, and community receivers everywhere else. Hover anything; select a database node to see why it sits there.`),
-    el('div', { class: 'v2-controls' }, seg([['pop', 'Population'], ['cov', 'Station coverage']], S.view, v => { S.view = v; ctx.full(); }, 'Map shows')),
-    sharedControls(ctx, run),
-    layers,
-    el('div', { class: 'v2-grid-map' }, el('div', { class: 'vcard v2-mapcard' }, holder, legend, dataNote()), side.box),
+    // Controls sit beside the map, not above it, so the whole map fits a 1280 × 720 projector without scrolling.
+    el('div', { class: 'v2-grid-map' }, el('div', { class: 'vcard v2-mapcard' }, holder, legend, dataNote()),
+      el('div', { class: 'v2-col' },
+        el('div', { class: 'vcard v2-mapctl' },
+          el('div', { class: 'v2-controls' }, seg([['pop', 'Population'], ['cov', 'Station coverage']], S.view, v => { S.view = v; ctx.full(); }, 'Map shows')),
+          sharedControls(ctx, run), layers),
+        side.box)),
   ];
+}
+// Tallest map that still fits on screen below where it starts (with `below` px for its legend), at the view's zoom.
+function fitHeight(holder, below) {
+  const view = holder.closest('.process-view'), z = parseFloat(getComputedStyle(holder.closest('.pv-inner')).zoom) || 1;
+  const top = holder.getBoundingClientRect().top + (view?.scrollTop || 0);
+  return Math.max(320, (innerHeight - top) / z - below);
 }
 function dataNote() {
   return el('p', { class: 'note' }, 'Basin outline: HydroSHEDS. Population: WorldPop 2020, projected with UN growth. Protected areas: WDPA. ',
     tag('Modeled proxy', 'proxy'), ' river-gauge sites (rule-based until the GRDC station list is obtained).');
 }
-function dbSide() {
+function dbSide(pick) {
   const db = D.db, name = S.db, c = db.candidates.find(x => x.name === name), best = db.best_by_count, top = db.top_sets_of_4.slice(0, 5);
   const bangui = db.top_sets_of_4.find(s => s.nodes.includes('Bangui'));
   const spread = top.at(-1).mean_km - top[0].mean_km;
   return card(`${name === db.recommended[0] ? 'Main hub' : 'Regional database'} · ${name}`,
+    seg(db.recommended.map(n => [n, n]), name, pick, 'Database node'),
     el('p', { text: c.notes }),
     el('p', { class: 'why' }, el('b', { text: 'Why four nodes, and why these? ' }),
       `With ${db.recommended[0]} alone, the average basin resident is ${fmt(db.kinshasa_only_mean_km)} km from a node. Adding nodes cuts that to ${fmt(best[2].mean_km)} km (2), ${fmt(best[3].mean_km)} km (3) and ${fmt(best[4].mean_km)} km (4), and each extra node is a full replica that can run the alert chain alone. Returns flatten after four, which is why we stop there.`),
