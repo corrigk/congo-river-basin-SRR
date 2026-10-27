@@ -210,7 +210,7 @@ export function latencyCard() {
     const L = LATENCY[leg];
     return `<div class="lt-bar v-${m}">${L.segments.map((g, j) => `
       <span class="lt-seg" data-seg="${leg}:${g.k}" style="flex:${g[m]};--j:${j}" title="${esc(g.label)}: ${g[m]} min">
-        <b>${g[m]}</b><em>${esc(g.label)}</em>
+        <b>${g[m]}</b><em><span class="lt-id">${esc(g.k)}</span><span class="lt-name">${esc(g.label.slice(g.k.length))}</span></em>
       </span>`).join('')}</div>`;
   };
   return `

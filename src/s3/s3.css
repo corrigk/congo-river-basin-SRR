@@ -210,9 +210,13 @@
 .lt-leg-h > strong { grid-column: 3; grid-row: 1; text-align: right; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 24px; color: var(--text); line-height: 1; }
 .lt-bar { grid-column: 2; grid-row: 1; min-width: 0; display: flex; gap: 3px; height: 38px; }
 .lt-seg { min-width: 0; position: relative; display: flex; flex-direction: column; justify-content: center; padding: 0 6px; border-radius: 6px; overflow: hidden; background: rgba(var(--hi), .05); border: 1px solid var(--line); transition: background .4s var(--ease), border-color .4s; }
+.lt-seg { container-type: inline-size; }
 .lt-seg b { font-family: var(--display); font-style: italic; font-weight: 800; font-size: 15px; line-height: 1; color: var(--muted); }
 .lt-seg b::after { content: ' min'; font-family: var(--body); font-style: normal; font-weight: 500; font-size: 10px; }
 .lt-seg em { font-style: normal; font-size: 10.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+/* narrow segments (F1 is 2 of 30 min): just the minutes and the function ID; the full name is in the tooltip */
+@container (max-width: 60px) { .lt-name { display: none; } .lt-seg b::after { font-size: 9px; } }
+@container (max-width: 34px) { .lt-seg b::after { content: none; } .lt-seg b { font-size: 13px; } }
 .lt-leg[data-leg="uplink"] .lt-seg.is-done { background: color-mix(in srgb, var(--data) 14%, transparent); border-color: color-mix(in srgb, var(--data) 35%, transparent); }
 .lt-leg[data-leg="uplink"] .lt-seg.is-on { background: color-mix(in srgb, var(--data) 30%, transparent); border-color: var(--data); box-shadow: 0 0 16px color-mix(in srgb, var(--data) 25%, transparent); }
 .lt-leg[data-leg="alert"] .lt-seg.is-done { background: color-mix(in srgb, var(--alert) 14%, transparent); border-color: color-mix(in srgb, var(--alert) 35%, transparent); }
