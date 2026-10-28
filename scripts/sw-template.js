@@ -14,6 +14,9 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
     for (const k of await caches.keys()) if (k.startsWith('srr-') && k !== CACHE) await caches.delete(k);
+    // Earlier workers cached the page's reachability probe (sw.js?probe=...); drop any copy so the probe works offline.
+    const cache = await caches.open(CACHE);
+    for (const r of await cache.keys()) if (new URL(r.url).pathname.endsWith('/sw.js')) await cache.delete(r);
     await self.clients.claim();
   })());
 });
@@ -22,7 +25,14 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin) return;
-  if (req.mode === 'navigate') { e.respondWith(page(req, e)); return; }
+  // Never from the cache: the page fetches sw.js to find out whether the server is reachable at all.
+  if (url.pathname.endsWith('/sw.js')) return;
+  if (req.mode === 'navigate') {
+    // The cached page answers for the site itself; other pages (srr-offline.html) load as themselves.
+    const p = url.pathname, isPage = p === new URL(self.registration.scope).pathname || p.endsWith('/index.html');
+    e.respondWith(isPage ? page(req, e) : networkFirst(req));
+    return;
+  }
   if (!req.url.startsWith(self.registration.scope)) { e.respondWith(networkFirst(req)); return; }
   e.respondWith((async () => {
     const hit = await caches.match(req, { ignoreSearch: true });

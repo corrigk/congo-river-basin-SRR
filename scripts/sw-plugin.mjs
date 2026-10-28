@@ -21,10 +21,11 @@ export function serviceWorker() {
       const isGlobe = f => f.startsWith('cesium/') || /^assets\/(globemap|groundmap)-/.test(f); // the lazy 3D views
       const core = ['./', ...files.filter(f => !isGlobe(f))];
       const globe = files.filter(isGlobe);
-      const hash = crypto.createHash('sha256');
+      const template = fs.readFileSync(new URL('./sw-template.js', import.meta.url), 'utf8');
+      // The version covers the worker's own code too, so a change to its logic starts a fresh cache.
+      const hash = crypto.createHash('sha256').update(template);
       for (const f of [...core.slice(1), ...globe]) hash.update(f).update(fs.readFileSync(path.join(outDir, f)));
       const size = list => list.reduce((s, f) => s + (f === './' ? 0 : fs.statSync(path.join(outDir, f)).size), 0);
-      const template = fs.readFileSync(new URL('./sw-template.js', import.meta.url), 'utf8');
       fs.writeFileSync(path.join(outDir, 'sw.js'), template
         .replace('__VERSION__', hash.digest('hex').slice(0, 12))
         .replace('__CORE__', JSON.stringify(core))
