@@ -194,14 +194,21 @@ export function stepPanel(s, i) {
     ${st.fn?.length ? `<h3 class="p-h">Functions in this step</h3><div class="p-fns">${st.fn.map(fnChip).join('')}</div>` : ''}
     ${st.interfaces?.length ? `<h3 class="p-h">Partner interfaces ${tbrTag()}</h3><ul class="p-ifs">${st.interfaces.map(x => `<li><span class="pill pill-rfp">${x.id}</span><span>${esc(x.note)}</span></li>`).join('')}</ul>` : ''}
     ${st.note ? `<p class="p-note">${esc(st.note)}</p>` : ''}
-    <p class="p-foot">Map positions are illustrative. The scenario map draws no constellation; the notional baseline is in Space &amp; backhaul.</p>`;
+    <p class="p-foot">Map positions are illustrative. The scenario map draws no constellation; the notional baseline is on the ConOps tab.</p>`;
 }
 
-// A function from the Level 1 flow (F1-F8 link back to it; continuous functions C1, C2 are labels).
+// A block of the Level 1 functional flow; the chip opens it in Function flow.
 function fnChip(id) {
-  const f = FUNCTIONS.functions.find(x => x.id === id) || FUNCTIONS.continuous_functions.find(x => x.id === id);
-  const label = `<b>${id}</b><span>${esc(f ? f.name : '')}</span>`;
-  return id.startsWith('F') ? `<button class="chip chip-fn" data-fn="${id}">${label}${ICON.arrow}</button>` : `<span class="chip chip-fn is-static">${label}</span>`;
+  const f = FUNCTIONS.functions.find(x => x.id === id);
+  return `<button class="chip chip-fn" data-fn="${id}"><b>${id}</b><span>${esc(f ? f.title : '')}</span>${ICON.arrow}</button>`;
+}
+
+// The nine flow blocks as a strip on the scenario card; the step's blocks light up. F9 (persistent) is dashed.
+export function flowStrip(active = []) {
+  return `<ol class="st-strip fl-strip">${FUNCTIONS.functions.map(f => `
+    <li class="st-node${f.persistent ? ' is-persistent' : ''}${active.includes(f.id) ? ' is-active' : ''}" title="${esc(`${f.id} ${f.title}${f.persistent ? ' (persistent)' : ''}`)}">
+      <span class="st-n">${f.id}</span><span class="fl-name">${esc(f.name)}</span>
+    </li>`).join('')}</ol>`;
 }
 
 // Latency budget: both legs, both modes rendered; CSS picks the mode, JS marks the active segments.

@@ -1,84 +1,447 @@
 {
-  "_note": "Level 1 functional flow, generalized from the team's flood flow to all hazards. Function names keep the team's eight boxes. Latency allocations and derived L1 requirements are DRAFTS for the team to adjust; the team's own L1-L3 requirements take precedence.",
-  "hazards": [
-    {"id": "flood", "name": "Flooding", "detect_example": "River gauge reads water rising past its alert level"},
-    {"id": "fire", "name": "Fire", "detect_example": "Smoke sensor in the savanna belt trips; satellite hotspot from another system confirms"},
-    {"id": "logging", "name": "Illegal logging / deforestation", "detect_example": "Acoustic sensor hears a chainsaw; S-2 radar shows new canopy loss"},
-    {"id": "mining", "name": "Illegal mining / pollution", "detect_example": "Water-quality probe sees a turbidity spike below a mining zone"},
-    {"id": "wildlife", "name": "Wildlife and poaching", "detect_example": "Tagged elephant stops moving, or a gunshot is detected"},
-    {"id": "health", "name": "Disease and community emergencies", "detect_example": "Ranger or health worker sends a priority report from a handheld"}
-  ],
-  "functions": [
-    {"id": "F1", "name": "DETECT", "flood_label": "Detect rising water",
-     "description": "A sensor, tag, ranger device or partner system detects an event that crosses a threshold and forms a short, time-stamped priority message.",
-     "performed_by": ["Field sensors and tags", "Ranger handhelds", "Partner systems (S-1, S-2, A-1, A-4)"],
-     "inputs": "Physical event", "outputs": "Priority message (<= a few hundred bytes)",
-     "traces": ["MO-1", "S3-02", "S3-04"],
-     "latency_min": {"budget": "S3-03", "threshold": 2, "objective": 0.5}},
-    {"id": "F2", "name": "TRANSMIT to satellite", "flood_label": "Transmit to satellite",
-     "description": "The terminal sends the message to a satellite overhead, directly or through the nearest ranger-station tower when it sits under canopy.",
-     "performed_by": ["Sensor terminal radio and antenna", "Ranger-station relay", "LEO IoT satellites"],
-     "inputs": "Priority message", "outputs": "Message on board / in transit",
-     "traces": ["MO-1", "S3-01", "S3-03"],
-     "latency_min": {"budget": "S3-03", "threshold": 18, "objective": 2.5}},
-    {"id": "F3", "name": "SEND to database", "flood_label": "Send to database",
-     "description": "The satellite downlinks to the nearest gateway; the regional database stores it, filters duplicates and forwards it to the Kinshasa hub, where it appears on the common operating picture (COP). Each node keeps a replica.",
-     "performed_by": ["Gateways at the 4 database nodes", "Regional databases", "Kinshasa hub"],
-     "inputs": "Downlinked message", "outputs": "Event on the COP",
-     "traces": ["MO-1", "S3-03", "S3-10"],
-     "latency_min": {"budget": "S3-03", "threshold": 10, "objective": 2}},
-    {"id": "F4", "name": "PROCESS, evaluate threat", "flood_label": "Process, evaluate threat",
-     "description": "Hub analysts and models fuse the event with other data (radar, weather, history) and decide whether it is a threat, where, and who is at risk.",
-     "performed_by": ["Kinshasa hub (regional node as backup)", "Partner data (S-1, S-2, A-4)"],
-     "inputs": "COP event + context", "outputs": "Threat assessment and recommended alert area",
-     "traces": ["MO-1", "MO-2"],
-     "latency_min": {"budget": "outside S-3 timing (agency process)", "threshold": null, "objective": null}},
-    {"id": "F5", "name": "AUTHORIZE", "flood_label": "Authorize",
-     "description": "The responsible national agency approves the alert and issues it as a CAP message. S-3 never decides; it only carries.",
-     "performed_by": ["National disaster or park agency (each of the 10 countries)"],
-     "inputs": "Threat assessment", "outputs": "Authorized CAP alert",
-     "traces": ["MO-2", "Constraint: CAP, national authority"],
-     "latency_min": {"budget": "outside S-3 timing (agency decision)", "threshold": null, "objective": null}},
-    {"id": "F6", "name": "RETRANSMIT to satellite", "flood_label": "Retransmit to satellite",
-     "description": "The hub validates the CAP message, converts it to speech in the district's languages, sets the geo-target area and uplinks it to the broadcast satellite.",
-     "performed_by": ["Kinshasa hub (any node as backup)", "Uplink station", "GEO broadcast payload"],
-     "inputs": "CAP alert", "outputs": "Geo-targeted spoken alert on air",
-     "traces": ["MO-2", "S3-05", "S3-06"],
-     "latency_min": {"budget": "S3-05", "threshold": 4, "objective": 1.25}},
-    {"id": "F7", "name": "SEND to outposts", "flood_label": "Send to outposts",
-     "description": "Community receivers and ranger-station loudspeakers inside the target area wake up and play the alert aloud; ranger terminals get the text.",
-     "performed_by": ["Community receivers (S3-07)", "Ranger-station towers and loudspeakers", "Ranger terminals"],
-     "inputs": "Broadcast alert", "outputs": "Alert audible in the community",
-     "traces": ["MO-2", "MO-3", "S3-05", "S3-07"],
-     "latency_min": {"budget": "S3-05", "threshold": 6, "objective": 1.75}},
-    {"id": "F8", "name": "VERIFICATION", "flood_label": "Verification",
-     "description": "Ranger stations confirm the alert was heard (receiver check-ins, patrols, the tower loudspeaker) and report ground truth; the acknowledgment returns over the satellite link and closes the loop to F4.",
-     "performed_by": ["Ranger stations and teams", "Two-way terminals", "LEO satellites / commercial backhaul"],
-     "inputs": "Alert played", "outputs": "Delivery confirmation + ground truth",
-     "traces": ["MO-2", "MO-3", "S3-08", "S3-09"],
-     "latency_min": {"budget": "S3-09", "threshold": 360, "objective": 15}}
-  ],
-  "continuous_functions": [
-    {"id": "C1", "name": "Two-way responder communications", "description": "Rangers and responders talk and text through the station, the satellite layer and commercial backhaul, without towers or the grid.", "traces": ["MO-3", "S3-08", "S3-09"]},
-    {"id": "C2", "name": "Maintain the network", "description": "Monitor terminal health and power (solar, hydro, hand crank), replace failed sensors and receivers, replenish satellites.", "traces": ["S3-04", "S3-10"]}
-  ],
-  "latency_budgets": {
-    "S3-03": {"threshold_min": 30, "objective_min": 5, "functions": ["F1", "F2", "F3"]},
-    "S3-05": {"threshold_min": 10, "objective_min": 3, "functions": ["F6", "F7"]},
-    "S3-09": {"threshold_min": 360, "objective_min": 15, "functions": ["F8"]}
+ "_note": "Level 1 functional flow: the team's nine blocks (Acquire, Transmit, Process, Evaluate, Generate, Broadcast, Receive, Verify, Coordinate) with their sub-steps. F1-F8 run in sequence; at F8, missing acknowledgments send the alert back to F6; F9 Coordinate is persistent and runs alongside the others. Latency allocations and derived L1 requirements are DRAFTS for the team to adjust; the team's own requirements take precedence.",
+ "hazards": [
+  {
+   "id": "flood",
+   "name": "Flooding",
+   "detect_example": "River gauge reads water rising past its alert level"
   },
-  "derived_L1_drafts": [
-    {"id": "L1-01", "parent": "S3-01", "function": "F2", "text": "The system shall receive messages from terminals anywhere within the basin boundary, including terminals under 30-40 m canopy within relay range of a ranger station.", "verify": "Analysis + demonstration"},
-    {"id": "L1-02", "parent": "S3-03", "function": "F2", "text": "The space segment shall provide a satellite in simultaneous view of an open-sky terminal and a gateway within 18 min at the 95th percentile (threshold) and 2.5 min (objective).", "verify": "Analysis (orbit simulation)"},
-    {"id": "L1-03", "parent": "S3-03", "function": "F3", "text": "The ground segment shall deliver a downlinked priority message to the hub COP within 10 min (threshold) and 2 min (objective) at >= 95% / >= 99% completeness.", "verify": "Test"},
-    {"id": "L1-04", "parent": "S3-10", "function": "F3", "text": "Every database node shall hold a full replica and shall be able to run F3-F8 alone if the hub is unreachable.", "verify": "Demonstration (failover drill)"},
-    {"id": "L1-05", "parent": "S3-05", "function": "F6", "text": "The hub shall convert an authorized CAP alert into geo-targeted speech and put it on air within 4 min (threshold) and 1.25 min (objective).", "verify": "Test"},
-    {"id": "L1-06", "parent": "S3-06", "function": "F6", "text": "The broadcast shall address areas of <= 50,000 km2 (threshold) / <= 2,500 km2 (objective) and carry French, Lingala, Kiswahili, Kikongo and Tshiluba.", "verify": "Test"},
-    {"id": "L1-07", "parent": "S3-05", "function": "F7", "text": "Community receivers in the target area shall play the alert aloud within 6 min of broadcast (threshold), 1.75 min (objective), for >= 95% / >= 99% of receivers.", "verify": "Test"},
-    {"id": "L1-08", "parent": "S3-07", "function": "F7", "text": "The community receiver shall cost <= $25, run from solar or hand crank, and receive with a fixed antenna needing no pointing.", "verify": "Inspection + test"},
-    {"id": "L1-09", "parent": "S3-09", "function": "F8", "text": "Each ranger station shall return a delivery confirmation for its area within 6 h (threshold) and 15 min (objective).", "verify": "Demonstration"},
-    {"id": "L1-10", "parent": "S3-08", "function": "C1", "text": "The system shall support >= 500 simultaneous responder terminals at >= 4.8 kbps with all terrestrial networks down.", "verify": "Test"},
-    {"id": "L1-11", "parent": "S3-10", "function": "C2", "text": "Ranger stations shall keep alerting and two-way service through 5 days without sun, using storage, micro-hydro where available, and hand crank.", "verify": "Analysis + test"},
-    {"id": "L1-12", "parent": "Constraint", "function": "F5", "text": "No alert shall be broadcast without a valid CAP message signed by an authorized national agency.", "verify": "Inspection + test"}
-  ]
+  {
+   "id": "fire",
+   "name": "Fire",
+   "detect_example": "Smoke sensor in the savanna belt trips; satellite hotspot from another system confirms"
+  },
+  {
+   "id": "logging",
+   "name": "Illegal logging / deforestation",
+   "detect_example": "Acoustic sensor hears a chainsaw; S-2 radar shows new canopy loss"
+  },
+  {
+   "id": "mining",
+   "name": "Illegal mining / pollution",
+   "detect_example": "Water-quality probe sees a turbidity spike below a mining zone"
+  },
+  {
+   "id": "wildlife",
+   "name": "Wildlife and poaching",
+   "detect_example": "Tagged elephant stops moving, or a gunshot is detected"
+  },
+  {
+   "id": "health",
+   "name": "Disease and community emergencies",
+   "detect_example": "Ranger or health worker sends a priority report from a handheld"
+  }
+ ],
+ "functions": [
+  {
+   "id": "F1",
+   "name": "Acquire",
+   "title": "Acquire Environment & Field Data",
+   "description": "A sensor, tag, ranger device or partner system measures conditions, adds observation metadata, formats a standardized message, sets its priority and queues it for transmission.",
+   "steps": [
+    "Identify data source",
+    "Measure conditions",
+    "Determine observation metadata",
+    "Format into standardized data message",
+    "Assign message priority",
+    "Queue message for transmission"
+   ],
+   "performed_by": [
+    "Field sensors and tags",
+    "Ranger handhelds",
+    "Partner systems (S-1, S-2, A-1, A-4)"
+   ],
+   "inputs": "Conditions in the field",
+   "outputs": "Prioritized, standardized message (a few hundred bytes), queued",
+   "traces": [
+    "MO-1",
+    "S3-02",
+    "S3-04"
+   ],
+   "latency_min": {
+    "budget": "S3-03",
+    "threshold": 2,
+    "objective": 0.5
+   },
+   "persistent": false
+  },
+  {
+   "id": "F2",
+   "name": "Transmit",
+   "title": "Transmit Data to Ground",
+   "description": "The terminal picks an available satellite path and links up (directly, through its raised antenna, or through a station or repeater under canopy); the satellite receives and validates the message, directs it to the right ground terminal and forwards it to the ground system, and reception is acknowledged.",
+   "steps": [
+    "Receive transmission request",
+    "Select available satellite communication path",
+    "Establish communication link with satellite",
+    "Transmit message to satellite",
+    "Receive message on satellite",
+    "Validate and identify message",
+    "Direct message towards correct ground terminal",
+    "Forward message to ground system",
+    "Acknowledge reception"
+   ],
+   "performed_by": [
+    "Terminal radio and antenna",
+    "Ranger-station tower or canopy repeater",
+    "LEO IoT satellites and gateways"
+   ],
+   "inputs": "Queued message",
+   "outputs": "Message at the ground system; reception acknowledged",
+   "traces": [
+    "MO-1",
+    "S3-01",
+    "S3-02",
+    "S3-03"
+   ],
+   "latency_min": {
+    "budget": "S3-03",
+    "threshold": 18,
+    "objective": 2.5
+   },
+   "persistent": false
+  },
+  {
+   "id": "F3",
+   "name": "Process",
+   "title": "Process Data",
+   "description": "The regional database receives and validates the message, reconciles it with existing records, stores it, updates the current models and distributes the information to the monitors in the common operating picture.",
+   "steps": [
+    "Receive incoming message",
+    "Validate and identify message",
+    "Reconcile incoming observations with existing records",
+    "Store data in central database",
+    "Update current models",
+    "Distribute information to monitors"
+   ],
+   "performed_by": [
+    "Regional databases",
+    "Kinshasa hub"
+   ],
+   "inputs": "Incoming message",
+   "outputs": "Validated record in the COP; models updated",
+   "traces": [
+    "MO-1",
+    "S3-03",
+    "S3-10"
+   ],
+   "latency_min": {
+    "budget": "S3-03",
+    "threshold": 10,
+    "objective": 2
+   },
+   "persistent": false
+  },
+  {
+   "id": "F4",
+   "name": "Evaluate",
+   "title": "Evaluate Conditions",
+   "description": "Relevant data is retrieved, measurements are compared with thresholds and correlated across sources, hazard severity and location are assessed, and the agencies decide whether an alert is needed.",
+   "steps": [
+    "Retrieve relevant data",
+    "Compare measurements to predefined thresholds",
+    "Correlate observations of multiple data sources",
+    "Assess hazard severity and location",
+    "Determine necessity of an alert"
+   ],
+   "performed_by": [
+    "National agencies",
+    "Forecast models",
+    "Partner systems (for example an S-1 revisit)"
+   ],
+   "inputs": "Records and models",
+   "outputs": "Hazard severity and location; alert decision",
+   "traces": [
+    "MO-1",
+    "MO-2"
+   ],
+   "latency_min": {
+    "budget": "outside S-3 timing (agency process)",
+    "threshold": null,
+    "objective": null
+   },
+   "persistent": false
+  },
+  {
+   "id": "F5",
+   "name": "Generate",
+   "title": "Generate Alerts",
+   "description": "A proposed alert is generated, checked against its source data, customized for the geographic location of the hazard and completed as a full alert message, under the national alerting authority.",
+   "steps": [
+    "Generate proposed alert",
+    "Validate alert information and source data",
+    "Customize alert for geographic location of hazard",
+    "Generate complete alert message"
+   ],
+   "performed_by": [
+    "National alerting authority",
+    "S-3 alert tools (CAP)"
+   ],
+   "inputs": "Alert decision",
+   "outputs": "Authorized, geo-targeted alert message",
+   "traces": [
+    "MO-2",
+    "S3-06",
+    "Constraint: CAP, national authority"
+   ],
+   "latency_min": {
+    "budget": "outside S-3 timing (agency decision); the S3-05 clock starts when the authorized alert reaches S-3",
+    "threshold": null,
+    "objective": null
+   },
+   "persistent": false
+  },
+  {
+   "id": "F6",
+   "name": "Broadcast",
+   "title": "Broadcast Alerts",
+   "description": "S-3 identifies the target recipients and the pathway, sends the alert from the ground system to the satellite network, relays it across the network and delivers it to community receivers and responders, then reports delivery status.",
+   "steps": [
+    "Identify target recipients",
+    "Select appropriate pathway",
+    "Transmit alert from ground system to satellite network",
+    "Relay alert across network",
+    "Deliver alert to community receivers and responders",
+    "Report delivery status"
+   ],
+   "performed_by": [
+    "Ground uplink",
+    "GEO broadcast payload",
+    "LEO satellites (responder terminals)"
+   ],
+   "inputs": "Authorized alert",
+   "outputs": "Alert delivered; delivery status",
+   "traces": [
+    "MO-2",
+    "S3-05",
+    "S3-06"
+   ],
+   "latency_min": {
+    "budget": "S3-05",
+    "threshold": 4,
+    "objective": 1.25
+   },
+   "persistent": false
+  },
+  {
+   "id": "F7",
+   "name": "Receive",
+   "title": "Receive & Present Alerts",
+   "description": "The receiver or terminal receives and validates the alert, converts text to spoken audio if required, activates the community notification interface or presents it on the terminal, records reception and transmits an acknowledgement.",
+   "steps": [
+    "Receive alert on receiver or terminal",
+    "Validate alert",
+    "Convert alert text into spoken audio if required",
+    "Activate community notification interface",
+    "Present alert on compatible terminals",
+    "Record alert reception status",
+    "Transmit acknowledgement"
+   ],
+   "performed_by": [
+    "Community receivers ($25, solar or crank)",
+    "Responder terminals",
+    "Station loudspeakers"
+   ],
+   "inputs": "Broadcast alert",
+   "outputs": "Audible spoken alert; acknowledgement sent",
+   "traces": [
+    "MO-2",
+    "S3-05",
+    "S3-07"
+   ],
+   "latency_min": {
+    "budget": "S3-05",
+    "threshold": 6,
+    "objective": 1.75
+   },
+   "persistent": false
+  },
+  {
+   "id": "F8",
+   "name": "Verify",
+   "title": "Verify",
+   "description": "Delivery acknowledgments come back and the alert delivery status is updated; missing acknowledgments are identified, satellite and terminal health is inspected and operators are told of any degradation. If acknowledgments are missing, the alert goes back to F6 and is broadcast again to the receivers that have not answered.",
+   "steps": [
+    "Receive delivery acknowledgment",
+    "Update alert delivery status",
+    "Identify missing acknowledgments",
+    "Inspect satellite and terminal health",
+    "Notify operators of degradation if necessary"
+   ],
+   "decision": {
+    "question": "All targeted receivers acknowledged?",
+    "yes": "Alert confirmed",
+    "no": "F6",
+    "no_label": "Rebroadcast to receivers that have not acknowledged"
+   },
+   "performed_by": [
+    "Hub and monitoring operators",
+    "Ranger stations (ground truth)",
+    "Return link (LEO or station backhaul)"
+   ],
+   "inputs": "Acknowledgments",
+   "outputs": "Delivery confirmed, or a rebroadcast",
+   "traces": [
+    "MO-2",
+    "S3-05",
+    "S3-09",
+    "S3-10"
+   ],
+   "latency_min": {
+    "budget": "S3-09",
+    "threshold": 360,
+    "objective": 15
+   },
+   "persistent": false
+  },
+  {
+   "id": "F9",
+   "name": "Coordinate",
+   "title": "Coordinate Response",
+   "persistent": true,
+   "description": "Runs alongside every other block: responders message in, are authenticated and prioritized; messages go through the satellite network and are delivered to the outposts; return commands and messages are relayed; field reports update the models; communication queues are maintained. Works with towers and the grid down.",
+   "steps": [
+    "Receive message from responders",
+    "Authenticate user",
+    "Assign message priority",
+    "Transmit message through satellite network",
+    "Deliver message to outpost",
+    "Receive return commands",
+    "Relay return messages",
+    "Update models with relevant field reports",
+    "Maintain communication queues"
+   ],
+   "performed_by": [
+    "Rangers and responders (two-way terminals)",
+    "Ranger stations (VHF, Starlink)",
+    "LEO satellites; A-1 relay as a complement"
+   ],
+   "inputs": "Responder traffic",
+   "outputs": "Commands and messages delivered; field reports into the models",
+   "traces": [
+    "MO-3",
+    "S3-08",
+    "S3-09"
+   ],
+   "latency_min": {
+    "budget": "S3-09",
+    "threshold": 360,
+    "objective": 15
+   }
+  }
+ ],
+ "latency_budgets": {
+  "S3-03": {
+   "threshold_min": 30,
+   "objective_min": 5,
+   "functions": [
+    "F1",
+    "F2",
+    "F3"
+   ]
+  },
+  "S3-05": {
+   "threshold_min": 10,
+   "objective_min": 3,
+   "functions": [
+    "F6",
+    "F7"
+   ]
+  },
+  "S3-09": {
+   "threshold_min": 360,
+   "objective_min": 15,
+   "functions": [
+    "F8",
+    "F9"
+   ],
+   "note": "per message (an acknowledgment in F8, a command in F9), not a sum"
+  }
+ },
+ "derived_L1_drafts": [
+  {
+   "id": "L1-01",
+   "parent": "S3-01",
+   "function": "F2",
+   "text": "The system shall receive messages from terminals anywhere within the basin boundary, including terminals under 30-40 m canopy within relay range of a ranger station.",
+   "verify": "Analysis + demonstration"
+  },
+  {
+   "id": "L1-02",
+   "parent": "S3-03",
+   "function": "F2",
+   "text": "The space segment shall provide a satellite in simultaneous view of an open-sky terminal and a gateway within 18 min at the 95th percentile (threshold) and 2.5 min (objective).",
+   "verify": "Analysis (orbit simulation)"
+  },
+  {
+   "id": "L1-03",
+   "parent": "S3-03",
+   "function": "F3",
+   "text": "The ground segment shall deliver a downlinked priority message to the hub COP within 10 min (threshold) and 2 min (objective) at >= 95% / >= 99% completeness.",
+   "verify": "Test"
+  },
+  {
+   "id": "L1-04",
+   "parent": "S3-10",
+   "function": "F3",
+   "text": "Every database node shall hold a full replica and shall be able to run F3-F8 alone if the hub is unreachable.",
+   "verify": "Demonstration (failover drill)"
+  },
+  {
+   "id": "L1-05",
+   "parent": "S3-05",
+   "function": "F6",
+   "text": "The hub shall convert an authorized CAP alert into geo-targeted speech and put it on air within 4 min (threshold) and 1.25 min (objective).",
+   "verify": "Test"
+  },
+  {
+   "id": "L1-06",
+   "parent": "S3-06",
+   "function": "F6",
+   "text": "The broadcast shall address areas of <= 50,000 km2 (threshold) / <= 2,500 km2 (objective) and carry French, Lingala, Kiswahili, Kikongo and Tshiluba.",
+   "verify": "Test"
+  },
+  {
+   "id": "L1-07",
+   "parent": "S3-05",
+   "function": "F7",
+   "text": "Community receivers in the target area shall play the alert aloud within 6 min of broadcast (threshold), 1.75 min (objective), for >= 95% / >= 99% of receivers.",
+   "verify": "Test"
+  },
+  {
+   "id": "L1-08",
+   "parent": "S3-07",
+   "function": "F7",
+   "text": "The community receiver shall cost <= $25, run from solar or hand crank, and receive with a fixed antenna needing no pointing.",
+   "verify": "Inspection + test"
+  },
+  {
+   "id": "L1-09",
+   "parent": "S3-09",
+   "function": "F8",
+   "text": "Each ranger station shall return a delivery confirmation for its area within 6 h (threshold) and 15 min (objective).",
+   "verify": "Demonstration"
+  },
+  {
+   "id": "L1-10",
+   "parent": "S3-08",
+   "function": "F9",
+   "text": "The system shall support >= 500 simultaneous responder terminals at >= 4.8 kbps with all terrestrial networks down.",
+   "verify": "Test"
+  },
+  {
+   "id": "L1-11",
+   "parent": "S3-10",
+   "function": "F8",
+   "text": "Ranger stations shall keep alerting and two-way service through 5 days without sun, using storage, micro-hydro where available, and hand crank.",
+   "verify": "Analysis + test"
+  },
+  {
+   "id": "L1-12",
+   "parent": "Constraint",
+   "function": "F5",
+   "text": "No alert shall be broadcast without a valid CAP message signed by an authorized national agency.",
+   "verify": "Inspection + test"
+  }
+ ]
 }

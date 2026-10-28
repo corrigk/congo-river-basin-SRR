@@ -204,7 +204,7 @@ function renderScenario() {
   $('#sc-count').textContent = `Step ${i + 1} / ${s.steps.length}`;
   $('[data-act="step-prev"]').disabled = i === 0;
   $('[data-act="step-next"]').disabled = i === s.steps.length - 1;
-  $('#sc-stages').innerHTML = V.stageStrip(st.stages);
+  $('#sc-stages').innerHTML = V.flowStrip(st.fn);
 
   // Latency budget: shown for scenarios that carry it; segments fill in as the chain reaches them.
   app.classList.toggle('has-latency', !!s.latency);

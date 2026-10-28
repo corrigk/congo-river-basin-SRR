@@ -150,11 +150,13 @@
 .sc-count { text-align: center; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .sc-stages .st-strip { gap: 3px; grid-template-columns: repeat(9, minmax(0, 1fr)); }
 .sc-stages .st-node { padding: 4px 0; align-items: center; border-radius: 6px; gap: 0; opacity: .5; background: none; }
-.sc-stages .st-n { font-size: 15px; }
+.sc-stages .st-n { font-size: 14px; }
+.sc-stages .fl-name { display: none; }
+.sc-stages .st-node.is-persistent { border-style: dashed; border-color: var(--line-2); }
 .sc-stages :is(.st-t, .st-r) { display: none; }
 .sc-stages .st-node.is-active { opacity: 1; background: var(--gold); border-color: var(--accent); box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent); }
 .sc-stages .st-node.is-active .st-n { color: var(--ink); }
-.sc-stages::before { content: 'Nine-stage loop'; display: block; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); font-weight: 600; margin-bottom: 5px; }
+.sc-stages::before { content: 'Functional flow'; display: block; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); font-weight: 600; margin-bottom: 5px; }
 
 /* scenario panel content */
 #app[data-view="scenario"] .panel { z-index: 15; }

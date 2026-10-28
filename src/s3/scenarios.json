@@ -1,5 +1,5 @@
 {
-  "_readme": "Scenario data for the scenario walkthrough (a mode of Function flow). Step field fn lists the Level 1 functions (F1-F8, C1-C2) the step exercises; latency segments are those function ids. Add a scenario by appending to `scenarios`; add a map node to `nodes`. Positions are illustrative. Step fields: title, text, before (optional 'today' contrast), reqs, mo, stages (nine-stage keys), show (node ids on the map), links ([from, to, kind] with kind up|down|two|cue|relay), focus (node ids to frame), latency ({leg, segments}), area (show the S3-06 geo-target footprint), interfaces ([{id, note}]), note (optional caveat).",
+  "_readme": "Scenario data for the scenario walkthrough (a mode of Function flow). Step field fn lists the Level 1 functions (F1-F9; F9 Coordinate is persistent) the step exercises; latency segments are those function ids. Add a scenario by appending to `scenarios`; add a map node to `nodes`. Positions are illustrative. Step fields: title, text, before (optional 'today' contrast), reqs, mo, stages (nine-stage keys), show (node ids on the map), links ([from, to, kind] with kind up|down|two|cue|relay), focus (node ids to frame), latency ({leg, segments}), area (show the S3-06 geo-target footprint), interfaces ([{id, note}]), note (optional caveat).",
 
   "nodes": {
     "gauge":      { "label": "Ubangi river gauge", "sub": "near Mobaye · illustrative", "kind": "sensor",    "at": [21.18, 4.32] },
@@ -64,7 +64,7 @@
         },
         {
           "title": "Authority decision", "fn": ["F5"],
-          "text": "The national agency reviews the data and authorizes the alert. S-3 does not decide. The alert arrives at S-3 as a CAP message.",
+          "text": "The national agency decides an alert is needed and generates it: checked against the source data and targeted to the flooded area. S-3 does not decide. The alert arrives at S-3 as a CAP message.",
           "reqs": [], "mo": ["MO-2"], "stages": ["forecast", "prioritize"],
           "show": ["cop", "agency"], "links": [["cop", "agency", "two"]], "focus": ["agency", "cop"],
           "note": "The S3-05 clock starts when the alert is authorized, so the agency’s decision time is outside S-3’s budget."
@@ -80,14 +80,14 @@
         },
         {
           "title": "Confirmation", "fn": ["F8"],
-          "text": "Delivery confirmation returns to the agency. The agency knows which receivers played the alert. This closes MO-2.",
+          "text": "Receivers acknowledge, and the delivery status returns to the agency. Any receiver that has not acknowledged gets the alert again (Verify back to Broadcast) until it does. This closes MO-2.",
           "reqs": [], "mo": ["MO-2"], "stages": ["deploy", "feedback"],
           "show": ["agency", "space", "rx-betou", "rx-mong", "rx-kouango", "rx-mobaye"],
           "links": [["rx-betou", "space", "up"], ["rx-mong", "space", "up"], ["rx-kouango", "space", "up"], ["rx-mobaye", "space", "up"], ["space", "agency", "down"]],
           "focus": ["rx-betou", "rx-mobaye", "rx-mong"], "state": { "rx-betou": "ok", "rx-mong": "ok", "rx-kouango": "ok", "rx-mobaye": "ok" }
         },
         {
-          "title": "Response coordination", "fn": ["C1"],
+          "title": "Response coordination", "fn": ["F9"],
           "text": "Two-way terminals carry commands and acknowledgments to rangers and responders. A-2 confirms the situation overhead and A-3 is dispatched.",
           "reqs": ["S3-08", "S3-09"], "mo": ["MO-3"], "stages": ["support"],
           "show": ["agency", "space", "rangers", "responders", "if-A-2", "if-A-3"],
@@ -148,14 +148,14 @@
       "reqs": ["S3-08", "S3-09", "S3-10"],
       "steps": [
         {
-          "title": "Terrestrial networks go down", "fn": ["C1"],
+          "title": "Terrestrial networks go down", "fn": ["F9"],
           "text": "Conflict or storms take out cell towers and the grid around the response area.",
           "before": "Floods and conflict take down towers and the grid, and internet reaches only about 27-32% of people even before that.",
           "reqs": [], "mo": ["MO-3"], "stages": ["support"],
           "show": ["towers", "rangers", "responders"], "links": [], "focus": ["towers", "rangers", "responders"], "state": { "towers": "down" }
         },
         {
-          "title": "Two-way over S-3", "fn": ["C1"],
+          "title": "Two-way over S-3", "fn": ["F9"],
           "text": "Rangers and responders switch to S-3 two-way terminals. Commands go out and acknowledgments come back.",
           "reqs": ["S3-08", "S3-09"], "mo": ["MO-3"], "stages": ["support"],
           "show": ["towers", "rangers", "responders", "space", "cop"],
@@ -163,7 +163,7 @@
           "focus": ["rangers", "responders", "cop"], "state": { "towers": "down" }
         },
         {
-          "title": "A-1 relay as a complement", "fn": ["C1"],
+          "title": "A-1 relay as a complement", "fn": ["F9"],
           "text": "Where A-1 is on station, it adds a regional relay. S-3 stays the primary basin-wide layer, and each covers for the other.",
           "reqs": ["S3-10"], "mo": ["MO-3"], "stages": ["support"],
           "show": ["towers", "rangers", "responders", "space", "cop", "if-A-1"],
@@ -173,7 +173,7 @@
           "note": "S-3 primary, A-1 complementary is our assumption, TBR with the A-1 team."
         },
         {
-          "title": "Service holds through the weather", "fn": ["C1", "C2"],
+          "title": "Service holds through the weather", "fn": ["F9", "F8"],
           "text": "Availability is specified in heavy tropical rain, so the link is sized for the weather that drives floods in the first place.",
           "reqs": ["S3-10"], "mo": ["MO-3"], "stages": ["support"],
           "show": ["towers", "rangers", "responders", "space", "cop"],
@@ -212,7 +212,7 @@
           "interfaces": [{ "id": "A-2", "note": "A-2’s ≤45 min clock starts when our alert is delivered." }]
         },
         {
-          "title": "Two-way link for the response", "fn": ["C1"],
+          "title": "Two-way link for the response", "fn": ["F9"],
           "text": "Rangers move with S-3 two-way terminals: commands out, acknowledgments back. The same layer that carried the flood warning carries this.",
           "reqs": ["S3-08", "S3-09"], "mo": ["MO-3"], "stages": ["support"],
           "show": ["site", "space", "ranger-post", "if-A-2s", "cop"], "links": [["ranger-post", "space", "two"], ["space", "cop", "two"], ["if-A-2s", "space", "two"]],
