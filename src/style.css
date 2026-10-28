@@ -62,7 +62,7 @@
   --fg: 28, 27, 23; --hi: 0, 0, 0;
   --bg: #F5F2EA; --bg-glow: rgba(44, 95, 116, .10); --surface: #FFFFFF; --card-2: #FFFFFF; --card-3: #FBF9F4;
   --recess: rgba(var(--hi), .7); --bar: rgba(250, 248, 242, .97); --bar-2: rgba(250, 248, 242, .9);
-  --glass-rgb: 255, 255, 255; --glass: rgba(var(--glass-rgb), .9); --tip: rgba(var(--hi), .98); --shadow: rgba(60, 45, 15, .16);
+  --glass-rgb: 255, 255, 255; --glass: rgba(var(--glass-rgb), .9); --tip: rgba(255, 255, 255, .98); --shadow: rgba(60, 45, 15, .16);
   --accent: #7A5A24; --river: #1D5E7A; --on-river: #FFFFFF; --rust-hi: #B0431C; --rust-soft: #9E3B19;
   --data: #0B7457; --alert: #835B06; --precip: #4150B0; --hydro: #0B7457;
   --muted: rgba(var(--fg), .76); --faint: rgba(var(--fg), .66); --line: rgba(var(--fg), .13); --line-2: rgba(var(--fg), .24);
@@ -73,7 +73,7 @@
     --fg: 28, 27, 23; --hi: 0, 0, 0;
     --bg: #F5F2EA; --bg-glow: rgba(44, 95, 116, .10); --surface: #FFFFFF; --card-2: #FFFFFF; --card-3: #FBF9F4;
     --recess: rgba(var(--hi), .7); --bar: rgba(250, 248, 242, .97); --bar-2: rgba(250, 248, 242, .9);
-    --glass-rgb: 255, 255, 255; --glass: rgba(var(--glass-rgb), .9); --tip: rgba(var(--hi), .98); --shadow: rgba(60, 45, 15, .16);
+    --glass-rgb: 255, 255, 255; --glass: rgba(var(--glass-rgb), .9); --tip: rgba(255, 255, 255, .98); --shadow: rgba(60, 45, 15, .16);
     --accent: #7A5A24; --river: #1D5E7A; --on-river: #FFFFFF; --rust-hi: #B0431C; --rust-soft: #9E3B19;
     --data: #0B7457; --alert: #835B06; --precip: #4150B0; --hydro: #0B7457;
     --muted: rgba(var(--fg), .76); --faint: rgba(var(--fg), .66); --line: rgba(var(--fg), .13); --line-2: rgba(var(--fg), .24);
