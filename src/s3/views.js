@@ -253,7 +253,7 @@ export function sourcesPanel() {
 // ---------- help ----------
 export function helpView() {
   const rows = [
-    ['1 – 7', 'Switch tab'], ['→ &nbsp;PgDn &nbsp;Space', 'Next scenario step'], ['← &nbsp;PgUp', 'Previous step'], ['R', 'Reset scenario'],
+    ['1 – 3', 'ConOps · Function flow · Requirements'], ['→ &nbsp;PgDn &nbsp;Space', 'ConOps: Why → What · scenario: next step'], ['← &nbsp;PgUp', 'Back'], ['R', 'Reset scenario'],
     ['T', 'Threshold / objective'], ['M', 'Next map: globe · ground · schematic'], ['G', 'Ground view'], ['O', 'Satellite: pass overhead / fixed in sky'], ['P', 'Presenter mode'], ['L', 'Light / dark theme'], ['S', 'Sources'], ['F', 'Fullscreen'], ['Esc', 'Close panel'], ['?', 'This help'],
   ];
   return `<div class="help-head"><span>Keyboard</span><button class="icon-btn" data-act="help" aria-label="Close shortcuts">${ICON.close}</button></div>

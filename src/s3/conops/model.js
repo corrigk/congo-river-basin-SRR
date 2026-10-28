@@ -99,7 +99,9 @@ export function siteRepeaters(D, stations, counts, k) {
     const tot = mine.reduce((a, [p]) => a + p.per, 0);
     reach[t.id] = tot ? mine.reduce((a, [p, c]) => a + (c ? p.per : 0), 0) / tot : 1;
   }
-  return { repeaters: out, reach };
+  // Per sample point: within a station's or repeater's relay reach (the map draws the ones that are not).
+  const points = pts.map((p, i) => ({ t: p.t, ll: p.ll, covered: covered[i] }));
+  return { repeaters: out, reach, points };
 }
 
 const lccLeo = sats => ASSUME.leo.fixedMusd + ASSUME.leo.perSatMusd * sats;
@@ -118,7 +120,7 @@ export function evaluate(D, yearData, opts) {
   const leo = leoRow(D, sats);
   const geoUp = opts.geo && fail !== 'geo';
   const needRelay = opts.raised ? Object.fromEntries(Object.entries(counts).map(([t, c]) => [t, A.raised.types.includes(t) ? 0 : c])) : counts;
-  const { repeaters, reach } = siteRepeaters(D, stations, needRelay, opts.repeaters);
+  const { repeaters, reach, points } = siteRepeaters(D, stations, needRelay, opts.repeaters);
 
   // ----- coverage -----
   const n = stations.length, last = n ? run.stations[opts.n - 1] : null;
@@ -192,7 +194,8 @@ export function evaluate(D, yearData, opts) {
   ].map(c => ({ ...c, state: c.ok ? 'pass' : c.near ? 'near' : 'fail' }));
 
   return {
-    stations, repeaters, reach, popPct, terminals, prioCount, fastShare, within30, s303, s305, s309, bytesDay, leoBytesDay,
+    allStations: stationsAll, lostStation: lost ? stationsAll.indexOf(lost) : -1, hubDown, geoUp, canopyShare, priority: A.priority,
+    stations, repeaters, reach, canopyPoints: points, popPct, terminals, prioCount, fastShare, within30, s303, s305, s309, bytesDay, leoBytesDay,
     responderMbps, backhaulMbps, avail, lines, total, sensorsUsd, receivers, checks, leo: { sats, row: leo },
     counts: { stations: n, repeaters: repeaters.length, dbNodes: k, satellites: sats, geo: opts.geo ? 1 : 0, receivers, terminals },
   };

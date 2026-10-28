@@ -10,11 +10,12 @@ import { createOffline } from './s3/offline.js';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $('#app');
-// Brief v2: the six analysis sections are tabs 1-6 and Requirements is tab 7. The scenario walkthrough is a mode
-// of Function flow; the Requirements tab has three views (mission & gap, Level 0, decomposition).
-const SECTION_TABS = ['flow', 'map', 'stations', 'sensors', 'comms', 'budget'];
+// Three tabs: ConOps (why, then what / where / how many), Function flow (with the scenario walkthrough as a mode)
+// and Requirements (mission & gap, Level 0, decomposition).
+const SECTION_TABS = ['flow'];
 const REQ_VIEWS = ['overview', 'requirements', 'decomposition'];
-const TABS = [...SECTION_TABS, ...REQ_VIEWS, 'scenario'];
+const TABS = ['conops', ...SECTION_TABS, ...REQ_VIEWS, 'scenario'];
+const MAIN_TABS = ['conops', 'flow', 'requirements'];
 const tabFor = v => (REQ_VIEWS.includes(v) ? 'requirements' : v === 'scenario' ? 'flow' : v);
 
 // ---------- static chrome ----------
@@ -31,7 +32,7 @@ $('#help').innerHTML = V.helpView();
 
 // ---------- state ----------
 // tab, mode ('t' threshold | 'o' objective), scenario + step, side panel, highlighted requirement.
-const state = { tab: 'flow', mode: 't', sc: 'A', step: 0, panel: null, hl: null, dsel: null, dsrr: null, fn: null };
+const state = { tab: 'conops', coStep: 'why', mode: 't', sc: 'A', step: 0, panel: null, hl: null, dsel: null, dsrr: null, fn: null };
 
 // ---------- map ----------
 const panel = $('#panel');
@@ -126,6 +127,7 @@ new ResizeObserver(([e]) => { if (e.contentRect.height) app.style.setProperty('-
 function readHash() {
   const [tab, sc, step] = location.hash.slice(1).split('/');
   if (TABS.includes(tab)) state.tab = tab;
+  if (tab === 'conops') { state.coStep = sc === 'what' ? 'what' : 'why'; return; }
   if (tab === 'decomposition') { state.dsel = sc ? decodeURIComponent(sc) : null; return; }
   if (tab === 'flow') { state.fn = /^F\d$/.test(sc || '') ? sc : null; return; }
   if (V.scenarioBy[sc]) state.sc = sc;
@@ -134,6 +136,7 @@ function readHash() {
 }
 function writeHash() {
   const h = state.tab === 'scenario' ? `#scenario/${state.sc}/${state.step + 1}`
+    : state.tab === 'conops' ? `#conops${state.coStep === 'what' ? '/what' : ''}`
     : state.tab === 'decomposition' && state.dsel ? `#decomposition/${encodeURIComponent(state.dsel)}` : `#${state.tab}`;
   if (location.hash !== h) history.replaceState(null, '', h);
 }
@@ -161,6 +164,7 @@ function render() {
   renderHighlights();
   renderDecomposition();
   renderAnalysis();
+  renderConops();
   writeHash();
 }
 
@@ -187,7 +191,7 @@ function goSrr(kind, ref) {
     for (const s of V.SCENARIOS) { const i = s.steps.findIndex(st => st.interfaces?.some(x => x.id === ref)); if (i >= 0) { setScenario(s.id, i); return; } }
     setTab('flow'); return;
   }
-  if (kind === 'trade') { setTab('comms'); return; } // the options compared / notional baseline
+  if (kind === 'trade') { state.coStep = 'what'; setTab('conops'); return; } // the space and backhaul options live in the ConOps design
   if (kind === 'srr-req') { setTab('requirements'); openPanel({ type: 'req', k: ref }); }
 }
 
@@ -267,8 +271,22 @@ function renderAnalysis() {
     m.renderSection(state.tab, $(`#view-${state.tab}`));
   });
 }
+// ---------- ConOps tab (loaded the first time it is opened) ----------
+let conops = null;
+function renderConops() {
+  if (state.tab !== 'conops') return;
+  (conops ||= import('./s3/conops/view.js').then(async m => { await m.mount($('#view-conops'), state.coStep); return m; }))
+    .then(m => { if (state.tab === 'conops') m.setStep(state.coStep); });
+}
+function setCoStep(step) {
+  if (step === state.coStep) return;
+  state.coStep = step;
+  writeHash();
+  conops?.then(m => m.setStep(step));
+  $('#announce').textContent = step === 'what' ? 'What we build, where, and how many' : 'Why the basin needs S-3';
+}
 let resizeT;
-addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (['map', 'budget'].includes(state.tab)) renderAnalysis(); }, 200); });
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (state.tab === 'conops') conops?.then(m => m.refit()); }, 200); });
 
 function setTab(t) {
   if (!TABS.includes(t)) return;
@@ -357,6 +375,7 @@ document.addEventListener('click', e => {
   }
   if (d.view) { setTab(d.view === 'requirements' && t.getAttribute('role') === 'tab' && REQ_VIEWS.includes(state.tab) ? state.tab : d.view); return; }
   if (d.fn) { location.hash = `#flow/${d.fn}`; return; }
+  if (d.coStep) { setCoStep(d.coStep); return; }
   if (d.mode) { setMode(d.mode); return; }
   if (d.map) { pickMap(d.map); return; }
   if (d.orbit) { groundMap?.setOrbit(d.orbit); pref.setOrbit(d.orbit); return; }
@@ -390,8 +409,9 @@ document.addEventListener('keydown', e => {
     next.focus(); setTab(next.dataset.view);
     return;
   }
-  if (/^[1-6]$/.test(k)) { setTab(SECTION_TABS[+k - 1]); return; }
-  if (k === '7') { setTab(REQ_VIEWS.includes(state.tab) ? state.tab : 'requirements'); return; }
+  if (/^[1-3]$/.test(k)) { const t = MAIN_TABS[+k - 1]; setTab(t === 'requirements' && REQ_VIEWS.includes(state.tab) ? state.tab : t); return; }
+  if (state.tab === 'conops' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); setCoStep('what'); return; }
+  if (state.tab === 'conops' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); setCoStep('why'); return; }
   if (state.tab === 'scenario' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); goStep(state.step + 1); return; }
   if (state.tab === 'scenario' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); goStep(state.step - 1); return; }
   if (lk === 'r') { reset(); return; }

@@ -3,7 +3,7 @@
 import core from './data/core.json';
 
 export const D = core;
-const loaders = import.meta.glob(['./data/geo.json', './data/grid.json', './data/pop-*.json', './data/stations-*.json'], { import: 'default' });
+const loaders = import.meta.glob(['./data/geo.json', './data/grid.json', './data/pop-*.json', './data/stations-*.json', './data/hazards.json'], { import: 'default' });
 const cache = new Map();
 const load = name => {
   if (!cache.has(name)) cache.set(name, loaders[`./data/${name}.json`]().catch(e => { cache.delete(name); throw e; }));
@@ -13,6 +13,7 @@ export const geo = () => load('geo');
 export const grid = () => load('grid');
 export const pop = year => load(`pop-${year}`);
 export const stations = year => load(`stations-${year}`);
+export const hazards = () => load('hazards'); // ConOps "why" layers
 export const peek = name => cache.get(name); // the promise, if already requested
 
 // first_covered_b64: little-endian Uint16 per cell, the index of the first station that covers it (65535 = never).

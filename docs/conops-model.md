@@ -20,13 +20,13 @@ RFP S-3 Level 0 numbers, verbatim. Everything else is a **planning assumption** 
 | Existing infrastructure | Data centres, cable landing, hydro, roads, rivers | Natural Earth, press sources (see Sources drawer) |
 | Conflict | 5,413 violent events and 34,558 deaths (best estimate), 2015–2024, in the basin | UCDP GED v25.1 |
 | Fire | 409,465 active-fire detections in 2024 (≥50% confidence), DR Congo only | NASA FIRMS MODIS C6.1 |
-| Floods | Flood alerts since 2000, where the service answered | GDACS (EC JRC) |
+| Floods | 130 flood alerts in the basin since 2000 (all ten basin countries) | GDACS (EC JRC) |
 | Protected areas | Where poaching and logging pressure concentrates | WDPA |
 
 Illegal mining is not shown: the IPIS mine-site service could not be reached when the data was built. It is listed
 as an open item rather than drawn from guesses.
 
-**What / Where / How many** (one key press): the problem layers fade out and the system fades in, on the same map:
+**What / Where / How many** (→ or PgDn, or the step buttons): the problem layers fade out and the system fades in, on the same map:
 the hub and regional databases, ranger stations with their towers, canopy repeaters, sensors, and the footprint of
 each device. Sliders and toggles change the design; the cost bar and the requirement checks update live.
 
@@ -168,7 +168,7 @@ point of failure for alerts.
 - All coverage radii, the canopy shares, satellite capacity, availability figures and cost ranges are planning
   assumptions, tagged on the page. The latency split across function blocks is a proposed allocation, TBR.
 - River-gauge sites are rule-based (modeled proxy) until the GRDC station list is obtained.
-- Fire data covers the DR Congo only (about 75% of the basin); flood alerts come from GDACS where the service answered.
+- Fire data covers the DR Congo only (about 75% of the basin). GDACS flood alerts are event points (where an alert was issued), not flood extents.
 - Illegal mining sites (IPIS) could not be downloaded; not shown.
 - **Requirements data quality, worth fixing before the review:** 226 of the 340 thresholds in the requirements
   repo reuse one of 13 boilerplate sentences, and some no longer measure their requirement (for example
