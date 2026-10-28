@@ -26,9 +26,9 @@ RFP S-3 Level 0 numbers, verbatim. Everything else is a **planning assumption** 
 Illegal mining is not shown: the IPIS mine-site service could not be reached when the data was built. It is listed
 as an open item rather than drawn from guesses.
 
-**What / Where / How many** (→ or PgDn, or the step buttons): the problem layers fade out and the system fades in, on the same map:
+**What / Where / How many** (→ or PgDn, or the step buttons): the problem layers fade out and the system fades in, on the same map, with the key numbers in a strip across the top:
 the hub and regional databases, ranger stations with their towers, canopy repeaters, sensors, and the footprint of
-each device. Sliders and toggles change the design; the cost bar and the requirement checks update live.
+each device. Sliders and toggles change the design; the numbers, the cost bar and the requirement checks update live. The legend groups everything (built, coverage, sensors in three families, data flow) and each switchable item is a button; **Data flow** animates sensor data up (sensor → station or repeater → satellite → database → hub), alerts down (hub → GEO → the whole basin) and responder two-way traffic.
 
 ---
 
@@ -61,8 +61,8 @@ behind it. Objective values are reported separately.
 | Req | Formula on the page | Baseline result |
 | --- | --- | --- |
 | **S3-01** Service area | Pass if the LEO constellation is up (it covers the whole basin, canopy included) | Pass |
-| **S3-02** ≥10,000 terminals × ≥2 kB/day | Terminals = sum of the sensor sliders. Daily data = Σ count × bytes/day. Network capacity = 100 kbps per satellite (assumption) × 86,400 s × share of time in contact | 10,950 terminals, 26.9 MB/day of 562 MB/day: **pass**. Objective (100,000 × 50 kB = 5 GB/day): not met |
-| **S3-03** Priority message ≤30 min, ≥95% | Time = sensor forms message (F1, 2 min) + **p95 satellite wait** + ground processing to the COP (F3, 10 min); the split is a proposed allocation, TBR. A priority-capable sensor gets open-sky timing if it is in the open, has a raised antenna, or is within a station's or repeater's relay reach; otherwise the under-canopy wait applies. Share within 30 min must be ≥95% | Open-sky path 19 min, canopy path 2.4 h. **49% within 30 min: fail** without raised antennas; **100% with them** |
+| **S3-02** ≥10,000 terminals × ≥2 kB/day | Terminals = sum of the sensor sliders. Daily data = Σ count × bytes/day. Network capacity = 20 kbps per satellite (assumption: low-power direct-to-satellite access shares a narrow channel) × 86,400 s × share of the day with a satellite in view. Use = data ÷ capacity | 10,950 terminals, 26.9 MB/day of 112 MB/day (24% used): **pass**. Objective (100,000 × 50 kB = 5 GB/day): not met |
+| **S3-03** Priority message ≤30 min, ≥95% | Time = sensor forms message (F1, 2 min) + **p95 satellite wait** + **queue** (section 3a) + ground processing to the COP (F3, 10 min); the split is a proposed allocation, TBR. A priority-capable sensor gets open-sky timing if it is in the open, has a raised antenna, or is within a station's or repeater's relay reach; otherwise the under-canopy wait applies. Share within 30 min must be ≥95% | Open-sky path 19 min, canopy path 2.4 h. **49% within 30 min: fail** without raised antennas; **100% with them** |
 | **S3-04** Terminal ≥1 yr, ≤$150 | Design value: $60 radio module, 3-year life (assumption) | Pass |
 | **S3-05** Alert audible ≤10 min, ≥95% of receivers | Authorize 2 min + GEO broadcast 0.5 min + receiver playback ≤1 min (L2-2.1.2, L2-2.3.1). Without the GEO payload, $25 fixed-antenna receivers have no path | ≈3.5 min: **pass**; fails with no GEO |
 | **S3-06** Geo-targeting ≤50,000 km² | Receivers addressed by district group code | Pass with GEO; objective 2,500 km² needs location-coded receivers |
@@ -75,6 +75,28 @@ behind it. Objective values are reported separately.
 Requirements that are verification wording only (for example "≥95% successful delivery of ≥100 valid test messages")
 do not size the system and are not modelled; see section 8.
 
+
+### 3a. Time, data and congestion (how the levers trade against each other)
+
+Every lever moves several numbers at once; the **How it adds up** tab shows them side by side.
+
+- **Capacity** = 20 kbps per satellite × 86,400 s × share of the day with a satellite in view (24 satellites: 52%,
+  112 MB/day). More satellites, more capacity.
+- **Use** u = sensor data per day ÷ capacity. More sensors (or bigger messages), more use.
+- **Queue** = average wait for a satellite pass × u / (1 − u). Priority messages jump the queue and see half of it.
+  At u ≥ 1 the network is saturated and routine data backs up. *Illustrative*: a simple queueing term, not a
+  link-level simulation.
+- **Priority time to the COP (p95)** = 2 + p95 wait + queue + 10 min on a fast path (open sky, raised antenna, or a
+  station or repeater in reach); under canopy without a relay the p95 wait is the 45° figure instead.
+- **Average message** = 12 min + (share of all terminals on a fast path × average open-sky wait) + (the rest × average
+  under-canopy wait) + the full queue.
+- **Alert to audible** = authorize 2 + GEO broadcast 0.5 + playback 1 min (unchanged by the sensor side).
+- **S-3's share of detection-to-warning** = priority time + alert time. The agencies' evaluation and alert
+  generation (F4–F5) sit between the two and are not S-3 time, so they are not added.
+- **Value**: station cost per person reached; whole-system cost per sensor terminal per year.
+
+The numbers strip on the map shows six of these (priority time, average message, alert time, data per day with
+capacity used, people reached, cost) with ▲/▼ against the baseline design.
 ---
 
 ## 4. Cost, as a range, 15 years
@@ -130,15 +152,16 @@ broadcast and its receiver regardless of stations.
 | --- | --- |
 | **Raised antennas on fixed sensors** | S3-03 goes from 49% to **100%** within 30 min, for about $0.2M. The cheapest fix by far |
 | Canopy repeaters instead (25 → 300) | S3-03 only 50% → 63%: sensors are spread over huge protected areas and a 10 km relay reaches few of them. Repeaters still help routine canopy traffic and commands |
-| LEO 12 satellites | S3-03 0% even in the open (p95 wait 19 min + 12 min fixed > 30) |
-| LEO 18 satellites | Saves $33M; S3-03 still met with raised antennas (open-sky p95 11 min) |
+| LEO 12 satellites | S3-03 fails even in the open: 34 min (p95 wait 19 min + queue 3 min + 12 min fixed), and capacity use doubles to 47% |
+| LEO 18 satellites | Saves $33M; S3-03 still met with raised antennas (24 min p95), average message 32 min |
 | LEO 36 satellites | +$66M; objective-level waits in the open (p95 5 min) but the canopy problem remains without antennas |
 | 1 database node (Kinshasa only) | S3-10 fails (98.8%); a hub outage stops everything |
 | 2–4 nodes | S3-10 passes; with the hub down, the next node takes over and nothing fails |
 | No GEO payload | Saves $80M but S3-05 and S3-06 fail: $25 receivers have no other path |
 | No Starlink backhaul | S3-08 fails: the LEO IoT link cannot carry 500 responders at 4.8 kbps |
 | More stations (100, 150, 200) | 44%, 51%, 55% of people within reach for +$11M, +$35M, +$59M |
-| 100,000 terminals (S3-02 objective count) | Fits the threshold checks; the objective data volume (5 GB/day) needs far more satellite capacity |
+| Sensors ×3 (about 33,000) | Capacity use 24% → 72%; priority time 19 → 21 min and average message 22 → 26 min as the queue grows; cost almost unchanged (sensors belong to the user agencies) |
+| 100,000 terminals (S3-02 objective count) | Overloads the network at 24 satellites (192% of capacity): data backs up, so S3-02, S3-03 and S3-09 fail; the objective data volume (5 GB/day) needs far more satellite capacity |
 
 **Failure cases** (with raised antennas): the hub down, one satellite plane lost, the grid and cell towers down, or a
 river station flooded each leave every threshold met. The grid case is the point of MO-3: stations run on solar, the

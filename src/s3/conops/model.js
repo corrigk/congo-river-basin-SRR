@@ -19,7 +19,12 @@ export const ASSUME = {
   s303FixedMin: { threshold: 2 + 10, objective: 0.5 + 2 },
   // S3-05: authorize + GEO broadcast + receiver playback, minutes (L2-2.1.2 <= 5 min broadcast, L2-2.3.1 <= 60 s playback).
   s305GeoMin: 2 + 0.5 + 1,
-  leoKbpsPerSat: 100,                                // IoT payload uplink, aggregate per satellite
+  // IoT payload uplink, aggregate per satellite: low-power direct-to-satellite access (LoRa / Argos class) shares a
+  // narrow channel among every terminal in the footprint.
+  leoKbpsPerSat: 20,
+  // Congestion (illustrative): queueing delay = average wait for a pass x u / (1 - u), u = daily traffic / capacity.
+  // Priority messages jump the queue and see half of it. At u >= 1 the network is saturated.
+  congestion: { priorityShare: 0.5 },
   starlinkMbpsPerSite: 50,
   responderKbps: 4.8,
   terminalUsd: 60, terminalLifeYr: 3,                // S-3 radio module in each sensor (S3-04: <= $150, >= 1 yr)
@@ -131,11 +136,23 @@ export function evaluate(D, yearData, opts) {
   // Share of priority-capable terminals whose messages see open-sky timing: in the open, raised antenna, or within relay reach.
   const prio = D.sn.types.filter(t => A.priority.includes(t.id));
   const prioCount = prio.reduce((a, t) => a + counts[t.id], 0);
-  const fastShare = prio.reduce((a, t) => a + counts[t.id] * ((1 - canopyShare(t.id)) + canopyShare(t.id) * (t.id === 'ranger' ? (n ? 1 : 0) : reach[t.id])), 0) / Math.max(1, prioCount);
+  const fastOf = t => (1 - canopyShare(t.id)) + canopyShare(t.id) * (t.id === 'ranger' ? (n ? 1 : 0) : reach[t.id]);
+  const fastShare = prio.reduce((a, t) => a + counts[t.id] * fastOf(t), 0) / Math.max(1, prioCount);
+  const fastShareAll = D.sn.types.reduce((a, t) => a + counts[t.id] * fastOf(t), 0) / Math.max(1, terminals);
+
+  // ----- capacity and congestion -----
+  const bytesDay = D.sn.types.reduce((a, t) => a + counts[t.id] * t.bytes_per_day, 0);
+  const byType = D.sn.types.map(t => ({ id: t.id, name: t.name, count: counts[t.id], bytes: counts[t.id] * t.bytes_per_day }));
+  const leoBytesDay = (A.leoKbpsPerSat * 1000 / 8) * 86400 * (leo.open_sky_20deg.pct_time_in_contact / 100); // about one satellite footprint spans the basin
+  const util = bytesDay / Math.max(1, leoBytesDay);
+  const saturated = util >= 1;
+  const qFactor = saturated ? Infinity : util / (1 - util);
+  const qRoutine = leo.open_sky_20deg.mean_wait_min * qFactor;
+  const qPrio = qRoutine * A.congestion.priorityShare;
 
   // ----- latency -----
   const ground = nodesUp > 0; // with no database node up, nothing reaches the COP
-  const p95 = (fixed, sky) => (ground ? fixed + leo[sky].p95_wait_min : Infinity);
+  const p95 = (fixed, sky) => (ground ? fixed + leo[sky].p95_wait_min + qPrio : Infinity);
   const s303 = {
     open: p95(A.s303FixedMin.threshold, 'open_sky_20deg'), canopy: p95(A.s303FixedMin.threshold, 'under_canopy_45deg'),
     openObj: p95(A.s303FixedMin.objective, 'open_sky_20deg'),
@@ -144,11 +161,13 @@ export function evaluate(D, yearData, opts) {
   const within30 = (s303.open <= 30 ? fastShare : 0) + (s303.canopy <= 30 ? 1 - fastShare : 0);
   const within5 = s303.openObj <= 5 ? fastShare : 0;
   const s305 = geoUp && ground ? A.s305GeoMin : Infinity;
-  const s309 = ground ? leo.under_canopy_45deg.max_wait_min + A.s303FixedMin.threshold : Infinity; // worst-case command to a canopy terminal
+  const s309 = ground ? leo.under_canopy_45deg.max_wait_min + A.s303FixedMin.threshold + qPrio : Infinity; // worst-case command to a canopy terminal
+  // Average time for a routine message to reach the COP, all terminals: fast path (open sky or relayed) or canopy path.
+  const avgCop = ground ? A.s303FixedMin.threshold + fastShareAll * leo.open_sky_20deg.mean_wait_min + (1 - fastShareAll) * leo.under_canopy_45deg.mean_wait_min + qRoutine : Infinity;
+  // S-3's part of detection-to-warning: priority message to the COP (p95, fast path) plus authorized alert to audible.
+  // The agencies' evaluation and alert generation (F4-F5) sit between the two and are not S-3 time.
+  const s3Chain = s303.open + s305;
 
-  // ----- capacity -----
-  const bytesDay = D.sn.types.reduce((a, t) => a + counts[t.id] * t.bytes_per_day, 0);
-  const leoBytesDay = (A.leoKbpsPerSat * 1000 / 8) * 86400 * (leo.open_sky_20deg.pct_time_in_contact / 100); // about one satellite footprint spans the basin
   const responderMbps = 500 * A.responderKbps / 1000;
   const backhaulMbps = (opts.starlink ? n * A.starlinkMbpsPerSite : 0) + (A.leoKbpsPerSat / 1000) * (leo.open_sky_20deg.pct_time_in_contact / 100);
 
@@ -181,7 +200,7 @@ export function evaluate(D, yearData, opts) {
   const cap = D.cost.budget.lcc_cap_usd / 1e6;
   const checks = [
     { id: 'S3-01', ok: sats >= 12 && ground, v: `${sats} LEO satellites cover the whole basin, under canopy included` },
-    { id: 'S3-02', ok: terminals >= 10000 && bytesDay >= 10000 * 2000 && leoBytesDay >= bytesDay, v: `${fmtN(terminals)} terminals, ${mb(bytesDay)}/day of ${mb(leoBytesDay)}/day capacity`, obj: terminals >= 100000 && leoBytesDay >= 100000 * 50000 },
+    { id: 'S3-02', ok: terminals >= 10000 && bytesDay >= 10000 * 2000 && !saturated, near: terminals >= 10000 && util < 1.2, v: `${fmtN(terminals)} terminals, ${mb(bytesDay)}/day of ${mb(leoBytesDay)}/day capacity (${pct(util)} used)`, obj: terminals >= 100000 && leoBytesDay >= 100000 * 50000 },
     { id: 'S3-03', ok: within30 >= 0.95, near: within30 >= 0.85, v: `${pct(within30)} of priority messages within 30 min (p95: open sky or relayed ${minutes(s303.open)}, under canopy ${minutes(s303.canopy)})`, obj: within5 >= 0.99 },
     { id: 'S3-04', ok: A.terminalUsd <= 150 && A.terminalLifeYr >= 1, v: `$${A.terminalUsd} radio, ${A.terminalLifeYr}-yr life (assumption)`, obj: A.terminalUsd <= 50 && A.terminalLifeYr >= 3 },
     { id: 'S3-05', ok: s305 <= 10, v: geoUp ? `≈${s305} min to audible via GEO for every receiver in the footprint` : 'No GEO broadcast: $25 receivers have no path', obj: s305 <= 3 },
@@ -193,7 +212,20 @@ export function evaluate(D, yearData, opts) {
     { id: 'LCC', ok: total.base <= cap, near: total.low <= cap, v: `$${Math.round(total.low)}–${Math.round(total.high)}M (base $${Math.round(total.base)}M) vs $${cap}M cap` },
   ].map(c => ({ ...c, state: c.ok ? 'pass' : c.near ? 'near' : 'fail' }));
 
+  // ----- what the viewer weighs: time, data, reach, cost (the numbers on the map and in "How it adds up") -----
+  const peopleReached = (popPct / 100) * run.basin_pop;
+  const stationLine = lines.find(l => l.k === 'stations');
+  const metrics = {
+    p95Fast: s303.open, p95Canopy: s303.canopy, within30, avgCop, alertMin: s305, cmdWorst: s309, s3Chain, qPrio, qRoutine,
+    bytesDay, capacity: leoBytesDay, util, saturated, byType,
+    popPct, peopleReached, fastShare, fastShareAll,
+    costBase: total.base, costLow: total.low, costHigh: total.high,
+    costPerPerson: stationLine && peopleReached ? (stationLine.base * 1e6) / peopleReached : null,
+    costPerTerminalYr: terminals ? (total.base * 1e6) / terminals / A.life : null,
+  };
+
   return {
+    metrics,
     allStations: stationsAll, lostStation: lost ? stationsAll.indexOf(lost) : -1, hubDown, geoUp, canopyShare, priority: A.priority,
     stations, repeaters, reach, canopyPoints: points, popPct, terminals, prioCount, fastShare, within30, s303, s305, s309, bytesDay, leoBytesDay,
     responderMbps, backhaulMbps, avail, lines, total, sensorsUsd, receivers, checks, leo: { sats, row: leo },

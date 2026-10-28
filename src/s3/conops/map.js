@@ -8,15 +8,21 @@ const BB = { lon0: 11.3, lon1: 34.6, lat0: -14.2, lat1: 10.2 };
 const ASPECT = (BB.lat1 - BB.lat0) / (BB.lon1 - BB.lon0);
 const DENS = [1, 5, 15, 40, 100, 300, 1000];
 const densClass = d => { let k = 0; while (k < DENS.length && d >= DENS[k]) k++; return k; };
-export const SENSOR_COL = { gauge: '--s1', rain: '--s7', tag: '--s6', camera: '--s3', acoustic: '--s2', fire: '--critical', water_q: '--s5', ranger: '--text' };
+// Sensors on the map come in three families, so they read at a glance; hover still names the type.
+export const FAMILY = {
+  water: { name: 'Water: gauges, rain, water quality', col: '--s1', types: ['gauge', 'rain', 'water_q'] },
+  forest: { name: 'Forest and wildlife: tags, cameras, acoustic', col: '--s6', types: ['tag', 'camera', 'acoustic', 'ranger'] },
+  fire: { name: 'Fire', col: '--s2', types: ['fire'] },
+};
+export const familyOf = id => Object.keys(FAMILY).find(f => FAMILY[f].types.includes(id)) || 'forest';
 
 // opts: { onNode(name) } ; draw(G, S, R): G = loaded data, S = ConOps state, R = model result
 export function createConopsMap(holder, opts = {}) {
   const wrap = el('div', { class: 'co-mapwrap', role: 'img' });
-  const cvs = ['base', 'why', 'what'].map(k => el('canvas', { class: `co-cv co-${k}`, 'aria-hidden': 'true' }));
+  const cvs = ['base', 'why', 'what', 'flow'].map(k => el('canvas', { class: `co-cv co-${k}`, 'aria-hidden': 'true' }));
   wrap.append(...cvs);
   holder.replaceChildren(wrap);
-  const [cb, cw, cx] = cvs.map(c => c.getContext('2d'));
+  const [cb, cw, cx, cf] = cvs.map(c => c.getContext('2d'));
   let W = 500, H = 500, G = null, S = null, hits = { why: [], what: [] };
 
   function size() {
@@ -24,7 +30,7 @@ export function createConopsMap(holder, opts = {}) {
     W = Math.max(260, Math.min(maxW, maxH / ASPECT)); H = W * ASPECT;
     const dpr = devicePixelRatio || 1;
     wrap.style.width = `${W}px`; wrap.style.height = `${H}px`;
-    for (const [c, x] of [[cvs[0], cb], [cvs[1], cw], [cvs[2], cx]]) {
+    for (const [c, x] of [[cvs[0], cb], [cvs[1], cw], [cvs[2], cx], [cvs[3], cf]]) {
       c.width = W * dpr; c.height = H * dpr; c.style.width = `${W}px`; c.style.height = `${H}px`;
       x.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
@@ -137,62 +143,66 @@ export function createConopsMap(holder, opts = {}) {
   }
 
   // ---------- what: what S-3 builds, where, and how many ----------
+  // Colours: people reached gold; stations white (shape = access) with light-blue reach; repeaters periwinkle;
+  // database nodes pink; sensors in three families (water blue, forest and wildlife green, fire orange); misses red.
   function drawWhat(R) {
     const L = S.show, run = G.st.runs[S.mode];
     cx.clearRect(0, 0, W, H);
     const h = hits.what = [];
-    // People: covered by a station (mode colour) or not (neutral, darker = more people).
     const fc = G.first(run, `${S.mode}_${S.year}`), lost = R.lostStation;
-    const neu = [...Array(6).keys()].map(i => css(`--neu-${i}`)), cov = css('--s4');
+    const neu = [...Array(6).keys()].map(i => css(`--neu-${i}`)), cov = css('--gold');
     for (let k = 0; k < G.grid.i.length; k++) {
       const c = densClass(G.pop[k] / G.grid.km2[k]);
       const covered = L.coverage && fc[k] < S.n && fc[k] !== lost;
-      if (covered) { cx.globalAlpha = 0.6 + 0.05 * c; cellRect(cx, k, cov); } else { cx.globalAlpha = 0.25 + 0.08 * Math.min(c, 5); cellRect(cx, k, neu[Math.min(c, 5)]); }
+      if (covered) { cx.globalAlpha = 0.45 + 0.05 * c; cellRect(cx, k, cov); } else { cx.globalAlpha = 0.18 + 0.07 * Math.min(c, 5); cellRect(cx, k, neu[Math.min(c, 5)]); }
       cx.globalAlpha = 1;
     }
     // GEO alert footprint: the whole basin (dashed red when the payload is lost).
-    if (S.geo) stroke(cx, G.geo.basin, R.geoUp ? css('--alert') : css('--critical'), R.geoUp ? 2.4 : 2, R.geoUp ? [] : [6, 4]);
-    else stroke(cx, G.geo.basin, css('--accent'), 1.4);
+    if (S.geo && L.geo) stroke(cx, G.geo.basin, R.geoUp ? css('--alert') : css('--critical'), R.geoUp ? 2.6 : 2, R.geoUp ? [] : [6, 4]);
+    else stroke(cx, G.geo.basin, css('--line-2'), 1.4);
     // Network: regional nodes linked to the hub.
-    const nodes = S.nodes.map(n => D.db.candidates.find(c => c.name === n)).filter(Boolean);
-    const hub = nodes[0];
+    const nodes = S.nodes.map(n => D.db.candidates.find(c => c.name === n)).filter(Boolean), hub = nodes[0];
     if (hub) for (const nd of nodes.slice(1)) {
       const [a, b] = px(hub.lon, hub.lat), [c, d] = px(nd.lon, nd.lat);
-      cx.beginPath(); cx.moveTo(a, b); cx.lineTo(c, d); cx.strokeStyle = css('--accent'); cx.globalAlpha = 0.55; cx.lineWidth = 1.2; cx.setLineDash([4, 4]); cx.stroke(); cx.setLineDash([]); cx.globalAlpha = 1;
+      cx.beginPath(); cx.moveTo(a, b); cx.lineTo(c, d); cx.strokeStyle = css('--s5'); cx.globalAlpha = 0.6; cx.lineWidth = 1.3; cx.setLineDash([4, 4]); cx.stroke(); cx.setLineDash([]); cx.globalAlpha = 1;
     }
     // Footprints: station reach (relay 20 km solid, radio 25 km dashed) and repeater reach (10 km).
     if (L.reach) {
       cx.lineWidth = 1;
+      const riv = css('--river'), per = css('--precip');
       for (const s of R.stations) {
-        ring(cx, s.lon, s.lat, 20); cx.fillStyle = 'rgba(127,203,234,.10)'; cx.fill(); cx.strokeStyle = css('--river'); cx.globalAlpha = 0.7; cx.stroke();
-        ring(cx, s.lon, s.lat, 25); cx.setLineDash([2, 3]); cx.globalAlpha = 0.45; cx.stroke(); cx.setLineDash([]); cx.globalAlpha = 1;
+        ring(cx, s.lon, s.lat, 20); cx.fillStyle = riv; cx.globalAlpha = 0.12; cx.fill(); cx.strokeStyle = riv; cx.globalAlpha = 0.8; cx.stroke();
+        ring(cx, s.lon, s.lat, 25); cx.setLineDash([2, 3]); cx.globalAlpha = 0.5; cx.stroke(); cx.setLineDash([]); cx.globalAlpha = 1;
       }
-      for (const r of R.repeaters) { ring(cx, r.lon, r.lat, 10); cx.fillStyle = 'rgba(124,245,207,.12)'; cx.fill(); cx.strokeStyle = css('--data'); cx.globalAlpha = 0.8; cx.stroke(); cx.globalAlpha = 1; }
+      for (const r of R.repeaters) { ring(cx, r.lon, r.lat, 10); cx.fillStyle = per; cx.globalAlpha = 0.16; cx.fill(); cx.strokeStyle = per; cx.globalAlpha = 0.9; cx.stroke(); cx.globalAlpha = 1; }
     }
-    // Sensors: sample locations by type. Hollow red = a priority sensor under canopy with no relay or raised antenna (misses S3-03).
-    if (L.sensors) {
+    // Sensors: sample locations, coloured by family, each with a dark outline so it reads on any background.
+    // Hollow red = a priority sensor under canopy with no relay or raised antenna (misses S3-03).
+    {
       const relayed = new Map(R.canopyPoints.map(p => [`${p.t}:${p.ll[0]},${p.ll[1]}`, p.covered]));
-      const crit = css('--critical');
+      const crit = css('--critical'), edge = css('--bg');
       for (const t of D.sn.types) {
-        const col = css(SENSOR_COL[t.id] || '--text'), canopy = R.canopyShare(t.id), prio = R.priority.includes(t.id);
+        if (!L[familyOf(t.id)]) continue;
+        const col = css(FAMILY[familyOf(t.id)].col), canopy = R.canopyShare(t.id), prio = R.priority.includes(t.id);
         const scale = (S.sensors[t.id] ?? t.baseline_count) / t.baseline_count, pts = t.sample_points.slice(0, Math.round(t.sample_points.length * Math.min(1, scale)));
         for (const [lat, lon] of pts) {
           const [x, y] = px(lon, lat);
           const misses = prio && canopy >= 0.5 && !relayed.get(`${t.id}:${lon},${lat}`);
-          if (misses) { cx.beginPath(); cx.arc(x, y, 2.4, 0, 7); cx.strokeStyle = crit; cx.lineWidth = 1.1; cx.stroke(); }
-          else { cx.globalAlpha = t.id === 'tag' ? 0.4 : 0.85; cx.fillStyle = col; cx.fillRect(x - 1.1, y - 1.1, 2.2, 2.2); cx.globalAlpha = 1; }
+          cx.beginPath(); cx.arc(x, y, misses ? 2.6 : 1.9, 0, 7);
+          if (misses) { cx.strokeStyle = crit; cx.lineWidth = 1.3; cx.stroke(); }
+          else { cx.globalAlpha = t.id === 'tag' ? 0.55 : 1; cx.fillStyle = col; cx.fill(); cx.strokeStyle = edge; cx.lineWidth = 0.7; cx.stroke(); cx.globalAlpha = 1; }
         }
       }
     }
     // Repeaters and stations.
     for (const [i, r] of R.repeaters.entries()) {
       const [x, y] = px(r.lon, r.lat);
-      shape(cx, 'diamond', x, y, 4); cx.fillStyle = css('--data'); cx.fill(); cx.strokeStyle = css('--bg'); cx.lineWidth = 1; cx.stroke();
+      shape(cx, 'diamond', x, y, 4.2); cx.fillStyle = css('--precip'); cx.fill(); cx.strokeStyle = css('--bg'); cx.lineWidth = 1.2; cx.stroke();
       h.push({ x, y, r: 7, tip: () => [el('b', { text: `Canopy repeater #${i + 1}` }), kv('Reach', '10 km (assumption)'), el('div', { class: 'k', text: 'Relays canopy sensors to a satellite' })] });
     }
     R.allStations.forEach((s, i) => {
       const [x, y] = px(s.lon, s.lat), isLost = i === lost;
-      shape(cx, s.type, x, y, 3.6); cx.fillStyle = isLost ? css('--critical') : css('--text'); cx.fill(); cx.strokeStyle = css('--bg'); cx.lineWidth = 1.2; cx.stroke();
+      shape(cx, s.type, x, y, 3.8); cx.fillStyle = isLost ? css('--critical') : css('--text'); cx.fill(); cx.strokeStyle = css('--bg'); cx.lineWidth = 1.4; cx.stroke();
       if (isLost) cross(x, y, 8);
       h.push({ x, y, r: 7, tip: () => [el('b', { text: `Ranger station #${i + 1} · ${s.type} access` }), kv('Adds', `${fmt(s.gain)} people`), kv('People covered so far', `${fmt(s.cum_pct, 1)}%`), kv('15-yr cost so far', `$${fmt(s.cum_cost_musd, 1)}M`), isLost ? el('div', { class: 'k crit', text: 'Taken out by flood (failure case)' }) : null] });
     });
@@ -201,18 +211,100 @@ export function createConopsMap(holder, opts = {}) {
       const on = S.nodes.includes(c.name), [x, y] = px(c.lon, c.lat), isHub = c.name === S.nodes[0], down = isHub && R.hubDown, acting = R.hubDown && c.name === S.nodes[1];
       const r = on ? (isHub ? 8 : 6.5) : 4.5;
       cx.beginPath(); cx.rect(x - r, y - r, 2 * r, 2 * r);
-      if (on) { cx.fillStyle = down ? css('--neu-3') : css('--gold'); cx.fill(); cx.strokeStyle = '#000'; cx.lineWidth = 1.6; cx.stroke(); }
-      else { cx.strokeStyle = css('--accent'); cx.lineWidth = 1.2; cx.globalAlpha = 0.7; cx.stroke(); cx.globalAlpha = 1; }
+      if (on) { cx.fillStyle = down ? css('--neu-3') : css('--s5'); cx.fill(); cx.strokeStyle = css('--paper'); cx.lineWidth = 1.8; cx.stroke(); }
+      else { cx.strokeStyle = css('--s5'); cx.lineWidth = 1.2; cx.globalAlpha = 0.7; cx.stroke(); cx.globalAlpha = 1; }
       if (down) cross(x, y, r + 3);
       if (acting) { cx.beginPath(); cx.arc(x, y, r + 6, 0, 7); cx.strokeStyle = css('--data'); cx.lineWidth = 2.2; cx.stroke(); }
       if (on) label(cx, `${down ? 'OFFLINE · ' : acting ? 'ACTING HUB · ' : isHub ? 'HUB · ' : ''}${c.name}`, x + r + 4, y + 4, down ? css('--critical') : acting ? css('--data') : css('--text'), 11.5, 700);
       h.push({ x, y, r: 10, node: c.name, tip: () => [el('b', { text: on ? `${isHub ? 'Main hub' : 'Regional database'} · ${c.name}` : `Candidate site · ${c.name}` }),
         el('div', { class: 'k', text: isHub ? 'The hub stays in Kinshasa' : on ? 'Click to remove this node' : S.nodes.length >= 4 ? 'Four nodes already: remove one first' : 'Click to add a database node here' })] });
     }
+    buildFlows(R);
   }
   function cross(x, y, r) {
     cx.beginPath(); cx.moveTo(x - r, y - r); cx.lineTo(x + r, y + r); cx.moveTo(x + r, y - r); cx.lineTo(x - r, y + r);
     cx.strokeStyle = css('--critical'); cx.lineWidth = 2.2; cx.stroke();
+  }
+
+  // ---------- data flow: where everything transmits (animated; toggled from the legend) ----------
+  // Sensor data up: sensor -> station or repeater in reach (else straight up to a satellite) -> via satellite to the
+  // nearest database node -> hub. Alerts down: hub -> GEO -> a pulse over the whole basin. Two-way: stations <-> node <-> hub.
+  let flows = null, anim = 0;
+  const kmPx = (a, b) => Math.hypot(((a[0] - b[0]) * 111.32 * Math.cos((a[1] * Math.PI) / 180)), (a[1] - b[1]) * 110.57);
+  function buildFlows(R) {
+    const nodes = S.nodes.map(n => D.db.candidates.find(c => c.name === n)).filter(Boolean);
+    const live = R.hubDown ? nodes.slice(1) : nodes, hub = live[0];
+    const nearestNode = ll => live.reduce((b, nd) => (kmPx(ll, [nd.lon, nd.lat]) < kmPx(ll, [b.lon, b.lat]) ? nd : b), live[0]);
+    const relays = [...R.stations.map(s => ({ ll: [s.lon, s.lat], km: 20, kind: 'station' })), ...R.repeaters.map(r => ({ ll: [r.lon, r.lat], km: 10, kind: 'repeater' }))];
+    const up = [], direct = [];
+    for (const t of D.sn.types) {
+      const pts = t.sample_points, step = Math.max(1, Math.round(pts.length / 140)); // a readable sample of each type
+      for (let i = 0; i < pts.length; i += step) {
+        const ll = [pts[i][1], pts[i][0]];
+        let best = null, bd = 1e9;
+        for (const r of relays) { const d = kmPx(ll, r.ll); if (d <= r.km && d < bd) { bd = d; best = r; } }
+        if (best) up.push([ll, best.ll]); else direct.push(ll);
+      }
+    }
+    flows = { hub, nodes: live, up, direct, relays: relays.map(r => ({ ...r, node: hub ? nearestNode(r.ll) : null })), stations: R.stations, geoUp: R.geoUp };
+    drawFlows(performance.now());
+    syncAnim();
+  }
+  function drawFlows(ts) {
+    cf.clearRect(0, 0, W, H);
+    if (!flows || S.step !== 'what' || !flows.hub) return;
+    const L = S.show, t = ts / 1000, P = ll => px(ll[0], ll[1]);
+    const dash = (col, w, speed, pattern = [5, 7]) => { cf.strokeStyle = col; cf.lineWidth = w; cf.setLineDash(pattern); cf.lineDashOffset = -t * speed; };
+    const line = (a, b) => { cf.beginPath(); cf.moveTo(...a); cf.lineTo(...b); cf.stroke(); };
+    const arc = (a, b, lift) => { cf.beginPath(); cf.moveTo(...a); cf.quadraticCurveTo((a[0] + b[0]) / 2, Math.min(a[1], b[1]) - lift, ...b); cf.stroke(); };
+    const hubP = P([flows.hub.lon, flows.hub.lat]);
+    if (L.flowUp) {
+      const col = css('--data');
+      cf.globalAlpha = 0.9; dash(col, 1, 14, [3, 4]);
+      for (const [s, r] of flows.up) line(P(s), P(r));
+      cf.setLineDash([]); cf.lineWidth = 1;
+      for (const ll of flows.direct) { const [x, y] = P(ll), k = (t * 0.8 + (x * 7 + y) % 1) % 1; cf.globalAlpha = 0.25 + 0.6 * (1 - k); line([x, y - 2], [x, y - 7 - 6 * k]); }
+      cf.globalAlpha = 0.75; dash(col, 1.4, 22, [6, 6]);
+      for (const r of flows.relays) if (r.node) arc(P(r.ll), P([r.node.lon, r.node.lat]), 18 + 0.12 * Math.hypot(...P(r.ll).map((v, i) => v - P([r.node.lon, r.node.lat])[i])));
+      cf.globalAlpha = 1; dash(col, 2.4, 26, [8, 6]);
+      for (const nd of flows.nodes.slice(1)) line(P([nd.lon, nd.lat]), hubP);
+    }
+    if (L.flowTwo) {
+      const col = css('--s7');
+      const pair = (a, b) => { // two lanes, opposite directions
+        const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, ox = (-dy / len) * 1.6, oy = (dx / len) * 1.6;
+        cf.lineDashOffset = -t * 18; line([a[0] + ox, a[1] + oy], [b[0] + ox, b[1] + oy]);
+        cf.lineDashOffset = t * 18; line([b[0] - ox, b[1] - oy], [a[0] - ox, a[1] - oy]);
+      };
+      cf.globalAlpha = 0.8; cf.strokeStyle = col; cf.lineWidth = 1.2; cf.setLineDash([4, 5]);
+      for (const r of flows.relays) if (r.kind === 'station' && r.node) pair(P(r.ll), P([r.node.lon, r.node.lat]));
+      cf.lineWidth = 2; for (const nd of flows.nodes.slice(1)) pair(P([nd.lon, nd.lat]), hubP);
+      cf.globalAlpha = 1;
+    }
+    if (L.flowAlert && flows.geoUp) {
+      const col = css('--alert'), geoP = [W * 0.6, S.show.hud ? 60 : 18];
+      cf.globalAlpha = 1; dash(col, 2, 30, [6, 5]); line(hubP, geoP);
+      cf.setLineDash([]);
+      // the GEO satellite, top of the map
+      cf.beginPath(); cf.rect(geoP[0] - 5, geoP[1] - 4, 10, 8); cf.fillStyle = col; cf.fill();
+      cf.fillRect(geoP[0] - 16, geoP[1] - 2, 9, 4); cf.fillRect(geoP[0] + 7, geoP[1] - 2, 9, 4);
+      label(cf, 'GEO', geoP[0] + 20, geoP[1] + 4, col, 11, 700);
+      // broadcast: rings sweeping down over the basin
+      cf.save(); geoPath(cf, G.geo.basin); cf.clip('evenodd');
+      for (let k = 0; k < 3; k++) {
+        const ph = (t / 3 + k / 3) % 1;
+        cf.beginPath(); cf.arc(geoP[0], geoP[1], ph * H * 1.15, 0, 7); cf.strokeStyle = col; cf.globalAlpha = 0.65 * (1 - ph); cf.lineWidth = 3; cf.stroke();
+      }
+      cf.restore(); cf.globalAlpha = 1;
+    }
+    cf.setLineDash([]);
+  }
+  const animating = () => S && S.step === 'what' && (S.show.flowUp || S.show.flowAlert || S.show.flowTwo);
+  function syncAnim() {
+    cancelAnimationFrame(anim);
+    if (!animating()) { cf.clearRect(0, 0, W, H); return; }
+    const tick = ts => { drawFlows(ts); if (animating()) anim = requestAnimationFrame(tick); };
+    anim = requestAnimationFrame(tick);
   }
 
   // ---------- hover and click ----------
@@ -244,8 +336,11 @@ export function createConopsMap(holder, opts = {}) {
   });
 
   return {
+    wrap, // the view puts the numbers overlay in here
     // full redraw (data, year or size changed)
     draw(g, s, R) { G = g; S = s; size(); drawBase(); drawWhy(); drawWhat(R); this.describe(R); },
+    // step or flow toggles changed: start or stop the animation
+    sync(s) { S = s; drawFlows(performance.now()); syncAnim(); },
     // design changed: only the what layer
     drawWhat(s, R) { S = s; drawWhat(R); this.describe(R); },
     drawWhy(s) { S = s; drawWhy(); },
