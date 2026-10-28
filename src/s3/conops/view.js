@@ -2,7 +2,7 @@
 // areas, existing infrastructure); "What · where · how many" fades those out and the design in, with sliders and
 // toggles that drive the requirement checks, the cost range and the coverage curve (model.js).
 import { D, YEARS, MODES, geo as loadGeo, grid as loadGrid, pop as loadPop, stations as loadStations, hazards as loadHz, firstCovered } from '../v2/data.js';
-import { el, seg, tag, fmt, sv, svText, chartBlock, showTip, hideTip, kv } from '../v2/ui.js';
+import { el, seg, tag, fmt, fmtM, sv, svText, chartBlock, showTip, hideTip, kv } from '../v2/ui.js';
 import { evaluate, sweetSpot, LEO_SIZES } from './model.js';
 import { createConopsMap } from './map.js';
 import { GAP } from '../content.js';
@@ -30,7 +30,6 @@ const LINE_COL = { leo: '--s1', geo: '--s7', stations: '--s4', repeaters: '--dat
 
 let root = null, map = null, G = null, R = null, base = null, spot = null, nodeStats = null, raf = 0, timer = 0;
 const $ = s => root.querySelector(s);
-const fmtM = v => `$${fmt(v, v < 10 ? 1 : 0)}M`;
 
 // ---------- data for the current year ----------
 async function loadYear() {

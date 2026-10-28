@@ -564,3 +564,10 @@
 .src-list li::marker { color: var(--faint); font-variant-numeric: tabular-nums; }
 .src-list li span { display: block; color: var(--text); line-height: 1.45; }
 .src-list a { color: var(--river); font-size: 11.5px; text-underline-offset: 2px; word-break: break-all; }
+
+/* ---------- slide mode (H / ?slide): no top bar, the page fills the screen for screenshots ---------- */
+#app.is-slide { --top: 0px; }
+#app.is-slide .topbar { display: none; }
+.slide-exit { position: fixed; z-index: 60; top: 8px; right: 8px; padding: 6px 12px; border-radius: 8px; font-size: 12px;
+  background: var(--glass); border: 1px solid var(--line-2); color: var(--muted); opacity: 0; transition: opacity .25s; }
+.slide-exit:hover, .slide-exit:focus-visible { opacity: 1; }

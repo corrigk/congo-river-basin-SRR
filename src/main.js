@@ -316,6 +316,14 @@ function moveInk() {
 addEventListener('resize', () => { moveInk(); if (state.tab === 'decomposition') decomp?.resize(); });
 
 // Presenter mode: larger type, higher contrast, no keyboard hints. ?present in the link turns it on.
+// Slide mode (H / ?slide): the top bar disappears so the page fills the screen for a clean screenshot.
+// Keys still work (1-3, arrows); H or the corner button brings the bar back.
+function setSlide(on) {
+  app.classList.toggle('is-slide', on);
+  $('.slide-exit').hidden = !on;
+  requestAnimationFrame(() => { moveInk(); map.refit?.(); if (state.tab === 'conops') conops?.then(m => m.refit()); });
+}
+
 function setPresent(on) {
   app.classList.toggle('is-present', on);
   $('[data-act="present"]').setAttribute('aria-pressed', on);
@@ -368,6 +376,7 @@ document.addEventListener('click', e => {
       case 'fullscreen': fullscreen(); return;
       case 'preload': offline.preload(); return;
       case 'present': setPresent(!app.classList.contains('is-present')); return;
+      case 'slide': setSlide(!app.classList.contains('is-slide')); return;
       case 'theme': toggleTheme(); return;
       case 'skip': { const v = $(`#view-${state.tab}`); v.tabIndex = -1; v.focus(); return; }
       case 'sources': openPanel({ type: 'sources', k: 'all' }); return;
@@ -424,6 +433,7 @@ document.addEventListener('keydown', e => {
   if (lk === 't') { setMode(state.mode === 't' ? 'o' : 't'); return; }
   if (lk === 'f') { fullscreen(); return; }
   if (lk === 'p') { setPresent(!app.classList.contains('is-present')); return; }
+  if (lk === 'h') { setSlide(!app.classList.contains('is-slide')); return; }
   if (lk === 'l') { toggleTheme(); return; }
   if (lk === 's' && state.tab !== 'scenario') { openPanel({ type: 'sources', k: 'all' }); return; }
   if (k === '?') { toggleHelp(); return; }
@@ -439,6 +449,7 @@ document.addEventListener('keydown', e => {
 readHash();
 syncTheme();
 setPresent(new URLSearchParams(location.search).has('present') || pref.present());
+setSlide(new URLSearchParams(location.search).has('slide'));
 render();
 requestAnimationFrame(() => { moveInk(); app.classList.add('is-ready'); });
 setTimeout(loadGlobe, 150); // after first paint: the page is usable before Cesium arrives

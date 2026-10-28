@@ -261,7 +261,7 @@ export function sourcesPanel() {
 export function helpView() {
   const rows = [
     ['1 – 3', 'ConOps · Function flow · Requirements'], ['→ &nbsp;PgDn &nbsp;Space', 'ConOps: Why → What · scenario: next step'], ['← &nbsp;PgUp', 'Back'], ['R', 'Reset scenario'],
-    ['T', 'Threshold / objective'], ['M', 'Next map: globe · ground · schematic'], ['G', 'Ground view'], ['O', 'Satellite: pass overhead / fixed in sky'], ['P', 'Presenter mode'], ['L', 'Light / dark theme'], ['S', 'Sources'], ['F', 'Fullscreen'], ['Esc', 'Close panel'], ['?', 'This help'],
+    ['T', 'Threshold / objective'], ['M', 'Next map: globe · ground · schematic'], ['G', 'Ground view'], ['O', 'Satellite: pass overhead / fixed in sky'], ['P', 'Presenter mode'], ['H', 'Slide mode: hide the top bar for screenshots'], ['L', 'Light / dark theme'], ['S', 'Sources'], ['F', 'Fullscreen'], ['Esc', 'Close panel'], ['?', 'This help'],
   ];
   return `<div class="help-head"><span>Keyboard</span><button class="icon-btn" data-act="help" aria-label="Close shortcuts">${ICON.close}</button></div>
     <dl>${rows.map(([k, v]) => `<dt>${k.split(' &nbsp;').map(x => `<kbd>${x}</kbd>`).join('')}</dt><dd>${v}</dd>`).join('')}</dl>`;
