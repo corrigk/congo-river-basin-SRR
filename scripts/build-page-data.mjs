@@ -6,6 +6,7 @@
 //   pop-<year>.json      people per cell for one year (maps)
 //   stations-<year>.json the four coverage modes' station order, curve and first-covered map for one year
 //   hazards.json         conflict, fire and flood layers for the ConOps "why" map
+//   today.json           towns with a modeled terrestrial-reach radius, for the ConOps "today" step
 // Run after rerunning the pipeline:  npm run data:page
 import fs from 'node:fs';
 
@@ -50,6 +51,15 @@ write('grid.json', {
   i: pop.cells.i, country: pop.cells.country, km2: pop.cells.km2, river_km: pop.cells.river_km, road_km: pop.cells.road_km,
 });
 for (const y of pop.years) write(`pop-${y}.json`, pop.pop[String(y)]);
+
+// ConOps "today" layer: the towns and cities we hold, each with a MODELED reach radius for the terrestrial network
+// around it (proxy until real tower data, e.g. OpenCelliD, is added): 40 km for 1M+, 25 km for 250k+, 15 km for 50k+, else 8 km.
+const reachKm = p => (p >= 1e6 ? 40 : p >= 2.5e5 ? 25 : p >= 5e4 ? 15 : 8);
+write('today.json', {
+  _note: 'MODELED PROXY: reach radius by town size, not measured coverage.',
+  rule_km: { '1M+': 40, '250k+': 25, '50k+': 15, 'smaller': 8 },
+  towns: read('towns_raw.json').map(t => ({ name: t.name, cc: t.cc, lon: r(t.lon, 3), lat: r(t.lat, 3), pop: t.pop, r: reachKm(t.pop) })),
+});
 
 // ConOps "why" layers: conflict, fire and flood on the same grid (analysis/scripts/build_hazards.py).
 if (fs.existsSync(new URL('hazards.json', SRC))) write('hazards.json', read('hazards.json'));

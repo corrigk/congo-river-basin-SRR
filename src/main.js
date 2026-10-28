@@ -127,7 +127,7 @@ new ResizeObserver(([e]) => { if (e.contentRect.height) app.style.setProperty('-
 function readHash() {
   const [tab, sc, step] = location.hash.slice(1).split('/');
   if (TABS.includes(tab)) state.tab = tab;
-  if (tab === 'conops') { state.coStep = sc === 'what' ? 'what' : 'why'; return; }
+  if (tab === 'conops') { state.coStep = ['today', 'what'].includes(sc) ? sc : 'why'; return; }
   if (tab === 'decomposition') { state.dsel = sc ? decodeURIComponent(sc) : null; return; }
   if (tab === 'flow') { state.fn = /^F\d$/.test(sc || '') ? sc : null; return; }
   if (V.scenarioBy[sc]) state.sc = sc;
@@ -136,7 +136,7 @@ function readHash() {
 }
 function writeHash() {
   const h = state.tab === 'scenario' ? `#scenario/${state.sc}/${state.step + 1}`
-    : state.tab === 'conops' ? `#conops${state.coStep === 'what' ? '/what' : ''}`
+    : state.tab === 'conops' ? `#conops${state.coStep === 'why' ? '' : `/${state.coStep}`}`
     : state.tab === 'decomposition' && state.dsel ? `#decomposition/${encodeURIComponent(state.dsel)}` : `#${state.tab}`;
   if (location.hash !== h) history.replaceState(null, '', h);
 }
@@ -272,6 +272,7 @@ function renderAnalysis() {
   });
 }
 // ---------- ConOps tab (loaded the first time it is opened) ----------
+const CO_STEPS = ['why', 'today', 'what'];
 let conops = null;
 function renderConops() {
   if (state.tab !== 'conops') return;
@@ -283,7 +284,7 @@ function setCoStep(step) {
   state.coStep = step;
   writeHash();
   conops?.then(m => m.setStep(step));
-  $('#announce').textContent = step === 'what' ? 'What we build, where, and how many' : 'Why the basin needs S-3';
+  $('#announce').textContent = { what: 'What we build, where, and how many', today: 'Today, without S-3', why: 'Why the basin needs S-3' }[step];
 }
 let resizeT;
 addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (state.tab === 'conops') conops?.then(m => m.refit()); }, 200); });
@@ -419,8 +420,8 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (/^[1-3]$/.test(k)) { const t = MAIN_TABS[+k - 1]; setTab(t === 'requirements' && REQ_VIEWS.includes(state.tab) ? state.tab : t); return; }
-  if (state.tab === 'conops' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); setCoStep('what'); return; }
-  if (state.tab === 'conops' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); setCoStep('why'); return; }
+  if (state.tab === 'conops' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); setCoStep(CO_STEPS[Math.min(2, CO_STEPS.indexOf(state.coStep) + 1)]); return; }
+  if (state.tab === 'conops' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); setCoStep(CO_STEPS[Math.max(0, CO_STEPS.indexOf(state.coStep) - 1)]); return; }
   if (state.tab === 'scenario' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); goStep(state.step + 1); return; }
   if (state.tab === 'scenario' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); goStep(state.step - 1); return; }
   if (lk === 'r') { reset(); return; }

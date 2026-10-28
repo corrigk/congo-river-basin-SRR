@@ -26,6 +26,14 @@ RFP S-3 Level 0 numbers, verbatim. Everything else is a **planning assumption** 
 Illegal mining is not shown: the IPIS mine-site service could not be reached when the data was built. It is listed
 as an open item rather than drawn from guesses.
 
+**Today** (→): the same map with no S-3. The people existing networks reach are shaded blue and the people they do not
+reach warm orange, with the RFP's own figures in the strip above (river gauges reporting 13–15 of 400+, field data
+arriving after 3–7 days, 62% with no warning in a disaster, flood bulletins once a day). The reach of existing networks
+is a **modeled proxy**: a circle around each of the 260 towns and cities we hold, 40 km for 1M+ people, 25 km for
+250k+, 15 km for 50k+ and 8 km for smaller ones. It gives 37% of people and 3.9% of the land, which agrees with the
+RFP's 27–32% of people on the internet (reach is a little higher than use). It is not measured coverage; real tower
+data (for example OpenCelliD, which needs a free account) would replace it with no change to the page.
+
 **What / Where / How many** (→ or PgDn, or the step buttons): the problem layers fade out and the system fades in, on the same map, with the key numbers in a strip across the top:
 the hub and regional databases, ranger stations with their towers, canopy repeaters, sensors, and the footprint of
 each device. Sliders and toggles change the design; the numbers, the cost bar and the requirement checks update live. The legend groups everything (built, coverage, sensors in three families, data flow) and each switchable item is a button; **Data flow** animates sensor data up (sensor → station or repeater → satellite → database → hub), alerts down (hub → GEO → the whole basin) and responder two-way traffic.
@@ -97,6 +105,26 @@ Every lever moves several numbers at once; the **How it adds up** tab shows them
 
 The numbers strip on the map shows six of these (priority time, average message, alert time, data per day with
 capacity used, people reached, cost) with ▲/▼ against the baseline design.
+
+### 3b. Today vs the design (the "vs Today" table and the Today step)
+
+Each row compares what the basin has today with what the current design delivers, and says by how much. It updates
+with every slider.
+
+| Measure | Today | With S-3 (baseline) | Change | Basis of "today" |
+| --- | --- | --- | --- | --- |
+| People who can be warned | 37% | 100% (GEO plus a receiver in every community) | +63 points, about 141M more people (2041) | modeled proxy |
+| Land an alert can reach | 3.9% | 100% | about 26× | modeled proxy |
+| Got a warning in a disaster | 38% (62% got none) | ≥95% within 10 min (S3-05) | +57 points | RFP |
+| Field data reaches decision makers | 3–7 days | 19 min (priority, p95) | 224–523× faster | RFP |
+| Alert to audible | a daily email bulletin | 3.5 min | about 410× faster | RFP |
+| River gauges reporting | 13–15 of 400+ | 450 planned | about 32× | RFP (site count is a modeled proxy) |
+| Works with towers and grid down | no | yes, 99.8% (illustrative) | new | RFP, model |
+
+"Faster" divides today's delay (3, 5 or 7 days; a 24-hour bulletin) by the design's time, so it moves with the
+satellites and sensors. The "today" figures are the RFP's for **Central and West Africa**, not the basin alone. The
+people and land rows depend on the proxy above, so they are the least certain numbers on the page and are tagged.
+
 ---
 
 ## 4. Cost, as a range, 15 years

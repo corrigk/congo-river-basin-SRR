@@ -15,7 +15,7 @@ citation and explains the labels.
 
 | Key | Tab | What it shows |
 | --- | --- | --- |
-| 1 | **ConOps** | One map in two steps. **Why**: population density, conflict (UCDP), fire (NASA FIRMS), floods (GDACS), protected areas and existing infrastructure, with sourced figures. **What · where · how many** (→): the same map with the design: people within a station's reach, ranger stations and their reach, canopy repeaters, sensors, database nodes, the GEO alert footprint. Sliders and toggles (year, stations with the sweet-spot band, repeaters, raised antennas, database nodes, LEO size, GEO, Starlink, hydro, sensors per type, failure cases) drive live **requirement checks** (S3-01 to S3-10 and the $400M cap), the counts, and the **15-year cost range** |
+| 1 | **ConOps** | One map in three steps. **Why**: population density, conflict (UCDP), fire (NASA FIRMS), floods (GDACS), protected areas and existing infrastructure, with sourced figures. **Today** (→): the same map without S-3: who existing networks reach (a modeled proxy around the towns we hold) and the RFP's figures (3–7 days for field data, 62% with no warning, 13–15 river gauges). **With S-3 · where · how many** (→): the same map with the design: people within a station's reach, ranger stations and their reach, canopy repeaters, sensors, database nodes, the GEO alert footprint. Sliders and toggles (year, stations with the sweet-spot band, repeaters, raised antennas, database nodes, LEO size, GEO, Starlink, hydro, sensors per type, failure cases) drive live **requirement checks** (S3-01 to S3-10 and the $400M cap), the counts, and the **15-year cost range**; a **vs Today** tab says by how much the design improves each of today's numbers |
 | 2 | **Function flow** | The team's nine blocks: Acquire, Transmit, Process, Evaluate, Generate, Broadcast, Receive, Verify (a "No" loops back to Broadcast), and Coordinate (persistent). Each block's steps, performers and traceability; the latency budgets; and **Play**: the click-through scenarios on the globe or ground view (A flood warning chain, B routine collection, C degraded operations, D non-flood hazard), with an F1–F9 strip lighting each step's blocks |
 | 3 | **Requirements** | Mission & gap, the ten Level 0 requirements (threshold / objective), and the decomposition MO → L4 |
 
@@ -27,7 +27,7 @@ How the ConOps numbers are worked out (coverage, latency, capacity, availability
 | Key | Action |
 | --- | --- |
 | 1 – 3 | ConOps · Function flow · Requirements |
-| → · PgDn · Space | ConOps: Why → What. Scenario: next step (clickers work) |
+| → · PgDn · Space | ConOps: Why → Today → With S-3. Scenario: next step (clickers work) |
 | ← · PgUp | ConOps: back to Why. Scenario: previous step |
 | R | Reset the scenario to step 1 |
 | Esc | Close panel; in a scenario, back to Function flow |
@@ -39,7 +39,7 @@ How the ConOps numbers are worked out (coverage, latency, capacity, availability
 | S | Sources drawer |
 | F · ? | Fullscreen · shortcuts |
 
-**Deep links** open a view directly, so a slide can link straight to it: `…/#conops`, `…/#conops/what`,
+**Deep links** open a view directly, so a slide can link straight to it: `…/#conops`, `…/#conops/today`, `…/#conops/what`,
 `…/#flow/F8`, `…/#scenario/A/5`, `…/#requirements`, `…/#overview`, `…/#decomposition`. Add `?present` for presenter
 mode, `?slide` for slide mode and `?offline` to skip the online satellite imagery. Laid out for 1280×720 and up (also
 1024 px and phone width).
@@ -158,6 +158,7 @@ map, the number of database nodes is set with buttons; moving a node to another 
 | Basin outline | HydroSHEDS HydroBASINS (Lehner & Grill 2013) |
 | Population | WorldPop 2020, 1 km, UN-adjusted (CC BY 4.0), projected with UN growth |
 | Protected areas | UNEP-WCMC and IUCN, WDPA, October 2026 (**non-commercial use only**; cited on the page) |
+| Today's network reach | **Modeled proxy**: a radius around each of 260 towns (GeoNames), by size; not measured coverage |
 | Conflict | UCDP Georeferenced Event Dataset v25.1, 2015–2024 (CC BY 4.0) |
 | Fire | NASA FIRMS MODIS C6.1 active fires, 2024, DR Congo |
 | Floods | GDACS flood alerts since 2000 (EC JRC) |

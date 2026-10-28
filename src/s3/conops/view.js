@@ -1,9 +1,10 @@
-// ConOps tab: one map in two steps. "Why" shows what S-3 is up against (people, conflict, fire, floods, protected
-// areas, existing infrastructure); "What · where · how many" fades those out and the design in, with sliders and
+// ConOps tab: one map in three steps. "Why" shows what S-3 is up against (people, conflict, fire, floods, protected
+// areas, existing infrastructure); "Today" shows what the basin has without S-3 (a modeled proxy for existing
+// networks, plus the RFP's figures); "With S-3" fades those out and the design in, with sliders and
 // toggles that drive the requirement checks, the cost range and the coverage curve (model.js).
-import { D, YEARS, MODES, geo as loadGeo, grid as loadGrid, pop as loadPop, stations as loadStations, hazards as loadHz, firstCovered } from '../v2/data.js';
+import { D, YEARS, MODES, geo as loadGeo, grid as loadGrid, pop as loadPop, stations as loadStations, hazards as loadHz, today as loadToday, firstCovered } from '../v2/data.js';
 import { el, seg, tag, fmt, fmtM, sv, svText, chartBlock, showTip, hideTip, kv } from '../v2/ui.js';
-import { evaluate, sweetSpot, LEO_SIZES, ASSUME } from './model.js';
+import { evaluate, sweetSpot, LEO_SIZES, ASSUME, TODAY, todayReach, compareToday } from './model.js';
 import { createConopsMap, FAMILY, familyOf } from './map.js';
 import { GAP } from '../content.js';
 import '../v2/v2.css';
@@ -16,6 +17,7 @@ const DESIGN = () => ({
 });
 export const S = {
   step: 'why', ...DESIGN(), resTab: 'overview', sweep: 'leoSats',
+  today: { reached: true, unreached: true, rings: true, infra: true },
   why: { pop: true, infra: true, conflict: true, fire: true, flood: true, pa: true },
   show: { coverage: true, reach: true, geo: true, water: true, forest: true, fire: true, flowUp: false, flowAlert: false, flowTwo: false, hud: true },
 };
@@ -32,17 +34,18 @@ const CHECK_FULL = {
 const FAILS = [[null, 'None'], ['hub', 'Hub down'], ['leo', 'LEO plane lost'], ['geo', 'GEO lost'], ['grid', 'Grid and cell down'], ['station', 'Station flooded']];
 const LINE_COL = { leo: '--s1', geo: '--s7', stations: '--s4', repeaters: '--data', antennas: '--s3', db: '--accent', receivers: '--s5', backhaul: '--s2' };
 
-let root = null, map = null, hud = null, G = null, R = null, base = null, spot = null, nodeStats = null, raf = 0, timer = 0;
+let root = null, map = null, hud = null, hudToday = null, G = null, R = null, base = null, spot = null, nodeStats = null, raf = 0, timer = 0;
 const $ = s => root.querySelector(s);
 
 // ---------- data for the current year ----------
 async function loadYear() {
-  const [geo, grid, pop, st, hz] = await Promise.all([loadGeo(), loadGrid(), loadPop(S.year), loadStations(S.year), loadHz()]);
-  G = G && G.grid === grid ? { ...G, pop, st, hz } : {
-    geo, grid, pop, st, hz, first: firstCovered,
-    cellLL: grid.i.map(i => [grid.lon0 + (i % grid.nx) * grid.res_deg, grid.lat0 + Math.floor(i / grid.nx) * grid.res_deg]),
-    cellIdx: new Map(grid.i.map((g, k) => [g, k])),
-  };
+  const [geo, grid, pop, st, hz, today] = await Promise.all([loadGeo(), loadGrid(), loadPop(S.year), loadStations(S.year), loadHz(), loadToday()]);
+  if (!(G && G.grid === grid)) {
+    const cellLL = grid.i.map(i => [grid.lon0 + (i % grid.nx) * grid.res_deg, grid.lat0 + Math.floor(i / grid.nx) * grid.res_deg]);
+    G = { geo, grid, first: firstCovered, cellLL, cellIdx: new Map(grid.i.map((g, k) => [g, k])), today, todayReach: todayReach(grid, cellLL, today.towns) };
+  }
+  G = { ...G, pop, st, hz };
+  G.todayNow = G.todayReach.share(pop); // today's reach for this year's population
   spot = sweetSpot(st.runs[S.mode]);
   if (S.n == null) S.n = spot.knee;
   base = evaluate(D, st, { ...DESIGN(), n: spot.knee, year: S.year, mode: S.mode, dbNodes: BEST(4) });
@@ -74,34 +77,38 @@ export async function mount(el_, step = 'why') {
     <div class="co" data-step="${S.step}">
       <header class="co-head">
         <div><div class="pv-eyebrow">ConOps · RFP S-3</div>
-          <h2 class="co-title"><span class="co-t-why">Why the basin needs S-3</span><span class="co-t-what">What we build, where, and how many</span></h2></div>
+          <h2 class="co-title"><span class="co-t-why">Why the basin needs S-3</span><span class="co-t-today">Today, without S-3</span><span class="co-t-what">What we build, where, and how many</span></h2></div>
         <div class="seg co-step" role="group" aria-label="ConOps step (← →)">
           <button data-co-step="why" aria-pressed="${S.step === 'why'}">Why</button>
-          <button data-co-step="what" aria-pressed="${S.step === 'what'}">What · where · how many</button>
+          <button data-co-step="today" aria-pressed="${S.step === 'today'}">Today</button>
+          <button data-co-step="what" aria-pressed="${S.step === 'what'}">With S-3 · where · how many</button>
         </div>
       </header>
       <div class="co-body">
         <div class="co-mapcol"><div class="co-map"><div class="v2-loading">Loading the basin…</div></div><div class="co-legend"></div></div>
-        <div class="co-col co-side"><div class="co-pane is-why"></div><div class="co-pane is-what"></div></div>
-        <div class="co-col co-res"><div class="co-pane is-why"></div><div class="co-pane is-what"></div></div>
+        <div class="co-col co-side"><div class="co-pane is-why"></div><div class="co-pane is-today"></div><div class="co-pane is-what"></div></div>
+        <div class="co-col co-res"><div class="co-pane is-why"></div><div class="co-pane is-today"></div><div class="co-pane is-what"></div></div>
       </div>
     </div>`;
   await loadYear();
   map = createConopsMap($('.co-map'), { onNode: toggleNode });
   hud = el('div', { class: 'co-hud', role: 'status', 'aria-label': 'Design numbers' });
-  map.wrap.append(hud);
+  hudToday = el('div', { class: 'co-hud co-hud-today', role: 'status', 'aria-label': 'What the basin has today' });
+  map.wrap.append(hudToday, hud);
   nodeStats = nodeDistances();
   R = evaluate(D, G.st, opts());
   map.draw(G, S, R);
   buildWhy();
+  buildToday();
   buildWhat();
   renderLegend();
   renderResults();
   renderHud();
+  renderToday();
 }
 
 export function setStep(step) {
-  if (!root || (step !== 'why' && step !== 'what')) return;
+  if (!root || !['why', 'today', 'what'].includes(step)) return;
   S.step = step;
   $('.co').dataset.step = step;
   for (const b of root.querySelectorAll('[data-co-step]')) b.setAttribute('aria-pressed', b.dataset.coStep === step);
@@ -128,6 +135,7 @@ function update({ data = false } = {}) {
     if (data) map.draw(G, S, R); else map.drawWhat(S, R);
     renderResults();
     renderHud();
+    renderToday();
     syncControls();
   });
 }
@@ -258,6 +266,59 @@ function resetDesign() {
   update({ data: true });
 }
 
+// ---------- today: what the basin has without S-3, and by how much the design improves it ----------
+function buildToday() {
+  const T = G.todayNow, side = $('.co-side .is-today');
+  const layers = [['reached', 'People reached today', 'var(--river)', 'proxy'], ['unreached', 'People with no network', 'var(--rust-hi)', 'proxy'], ['rings', "Each town's reach", 'transparent', 'proxy'], ['infra', 'Data centres, cables, hydro', 'var(--text)', 'see Sources']];
+  side.replaceChildren(
+    el('h3', { class: 'co-h', text: 'On the map' }),
+    el('div', { class: 'co-layers' }, layers.map(([k, label, sw, src]) => {
+      const cb = el('input', { type: 'checkbox' }); cb.checked = S.today[k];
+      cb.addEventListener('change', () => { S.today[k] = cb.checked; map.drawToday(S); });
+      return el('label', { class: 'co-layer' }, cb, el('i', { style: `background:${sw};${k === 'rings' ? 'border:1.5px solid var(--river);border-radius:50%' : ''}` }), el('span', { text: label }), el('small', { text: src }));
+    })),
+    el('p', { class: 'co-note' }, tag('Modeled proxy'), ` Existing networks are drawn around the ${G.today.towns.length} towns and cities we hold: 40 km for 1M+ people, 25 km for 250k+, 15 km for 50k+, 8 km for smaller. It is not measured coverage. It agrees with the RFP's figure that the internet reaches 27–32% of people. Real tower data (for example OpenCelliD) would replace it.`),
+    el('p', { class: 'co-note' }, 'The "With S-3" numbers use the design you set on the next step.'),
+    el('p', { class: 'co-hint' }, 'Press ', el('kbd', { text: '→' }), ' to see what S-3 builds.'),
+  );
+}
+
+function renderToday() {
+  const T = G.todayNow, d = TODAY;
+  hudToday.replaceChildren(
+    ...[[`${fmt(T.peoplePct)}%`, 'of people reached by existing networks*'], [`${d.gaugesLive[0]}–${d.gaugesLive[1]}`, `river gauges reporting, of ${d.gaugesHistoric}+`],
+      [`${d.syncDays[0]}–${d.syncDays[1]} days`, 'for field data to arrive'], [`${d.noWarningPct}%`, 'got no warning in a disaster'], ['once a day', 'flood bulletin, by email']]
+      .map(([big, label]) => el('div', { class: 'co-hud-c is-over' }, el('b', { text: big }), el('span', { text: label }))));
+  const pane = $('.co-res .is-today');
+  const gain = ((100 - T.peoplePct) / 100) * T.total / 1e6;
+  pane.replaceChildren(
+    el('div', { class: 'co-headline' },
+      el('b', { text: `${fmt(T.peoplePct)}% → ${R.geoUp ? '100' : fmt(T.peoplePct)}%` }),
+      el('span', { text: R.geoUp ? `of people can be warned: ${fmt(gain)} million more people, with field data arriving ${fmt((TODAY.syncDays[0] * 1440) / R.metrics.p95Fast, 0)}–${fmt((TODAY.syncDays[1] * 1440) / R.metrics.p95Fast, 0)}× faster` : 'of people can be warned: turn the GEO payload back on to see the gain' })),
+    compareCard(),
+    el('p', { class: 'co-foot' }, '* modeled proxy · the other figures are the RFP\'s, for Central and West Africa.'));
+}
+
+function compareCard() {
+  const rows = compareToday(R, G.todayNow, S.sensors.gauge);
+  const change = r => {
+    if (r.factorRange) return `${fmt(r.factorRange[0], 0)}–${fmt(r.factorRange[1], 0)}× faster`;
+    if (r.factor != null) return r.good === 'low' ? `${fmt(r.factor, r.factor < 10 ? 1 : 0)}× faster` : `${fmt(r.factor, r.factor < 10 ? 1 : 0)}×`;
+    if (r.change != null) return `+${fmt(r.change, 0)} ${r.unit}${r.extra ? ` · ${r.extra}` : ''}`;
+    return r.now === 'no' ? 'no change' : 'new';
+  };
+  const bad = r => r.now === 'no' || r.now === 'no alert path';
+  const body = el('div', { class: 'co-cmp', role: 'table', 'aria-label': 'Today against the current S-3 design' },
+    el('div', { class: 'co-cmp-h', role: 'row' }, el('span', { text: '' }), el('span', { text: 'Today' }), el('span', { text: 'With S-3' }), el('span', { text: 'Change' })),
+    rows.map(r => el('div', { class: `co-cmp-r${bad(r) ? ' is-bad' : ''}`, role: 'row', tabindex: 0,
+      onpointermove: ev => showTip(ev, [el('b', { text: r.label }), el('div', { text: r.note }), el('div', { class: 'k', text: r.kind === 'sourced' ? 'Today figure: RFP S-3 brief' : r.kind === 'proxy' ? 'Modeled proxy' : 'This model (assumptions)' })]),
+      onpointerleave: hideTip },
+    el('span', { class: 'co-cmp-l', text: r.label }), el('span', { class: 'co-cmp-t', text: r.today }), el('span', { class: 'co-cmp-n', text: r.now }),
+    el('span', { class: 'co-cmp-c', text: change(r) }), el('i', { class: `co-cmp-k is-${r.kind}`, title: r.kind === 'sourced' ? 'RFP figure' : r.kind === 'proxy' ? 'Modeled proxy' : 'Model', text: r.kind === 'sourced' ? 'RFP' : r.kind === 'proxy' ? 'proxy' : 'model' }))));
+  const table = [['Measure', 'Today', 'With S-3', 'Change', 'Basis'], ...rows.map(r => [r.label, r.today, r.now, change(r), r.kind === 'sourced' ? 'RFP' : r.kind === 'proxy' ? 'Modeled proxy' : 'Model'])];
+  return chartBlock('co-today', 'Today vs the S-3 design', body, table);
+}
+
 // ---------- legend (changes with the step; in "what" every item that can be switched is a button) ----------
 function renderLegend() {
   if (S.step === 'why') {
@@ -266,6 +327,14 @@ function renderLegend() {
       item('background:linear-gradient(90deg,var(--seq-1),var(--seq-6))', 'People per km²'), item('background:var(--critical);border-radius:50%;opacity:.7', 'Conflict (size = deaths)'),
       item('background:var(--s2);border-radius:50%', 'Fire'), item('background:var(--river);border-radius:50%', 'Flood alert'),
       item('border:1px dashed var(--s6)', 'Protected area'), item('background:var(--text)', 'Infrastructure')));
+    return;
+  }
+  if (S.step === 'today') {
+    const t = (key, sw, text) => el('button', { class: 'co-lg', 'aria-pressed': String(!!S.today[key]), title: `Show or hide: ${text}`,
+      onclick: () => { S.today[key] = !S.today[key]; map.drawToday(S); renderLegend(); } }, el('i', { class: 'co-sw', style: sw }), text);
+    $('.co-legend').replaceChildren(el('div', { class: 'co-lgroup' }, el('b', { text: 'Existing networks (modeled proxy)' }),
+      t('reached', 'background:var(--river);opacity:.8', 'People reached today'), t('unreached', 'background:var(--rust-hi);opacity:.7', 'People with no network'),
+      t('rings', 'border:1.5px solid var(--river);border-radius:50%', "Each town's reach"), t('infra', 'background:var(--text)', 'Infrastructure')));
     return;
   }
   const tog = (key, sw, text) => el('button', { class: 'co-lg', 'aria-pressed': String(!!S.show[key]), title: `Show or hide: ${text}`,
@@ -314,8 +383,8 @@ function renderHud() {
 // ---------- results: two tabs ----------
 function renderResults() {
   const pane = $('.co-res .is-what');
-  const tabs = el('div', { class: 'co-tabs' }, seg([['overview', 'Requirements and cost'], ['detail', 'How it adds up']], S.resTab, v => { S.resTab = v; renderResults(); }, 'Results'));
-  pane.replaceChildren(tabs, ...(S.resTab === 'detail' ? detailTab() : overviewTab()));
+  const tabs = el('div', { class: 'co-tabs' }, seg([['overview', 'Requirements and cost'], ['detail', 'How it adds up'], ['today', 'vs Today']], S.resTab, v => { S.resTab = v; renderResults(); }, 'Results'));
+  pane.replaceChildren(tabs, ...(S.resTab === 'detail' ? detailTab() : S.resTab === 'today' ? [compareCard()] : overviewTab()));
 }
 
 function overviewTab() {

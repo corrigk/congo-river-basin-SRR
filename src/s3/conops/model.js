@@ -109,6 +109,47 @@ export function siteRepeaters(D, stations, counts, k) {
   return { repeaters: out, reach, points };
 }
 
+// What the basin has today, with no S-3. The first block is the RFP's own figures (content.js GAP, Central and West
+// Africa); the town-reach layer is a MODELED PROXY (reach radius by town size) until real tower data is added.
+export const TODAY = {
+  gaugesLive: [13, 15], gaugesHistoric: 400,       // river stations still operating, of 400+ before 1960, few in real time
+  syncDays: [3, 7],                                // sensors and ranger devices sync only after 3-7 days
+  noWarningPct: 62,                                // of people in Central and West Africa who lived through a disaster
+  internetPct: [27, 32],                           // people the internet reaches
+  bulletinMin: 24 * 60,                            // flood bulletins go out by email once a day
+};
+
+// Which grid cells an existing town network reaches (proxy): flags per cell, and the shares of people and land.
+export function todayReach(grid, cellLL, towns) {
+  const flags = new Uint8Array(grid.i.length);
+  for (let k = 0; k < flags.length; k++) {
+    const [lon, lat] = cellLL[k], cosl = Math.cos((lat * Math.PI) / 180);
+    for (const t of towns) {
+      const dy = (lat - t.lat) * 110.57; if (Math.abs(dy) > t.r) continue;
+      const dx = (lon - t.lon) * 111.32 * cosl; if (Math.hypot(dx, dy) <= t.r) { flags[k] = 1; break; }
+    }
+  }
+  const share = (pop) => { let tot = 0, rea = 0, area = 0, atot = 0; for (let k = 0; k < flags.length; k++) { tot += pop[k]; atot += grid.km2[k]; if (flags[k]) { rea += pop[k]; area += grid.km2[k]; } } return { peoplePct: (100 * rea) / tot, areaPct: (100 * area) / atot, people: rea, total: tot }; };
+  return { flags, share };
+}
+
+// Today vs the current design: each row has what the basin has today, what the design delivers, and by how much.
+// kind: 'sourced' (RFP figure), 'proxy' (modeled proxy), 'model' (this model, an assumption set).
+export function compareToday(R, today, gaugeCount) {
+  const m = R.metrics, d = TODAY, sync = d.syncDays.map(x => x * 1440);
+  const alert = R.geoUp ? 100 : today.peoplePct; // with the GEO payload every community has a receiver in reach
+  return [
+    { k: 'people', label: 'People who can be warned', today: `${today.peoplePct.toFixed(0)}%`, now: `${alert.toFixed(0)}%`, change: alert - today.peoplePct, unit: 'points', good: 'high',
+      extra: `${((alert - today.peoplePct) / 100 * today.total / 1e6).toFixed(0)}M more people`, kind: 'proxy', note: 'Today: reach of the towns and cities we hold (modeled proxy). S-3: GEO broadcast to a $25 receiver in every community.' },
+    { k: 'area', label: 'Land an alert can reach', today: `${today.areaPct.toFixed(1)}%`, now: `${alert.toFixed(0)}%`, factor: alert / today.areaPct, good: 'high', kind: 'proxy', note: 'Share of the basin\'s 3.7M km².' },
+    { k: 'warned', label: 'Got a warning in a disaster', today: `${100 - d.noWarningPct}%`, now: R.geoUp && m.alertMin <= 10 ? '≥95% in ≤10 min' : 'no alert path', change: R.geoUp ? 95 - (100 - d.noWarningPct) : null, unit: 'points', good: 'high', kind: 'sourced', note: 'Today: 62% of people in Central and West Africa who lived through a disaster got none (RFP). S-3: requirement S3-05.' },
+    { k: 'delay', label: 'Field data reaches decision makers', today: `${d.syncDays[0]}–${d.syncDays[1]} days`, now: `${m.p95Fast.toFixed(0)} min`, factorRange: [sync[0] / m.p95Fast, sync[1] / m.p95Fast], good: 'low', kind: 'sourced', note: 'Today: sensors and ranger devices sync only after 3–7 days (RFP). S-3: priority message, 95th percentile.' },
+    { k: 'bulletin', label: 'Alert to audible', today: 'a daily email', now: `${m.alertMin.toFixed(1)} min`, factor: d.bulletinMin / m.alertMin, good: 'low', kind: 'sourced', note: 'Today: flood bulletins go out by email once a day (RFP). S-3: authorized alert to a spoken alert.' },
+    { k: 'gauges', label: 'River gauges reporting', today: `${d.gaugesLive[0]}–${d.gaugesLive[1]} of ${d.gaugesHistoric}+`, now: `${gaugeCount}`, factor: gaugeCount / ((d.gaugesLive[0] + d.gaugesLive[1]) / 2), good: 'high', kind: 'sourced', note: 'Today: stations still operating, few in real time (RFP). S-3: gauges set on the Sensors slider (site count is a modeled proxy).' },
+    { k: 'resilient', label: 'Works with towers and grid down', today: 'no', now: R.checks.find(c => c.id === 'S3-10').state === 'fail' ? 'no' : `yes, ${(R.avail * 100).toFixed(1)}%`, good: 'high', kind: 'model', note: 'Today: floods and conflict take down towers and the grid (RFP). S-3: stations on solar, receivers on solar or crank (availability is illustrative).' },
+  ];
+}
+
 const lccLeo = sats => ASSUME.leo.fixedMusd + ASSUME.leo.perSatMusd * sats;
 const range3 = (base, [lo, hi]) => ({ low: base * lo, base, high: base * hi });
 

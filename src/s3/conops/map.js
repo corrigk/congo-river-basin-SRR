@@ -1,6 +1,7 @@
-// ConOps map: three stacked canvases over the same projection. Base (borders, basin, rivers) never moves; the
-// "why" layer (people, conflict, fire, floods, protected areas, existing infrastructure) and the "what" layer
-// (coverage, stations, repeaters, sensors, databases, footprints) crossfade when the step changes.
+// ConOps map: stacked canvases over the same projection. Base (borders, basin, rivers) never moves; the "why" layer
+// (people, conflict, fire, floods, protected areas, existing infrastructure), the "today" layer (who existing
+// networks reach: a modeled proxy) and the "what" layer (coverage, stations, repeaters, sensors, databases,
+// footprints, data flow) crossfade when the step changes.
 import { D } from '../v2/data.js';
 import { el, css, fmt, kv, showTip, hideTip } from '../v2/ui.js';
 
@@ -19,18 +20,18 @@ export const familyOf = id => Object.keys(FAMILY).find(f => FAMILY[f].types.incl
 // opts: { onNode(name) } ; draw(G, S, R): G = loaded data, S = ConOps state, R = model result
 export function createConopsMap(holder, opts = {}) {
   const wrap = el('div', { class: 'co-mapwrap', role: 'img' });
-  const cvs = ['base', 'why', 'what', 'flow'].map(k => el('canvas', { class: `co-cv co-${k}`, 'aria-hidden': 'true' }));
+  const cvs = ['base', 'why', 'today', 'what', 'flow'].map(k => el('canvas', { class: `co-cv co-${k}`, 'aria-hidden': 'true' }));
   wrap.append(...cvs);
   holder.replaceChildren(wrap);
-  const [cb, cw, cx, cf] = cvs.map(c => c.getContext('2d'));
-  let W = 500, H = 500, G = null, S = null, hits = { why: [], what: [] };
+  const [cb, cw, ct, cx, cf] = cvs.map(c => c.getContext('2d'));
+  let W = 500, H = 500, G = null, S = null, hits = { why: [], today: [], what: [] };
 
   function size() {
     const maxW = holder.clientWidth || 500, maxH = holder.clientHeight || maxW * ASPECT;
     W = Math.max(260, Math.min(maxW, maxH / ASPECT)); H = W * ASPECT;
     const dpr = devicePixelRatio || 1;
     wrap.style.width = `${W}px`; wrap.style.height = `${H}px`;
-    for (const [c, x] of [[cvs[0], cb], [cvs[1], cw], [cvs[2], cx], [cvs[3], cf]]) {
+    for (const [c, x] of [[cvs[0], cb], [cvs[1], cw], [cvs[2], ct], [cvs[3], cx], [cvs[4], cf]]) {
       c.width = W * dpr; c.height = H * dpr; c.style.width = `${W}px`; c.style.height = `${H}px`;
       x.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
@@ -140,6 +141,41 @@ export function createConopsMap(holder, opts = {}) {
       }
     }
     for (const c of D.db.candidates.filter(c => !c.excluded)) { const [x, y] = px(c.lon, c.lat); label(cw, c.name, x + 5, y - 4, css('--muted'), 10.5, 500); }
+  }
+
+  // ---------- today: who existing networks reach, with no S-3 (a MODELED PROXY around the towns we hold) ----------
+  function drawToday() {
+    const T = S.today, reach = G.todayReach.flags, h = hits.today = [];
+    ct.clearRect(0, 0, W, H);
+    const blue = css('--river'), warm = css('--rust-hi');
+    for (let k = 0; k < G.grid.i.length; k++) {
+      const c = densClass(G.pop[k] / G.grid.km2[k]);
+      if (reach[k]) { if (T.reached) { ct.globalAlpha = 0.55 + 0.06 * c; cellRect(ct, k, blue); } }
+      else if (T.unreached && c > 0) { ct.globalAlpha = 0.1 + 0.11 * Math.min(c, 5); cellRect(ct, k, warm); }
+    }
+    ct.globalAlpha = 1;
+    stroke(ct, G.geo.basin, css('--accent'), 1.6);
+    if (T.rings) {
+      ct.lineWidth = 1; ct.strokeStyle = blue; ct.globalAlpha = 0.75;
+      for (const t of G.today.towns) { ring(ct, t.lon, t.lat, t.r); ct.stroke(); }
+      ct.globalAlpha = 1;
+    }
+    if (T.infra) {
+      for (const it of D.infra.items) {
+        if (it.type === 'conflict') continue;
+        const [x, y] = px(it.lon, it.lat); if (x < 0 || x > W) continue;
+        ct.beginPath();
+        if (it.type.startsWith('data_centre')) ct.rect(x - 4, y - 4, 8, 8); else if (it.type === 'hydro') shape(ct, 'remote', x, y, 4.5); else ct.arc(x, y, 4, 0, 7);
+        ct.fillStyle = it.type === 'data_centre_planned' ? css('--bg') : css('--text'); ct.fill(); ct.strokeStyle = css('--bg'); ct.lineWidth = 1.5; ct.stroke();
+        h.push({ x, y, r: 8, tip: () => [el('b', { text: it.name }), el('div', { class: 'k', text: it.type.replace(/_/g, ' ') })] });
+      }
+    }
+    for (const t of G.today.towns) {
+      const [x, y] = px(t.lon, t.lat);
+      if (t.pop >= 5e4) { ct.beginPath(); ct.arc(x, y, t.pop >= 1e6 ? 3.2 : 2.2, 0, 7); ct.fillStyle = css('--text'); ct.fill(); ct.strokeStyle = css('--bg'); ct.lineWidth = 1; ct.stroke(); }
+      if (t.pop >= 5e5) label(ct, t.name, x + 5, y - 4, css('--muted'), 10.5, 500);
+      h.push({ x, y, r: 6, tip: () => [el('b', { text: t.name }), kv('Population', fmt(t.pop)), kv('Network reach (modeled)', `${t.r} km`), el('div', { class: 'k', text: 'Proxy: radius set by town size' })] });
+    }
   }
 
   // ---------- what: what S-3 builds, where, and how many ----------
@@ -318,7 +354,8 @@ export function createConopsMap(holder, opts = {}) {
     const i = Math.round((lat - g.lat0) / g.res_deg) * g.nx + Math.round((lon - g.lon0) / g.res_deg), k = G.cellIdx.get(i);
     if (k == null) return hideTip();
     const nodes = [el('b', { text: `${fmt(G.pop[k])} people` }), kv('Density', `${fmt(G.pop[k] / g.km2[k], 1)} /km²`), kv('Country', g.country[k])];
-    if (S.step === 'why') {
+    if (S.step === 'today') nodes.push(kv('Existing network reach (modeled proxy)', G.todayReach.flags[k] ? 'yes' : 'no'));
+    else if (S.step === 'why') {
       const fire = G.hz.fires.cells[i], con = G.hz.conflict.cells[i];
       if (fire) nodes.push(kv('Fire detections 2024', fmt(fire)));
       if (con) nodes.push(kv('Violent events 2015–24', `${fmt(con[0])} (${fmt(con[1])} deaths)`));
@@ -338,14 +375,17 @@ export function createConopsMap(holder, opts = {}) {
   return {
     wrap, // the view puts the numbers overlay in here
     // full redraw (data, year or size changed)
-    draw(g, s, R) { G = g; S = s; size(); drawBase(); drawWhy(); drawWhat(R); this.describe(R); },
+    draw(g, s, R) { G = g; S = s; size(); drawBase(); drawWhy(); drawToday(); drawWhat(R); this.describe(R); },
+    drawToday(s) { S = s; drawToday(); },
     // step or flow toggles changed: start or stop the animation
     sync(s) { S = s; drawFlows(performance.now()); syncAnim(); },
     // design changed: only the what layer
     drawWhat(s, R) { S = s; drawWhat(R); this.describe(R); },
     drawWhy(s) { S = s; drawWhy(); },
     describe(R) {
-      wrap.setAttribute('aria-label', S.step === 'why'
+      wrap.setAttribute('aria-label', S.step === 'today'
+        ? `Map of what the basin has today with no S-3: existing town networks (a modeled proxy) reach about ${fmt(G.todayNow.peoplePct)}% of people and ${fmt(G.todayNow.areaPct, 1)}% of the land.`
+        : S.step === 'why'
         ? `Map of the Congo River Basin: population density, ${fmt(G.hz.conflict.events)} violent events 2015–2024, ${fmt(G.hz.fires.detections)} fire detections in 2024, ${G.hz.floods.events.length} flood alerts, protected areas and existing infrastructure.`
         : `Map of the S-3 design, ${S.year}: ${S.nodes.length} database node${S.nodes.length === 1 ? '' : 's'} (${S.nodes.join(', ')}), ${S.n} ranger stations reaching ${fmt(R.popPct, 1)}% of people, ${R.repeaters.length} canopy repeaters, ${fmt(R.terminals)} sensor terminals.`);
     },
