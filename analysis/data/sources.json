@@ -108,6 +108,18 @@
   "wdpa": {
    "title": "UNEP-WCMC and IUCN (2026), Protected Planet: The World Database on Protected Areas (WDPA) and World Database on OECMs (WDOECM) [Online], October 2026, Cambridge, UK: UNEP-WCMC and IUCN. Non-commercial use.",
    "url": "https://www.protectedplanet.net"
+  },
+  "ucdp_ged": {
+   "title": "UCDP Georeferenced Event Dataset (GED) Global version 25.1. Davies, Pettersson, Sollenberg & Öberg (2025), Journal of Peace Research; Sundberg & Melander (2013). CC BY 4.0",
+   "url": "https://ucdp.uu.se/downloads/"
+  },
+  "nasa_firms": {
+   "title": "NASA FIRMS MODIS Collection 6.1 active fire detections, 2024, DR Congo (MCD14ML). NASA LANCE / FIRMS, doi:10.5067/FIRMS/MODIS/MCD14ML",
+   "url": "https://firms.modaps.eosdis.nasa.gov/country/"
+  },
+  "gdacs": {
+   "title": "GDACS Global Disaster Alert and Coordination System: flood event alerts, European Commission Joint Research Centre and UN OCHA",
+   "url": "https://www.gdacs.org/"
   }
  }
 }

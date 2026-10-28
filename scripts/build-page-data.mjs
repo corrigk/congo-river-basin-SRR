@@ -5,6 +5,7 @@
 //   grid.json            population grid: cell index, country, area, distance to river / road (maps)
 //   pop-<year>.json      people per cell for one year (maps)
 //   stations-<year>.json the four coverage modes' station order, curve and first-covered map for one year
+//   hazards.json         conflict, fire and flood layers for the ConOps "why" map
 // Run after rerunning the pipeline:  npm run data:page
 import fs from 'node:fs';
 
@@ -49,6 +50,9 @@ write('grid.json', {
   i: pop.cells.i, country: pop.cells.country, km2: pop.cells.km2, river_km: pop.cells.river_km, road_km: pop.cells.road_km,
 });
 for (const y of pop.years) write(`pop-${y}.json`, pop.pop[String(y)]);
+
+// ConOps "why" layers: conflict, fire and flood on the same grid (analysis/scripts/build_hazards.py).
+if (fs.existsSync(new URL('hazards.json', SRC))) write('hazards.json', read('hazards.json'));
 
 const st = read('stations.json');
 for (const y of pop.years) {

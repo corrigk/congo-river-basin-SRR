@@ -12,6 +12,9 @@ LEO revisit, sensors, comms options and the 15-year budget. Scripts in `scripts/
 | WorldPop 2020 1 km UN-adjusted, one GeoTIFF per country (COD COG CAF CMR AGO ZMB TZA BDI RWA GAB) | `raw/worldpop/` | `https://data.worldpop.org/GIS/Population/Global_2000_2020_1km_UNadj/2020/<ISO3>/<iso3>_ppp_2020_1km_Aggregated_UNadj.tif` (CC BY 4.0) |
 | WDPA per-country shapefiles (same 10 countries) | `raw/wdpa/` | `https://d1gam3xoknrgr2.cloudfront.net/current/WDPA_WDOECM_<Mon><YYYY>_Public_<ISO3>_shp.zip` (Protected Planet; **non-commercial terms of use**, cite as in `data/sources.json`) |
 | Basin outline | already in the repo | `../src/data/basin.json` (HydroSHEDS HydroBASINS) |
+| Conflict events (UCDP GED v25.1, CC BY 4.0) | `raw/hazards/ucdp/ged251-csv.zip` | `https://ucdp.uu.se/downloads/ged/ged251-csv.zip` (29 MB) |
+| Active fires 2024, DR Congo (NASA FIRMS MODIS) | `raw/hazards/firms/` | `https://firms.modaps.eosdis.nasa.gov/data/country/modis/2024/modis_2024_Democratic_Republic_of_the_Congo.csv` (41 MB) |
+| Flood alerts (GDACS, EC JRC) | `raw/hazards/gdacs/FL_<country>.json` | GDACS event-list API, one request per basin country (small; the service often times out, so retry) |
 
 ## Run it
 
@@ -30,6 +33,7 @@ $PY scripts/optimize_stations.py
 $PY scripts/site_databases.py
 $PY scripts/leo_revisit.py
 $PY scripts/build_sensors_comms_budget.py                 # uses the WDPA polygons when raw/wdpa has them
+$PY -I scripts/build_hazards.py                           # conflict, fire and flood layers for the ConOps 'why' map
 ```
 
 Leave out `--basin`, `--worldpop` or the WDPA files to fall back to the original modeled proxies.
