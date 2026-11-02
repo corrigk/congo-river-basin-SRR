@@ -19,6 +19,8 @@ console.log(`  TOTAL $${b.total.base.toFixed(1)}M (${b.total.low.toFixed(0)}-${b
 console.log('  by year', b.perYear.map(p => p.total.toFixed(0)).join(' '));
 for (const c of b.checks) console.log(`  ${c.id.padEnd(6)} ${c.state.padEnd(5)} margin ${(c.margin * 100).toFixed(0).padStart(4)}%  ${c.v}`);
 console.log('  criteria', Object.entries(b.criteria).map(([k, v]) => `${k} ${v.toFixed(2)}`).join('  '), ' score', weightedScore(b).toFixed(3));
+const X = b.phys;
+console.log(`  physics: uplink margin ${X.uplink.margin.toFixed(1)} dB, canopy closes ${X.uplink.closeEl}° (${X.uplink.canopyClass}), ${X.kbps.toFixed(1)} kbps/sat; relay ${X.relay.km.toFixed(1)} km; GEO margin ${X.geo.margin.toFixed(1)} dB; feeder ${(X.rain.feederAvail * 100).toFixed(2)}%; power ${X.power.pvKwp.toFixed(2)} kWp ${X.power.battKwh.toFixed(1)} kWh $${Math.round(X.power.capexUsd)}`);
 console.log('  fails', b.fails.map(f => `${f.f} ${(f.pass * 100).toFixed(0)}% ${f.failed?.join(',') || ''}`).join(' | '));
 
 console.log('\n== One option at a time');

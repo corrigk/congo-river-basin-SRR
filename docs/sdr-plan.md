@@ -10,7 +10,9 @@ save / duplicate / export / import, presets in `designs/`), Phase 1 (catalog wit
 and basis labels; several figures are still estimates), Phase 2 (cost ledger by year, build timeline; performance
 still the SRR formulas), Phase 3 (weights, ranking, winner map, flip points, robustness, failure scorecard, decision
 log), Phase 4 (optimizer in a Web Worker, five objectives, Pareto cloud), Phase 5 (tornado, elasticity, Monte Carlo).
-Not yet: RF link budgets, battery and solar sizing, spares and reliability models (Phase 2 physics); vendor quotes;
+Second session: link budgets (sensor uplink with canopy foliage, station relay, GEO downlink), ITU rain fade and
+station power sizing now drive capacity, canopy timing, relay reach, S3-10 and station cost (Links & power tab).
+Not yet: satellite power and mass budgets, spares and reliability models; vendor quotes;
 a presenting mode and PNG/SVG export for the SDR tab (Phase 6); the optimizer does not run in `srr-offline.html`
 (the worker is a separate file).
 

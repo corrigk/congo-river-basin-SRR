@@ -8,6 +8,7 @@ Tab **4 · SDR** (`#sdr`). The SRR tabs (1–3) are unchanged. Code in `src/sdr/
 | File | What it does |
 | --- | --- |
 | `catalog.js` | 2–5 real options per element (LEO uplink, launch, GEO, receiver, station power, backhaul, databases, tower, staffing) with unit costs, life, the performance numbers the engine uses, risk (1–5), lead time and **where each figure comes from** (Published / Datasheet / Quote / Estimate / SRR assumption, with the source and date) |
+| `physics.js` | Link budgets (sensor uplink, station relay, GEO alert downlink), rain fade and station power sizing, as tables of parameter, value, unit and note |
 | `engine.js` | A Design (every choice and slider) → the SRR ConOps model fed with the chosen equipment, a 15-year cost ledger by year, requirement checks with a **margin** each, five failure cases, and a 0–1 score on eight criteria |
 | `decide.js` | Team-weighted score, ranking, winner map, flip points, weight robustness |
 | `optimize.js` | Random sampling then hill climbing over the whole design space; best design for five objectives; Pareto frontier |
@@ -16,15 +17,50 @@ Tab **4 · SDR** (`#sdr`). The SRR tabs (1–3) are unchanged. Code in `src/sdr/
 | `view.js`, `sdr.css` | The tab |
 | `designs/*.json` | Preset designs (★ in the design menu). Export a design to a JSON file and commit it here to share it |
 
+## The physics (Links & power tab)
+
+The tab shows every budget line by line, plus four charts: uplink margin against elevation (open sky and under
+canopy), relay received power against distance, rain fade against share of the year, and station loads. The
+assumptions are sliders under **Physics assumptions** in the configurator (saved with the design).
+
+**Sensor uplink to LEO** (UHF, 401 MHz). C/N₀ = terminal EIRP + satellite G/T − free-space loss (32.45 + 20 log f + 20 log
+d, slant range at the elevation) − polarization and atmosphere − foliage + 228.6. Margin = C/N₀ − 10 log(burst rate)
+− required Eb/N₀ (6 dB: BPSK, rate-1/2 FEC); it must be at least 3 dB.
+- **Capacity per satellite** = channels × min(channel cap, rate the link supports at 20°) × 0.184 (pure ALOHA: sensors
+  transmit unsynchronised). This replaces the SRR's assumed 20 kbps: the 6U gives 16.9 kbps, the 12U 84.8, the
+  microsat 339.
+- **Canopy**: foliage loss is Weissberger's model over the crown layer crossed (layer / sin elevation) × a wet-tropical
+  factor. The elevation where the canopy margin reaches 3 dB decides the canopy sensors' revisit: from 20° they are
+  timed like open sky, up to 45° they use the 45° revisit row, above that they have no direct path (and need a relay).
+  The 6U closes at 33°, the 12U at 24°, the microsat at 18°.
+
+**Station relay to canopy sensors** (433 MHz). Allowed path loss = sensor power + tower antenna gain − cable − forest
+near the sensor − (sensitivity + 10 dB fade margin). Reach = the two-ray distance (40 log d − 20 log h_t − 20 log
+h_r), capped at the radio horizon 4.12 (√h_t + √h_r) km. 30 m tower: 25.6 km (the SRR assumed 20); 24 m: 22.9 km.
+
+**GEO alert downlink** (L-band, 1,490 MHz) to a 4 dBi, 250 K receiver behind 3 dB of thatch or trees, 8 kbps speech:
+margin 28 dB with a 53 dBW hosted beam, 19 dB with a 44 dBW leased beam. Spare margin can carry more language
+channels in the same power, or a cheaper receiver antenna.
+
+**Rain**: specific attenuation γ = k R^α (ITU-R P.838, horizontal, interpolated in frequency) over the effective path
+(ITU-R P.618, rain height 4.8 km), scaled from 0.01% to other percentages with the classic P.618 formula. The 14 GHz
+GEO feeder at the hub fades 34 dB at 0.01%; with 10 dB of uplink power control it is up 99.82% of the year. That
+figure now sets the rain term of S3-10. UHF and L-band links lose under 0.1 dB.
+
+**Station power**: loads (radios, S-3 terminal, backhaul terminal, ops room, medical fridge, charging; loudspeakers
+1 h on an alert day). Battery = (normal day × days of autonomy + alert) / depth of discharge / inverter efficiency;
+PV = (normal day × 1.3 + alert / autonomy) / (peak sun hours × 0.75). Baseline: 3.6 kWh a day, 1.7 kWp and 19 kWh
+LiFePO4, about $13.9k a station against the SRR's $28k kit.
+
 ## The engine
 
 **Performance** comes from the SRR model (`src/s3/conops/model.js`, explained in `conops-model.md`), with:
 - the revisit table for the orbit the launch buys (15° dedicated, 53° rideshare, 97.6° SSO rideshare) or, for a
   commercial service, its own row (Kinéis: the 24-satellite near-polar row as a proxy; Iridium: continuous coverage);
-- uplink capacity per satellite from the satellite option (20 / 60 / 250 kbps: estimates to confirm with a link budget);
+- uplink capacity, canopy timing, relay reach, rain availability and station power from `physics.js` (above);
 - terminal module price and life from the uplink option (S3-04), receiver price (S3-07), backhaul Mbps per site (S3-08);
 - node availability from the database option plus the staffing level, space availability from the LEO and GEO options;
-- station relay reach from the tower (30 m: 20 km; 24 m: 17 km, radio horizon ∝ √height).
+- tower height (30 or 24 m) into the relay budget.
 
 **Cost ledger.** First service (IOC) is the slowest element's lead time. Each line buys its equipment over the build
 years (1..IOC), replaces it every `life` years after that, and pays its recurring cost from IOC to year 15:
@@ -35,7 +71,7 @@ years (1..IOC), replaces it every `life` years after that, and pays its recurrin
 - commercial service: integration $2M + devices × airtime × 12 a year;
 - sensor radio modules: terminals × module price, replaced every module life;
 - GEO: capex (replaced if its life is under 15 years) + operations a year;
-- ranger stations: the SRR station items with the chosen tower and power, + the access kit, × the logistics multiplier
+- ranger stations: the SRR station items with the chosen tower and the sized power system, + the access kit, × the logistics multiplier
   for road / river / remote sites; 6% of capex a year maintenance; battery swaps every battery life; hydro extras;
 - repeaters $10k + $300/yr; databases 40% up front, the rest spread over the service years, + option opex;
 - backhaul kits at every station and node, replaced, + subscriptions; receivers × price × 1.3 (distribution), replaced;
@@ -84,6 +120,12 @@ stops meeting a requirement. **Elasticity**: % change in eight outcomes per % ch
 on the cumulative cost chart.
 
 ## First findings (baseline, 2041)
+
+- With the link budgets: the baseline costs **$395M**; the 6U uplink closes with 11 dB at 20° but carries 16.9 kbps per
+  satellite, so the uplink is 28% used. Relay reach is 25.6 km. S3-10 drops to 99.72% because of rain on the feeder.
+- **Wet canopy is the uplink's big unknown.** At a wet-foliage factor of about 2.4 the 6U canopy link no longer closes
+  below 70°, canopy sensors lose their direct path and S3-09 fails. A foliage measurement campaign (or a relay for
+  every canopy sensor) retires that risk.
 
 - The SRR baseline costs **$398M** (range $314–588M) with first service in 2030 (the hosted GEO payload's lead time).
   Monte Carlo puts its chance of staying under $400M at only **about 24%**: it has 1% margin on cost.
