@@ -81,21 +81,35 @@ function canopyPoints(D, counts) {
 }
 
 // Repeaters go where they reach the most canopy sensors not already within a station's relay reach (greedy).
+// Greedy picks do not depend on k, so the pick order is cached per (stations, sensor counts, station reach) and
+// extended on demand: the SDR optimizer evaluates thousands of designs and only pays for each order once.
+const repCache = new Map();
 export function siteRepeaters(D, stations, counts, k) {
   const pts = canopyPoints(D, counts);
-  const covered = pts.map(p => stations.some(s => kmBetween(p.ll, [s.lon, s.lat]) <= ASSUME.relayKm.station));
-  const out = [];
-  for (let r = 0; r < k; r++) {
+  const key = `${stations.length}|${stations.reduce((a, s) => a + s.lat * 31.7 + s.lon, 0).toFixed(4)}|${Object.values(counts).join(',')}|${ASSUME.relayKm.station}`;
+  let c = repCache.get(key);
+  if (!c) {
+    const covered0 = pts.map(p => stations.some(s => kmBetween(p.ll, [s.lon, s.lat]) <= ASSUME.relayKm.station));
+    c = { covered0, work: covered0.slice(), picks: [], done: false };
+    if (repCache.size > 600) repCache.clear();
+    repCache.set(key, c);
+  }
+  while (c.picks.length < k && !c.done) {
     let best = -1, gain = 0;
     for (let i = 0; i < pts.length; i++) {
-      if (covered[i]) continue;
+      if (c.work[i]) continue;
       let g = 0;
-      for (const j of pts[i].nb) if (!covered[j]) g += pts[j].w;
+      for (const j of pts[i].nb) if (!c.work[j]) g += pts[j].w;
       if (g > gain) { gain = g; best = i; }
     }
-    if (best < 0) break;
-    for (const j of pts[best].nb) covered[j] = true;
-    out.push({ lon: pts[best].ll[0], lat: pts[best].ll[1], gain });
+    if (best < 0) { c.done = true; break; }
+    for (const j of pts[best].nb) c.work[j] = true;
+    c.picks.push({ i: best, gain });
+  }
+  const covered = c.covered0.slice(), out = [];
+  for (const p of c.picks.slice(0, k)) {
+    for (const j of pts[p.i].nb) covered[j] = true;
+    out.push({ lon: pts[p.i].ll[0], lat: pts[p.i].ll[1], gain: p.gain });
   }
   // Share of each type's canopy sensors within relay reach.
   const reach = {};

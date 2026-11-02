@@ -1,0 +1,25 @@
+{
+  "name": "Commercial uplink (Iridium)",
+  "notes": "No own constellation: Iridium SBD modules and airtime. Fast, but the module price breaks S3-04.",
+  "year": 2041,
+  "mode": "mix",
+  "n": 78,
+  "repeaters": 0,
+  "dbNodes": 4,
+  "leoSats": 24,
+  "raised": true,
+  "sparesPerPlane": 0,
+  "sensorScale": 1,
+  "discountPct": 0,
+  "pick": {
+    "leo": "iridium",
+    "launch": "dedicated",
+    "geo": "hosted",
+    "receiver": "r25",
+    "power": "lfp",
+    "backhaul": "starlink",
+    "db": "colo",
+    "tower": "lattice30",
+    "ops": "standard"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "Baseline (SRR design)",
+  "notes": "The SRR concept with catalog equipment.",
+  "year": 2041,
+  "mode": "mix",
+  "n": 78,
+  "repeaters": 0,
+  "dbNodes": 4,
+  "leoSats": 24,
+  "raised": true,
+  "sparesPerPlane": 0,
+  "sensorScale": 1,
+  "discountPct": 0,
+  "pick": {
+    "leo": "own6u",
+    "launch": "dedicated",
+    "geo": "hosted",
+    "receiver": "r25",
+    "power": "lfp",
+    "backhaul": "starlink",
+    "db": "colo",
+    "tower": "lattice30",
+    "ops": "standard"
+  }
+}

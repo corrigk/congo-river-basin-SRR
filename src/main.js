@@ -14,8 +14,8 @@ const app = $('#app');
 // and Requirements (mission & gap, Level 0, decomposition).
 const SECTION_TABS = ['flow'];
 const REQ_VIEWS = ['overview', 'requirements', 'decomposition'];
-const TABS = ['conops', ...SECTION_TABS, ...REQ_VIEWS, 'scenario'];
-const MAIN_TABS = ['conops', 'flow', 'requirements'];
+const TABS = ['conops', ...SECTION_TABS, ...REQ_VIEWS, 'scenario', 'sdr'];
+const MAIN_TABS = ['conops', 'flow', 'requirements', 'sdr'];
 const tabFor = v => (REQ_VIEWS.includes(v) ? 'requirements' : v === 'scenario' ? 'flow' : v);
 
 // ---------- static chrome ----------
@@ -165,6 +165,7 @@ function render() {
   renderDecomposition();
   renderAnalysis();
   renderConops();
+  renderSdr();
   writeHash();
 }
 
@@ -271,6 +272,13 @@ function renderAnalysis() {
     m.renderSection(state.tab, $(`#view-${state.tab}`));
   });
 }
+// ---------- SDR workbench (loaded the first time it is opened) ----------
+let sdr = null;
+function renderSdr() {
+  if (state.tab !== 'sdr') return;
+  sdr ||= import('./sdr/view.js').then(async m => { await m.mount($('#view-sdr')); return m; });
+}
+
 // ---------- ConOps tab (loaded the first time it is opened) ----------
 const CO_STEPS = ['why', 'today', 'what'];
 let conops = null;
@@ -419,7 +427,7 @@ document.addEventListener('keydown', e => {
     next.focus(); setTab(next.dataset.view);
     return;
   }
-  if (/^[1-3]$/.test(k)) { const t = MAIN_TABS[+k - 1]; setTab(t === 'requirements' && REQ_VIEWS.includes(state.tab) ? state.tab : t); return; }
+  if (/^[1-4]$/.test(k)) { const t = MAIN_TABS[+k - 1]; setTab(t === 'requirements' && REQ_VIEWS.includes(state.tab) ? state.tab : t); return; }
   if (state.tab === 'conops' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); setCoStep(CO_STEPS[Math.min(2, CO_STEPS.indexOf(state.coStep) + 1)]); return; }
   if (state.tab === 'conops' && (k === 'ArrowLeft' || k === 'PageUp')) { e.preventDefault(); setCoStep(CO_STEPS[Math.max(0, CO_STEPS.indexOf(state.coStep) - 1)]); return; }
   if (state.tab === 'scenario' && (k === 'ArrowRight' || k === 'PageDown' || k === ' ')) { e.preventDefault(); goStep(state.step + 1); return; }

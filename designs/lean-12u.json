@@ -1,0 +1,25 @@
+{
+  "name": "Lean 12U + leased GEO",
+  "notes": "Longer-lived 12U satellites (two generations), 18 of them, a leased GEO transponder instead of a hosted payload.",
+  "year": 2041,
+  "mode": "mix",
+  "n": 78,
+  "repeaters": 0,
+  "dbNodes": 3,
+  "leoSats": 18,
+  "raised": true,
+  "sparesPerPlane": 0,
+  "sensorScale": 1,
+  "discountPct": 0,
+  "pick": {
+    "leo": "own12u",
+    "launch": "dedicated",
+    "geo": "lease",
+    "receiver": "r25",
+    "power": "lfp",
+    "backhaul": "starlink",
+    "db": "colo",
+    "tower": "lattice30",
+    "ops": "standard"
+  }
+}

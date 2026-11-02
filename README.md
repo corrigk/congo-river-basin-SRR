@@ -18,6 +18,7 @@ citation and explains the labels.
 | 1 | **ConOps** | One map in three steps. **Why**: population density, conflict (UCDP), fire (NASA FIRMS), floods (GDACS), protected areas and existing infrastructure, with sourced figures. **Today** (→): the same map without S-3: who existing networks reach (a modeled proxy around the towns we hold) and the RFP's figures (3–7 days for field data, 62% with no warning, 13–15 river gauges). **With S-3 · where · how many** (→): the same map with the design: people within a station's reach, ranger stations and their reach, canopy repeaters, sensors, database nodes, the GEO alert footprint. Sliders and toggles (year, stations with the sweet-spot band, repeaters, raised antennas, database nodes, LEO size, GEO, Starlink, hydro, sensors per type, failure cases) drive live **requirement checks** (S3-01 to S3-10 and the $400M cap), the counts, and the **15-year cost range**; a **vs Today** tab says by how much the design improves each of today's numbers |
 | 2 | **Function flow** | The team's nine blocks: Acquire, Transmit, Process, Evaluate, Generate, Broadcast, Receive, Verify (a "No" loops back to Broadcast), and Coordinate (persistent). Each block's steps, performers and traceability; the latency budgets; and **Play**: the click-through scenarios on the globe or ground view (A flood warning chain, B routine collection, C degraded operations, D non-flood hazard), with an F1–F9 strip lighting each step's blocks |
 | 3 | **Requirements** | Mission & gap, the ten Level 0 requirements (threshold / objective), and the decomposition MO → L4 |
+| 4 | **SDR** | The decision workbench for the System Definition Review: configure the system with catalog equipment (sourced, labelled options for every element), see the 15-year cost by year, requirement margins and failure cases, weigh designs with team weights (winner map, flip points, robustness, decision log), search the design space (Pareto cloud), and test sensitivity (tornado, elasticity, Monte Carlo). See [docs/sdr-workbench.md](docs/sdr-workbench.md) |
 
 How the ConOps numbers are worked out (coverage, latency, capacity, availability, cost range, the sweet spot) is in
 [docs/conops-model.md](docs/conops-model.md). Every chart has a **Table** button.
@@ -26,7 +27,7 @@ How the ConOps numbers are worked out (coverage, latency, capacity, availability
 
 | Key | Action |
 | --- | --- |
-| 1 – 3 | ConOps · Function flow · Requirements |
+| 1 – 4 | ConOps · Function flow · Requirements · SDR |
 | → · PgDn · Space | ConOps: Why → Today → With S-3. Scenario: next step (clickers work) |
 | ← · PgUp | ConOps: back to Why. Scenario: previous step |
 | R | Reset the scenario to step 1 |
@@ -83,6 +84,7 @@ rebuild the files the page loads and check the model:
 ```bash
 npm run data:page                  # analysis/data -> src/s3/v2/data (core, geo, grid, pop-<year>, stations-<year>, hazards)
 node scripts/conops-report.mjs     # the ConOps model on the new data: baseline, levers, failure cases, sweet spot
+node scripts/sdr-report.mjs --opt  # the SDR engine: baseline, each catalog option, the optimizer's best designs
 ```
 
 The page loads only the files a view needs, so the first paint stays small. The station slider defaults to the sweet
@@ -150,6 +152,8 @@ map, the number of database nodes is set with buttons; moving a node to another 
 - `src/s3/decomp/`: decomposition tab; `src/s3/offline.js`: service worker registration and the badge
 - `analysis/`: data pipeline (Python); `scripts/`: page data, ConOps report, service worker, test server
 - `docs/conops-model.md`: how the ConOps numbers are worked out
+- `src/sdr/`: the SDR workbench (catalog, engine, decide, optimize, sensitivity, worker, view); `designs/`: preset designs;
+  `scripts/sdr-report.mjs`: the engine in node; `docs/sdr-workbench.md`: how it works
 
 ## Data and licences
 
