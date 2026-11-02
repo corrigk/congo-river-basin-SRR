@@ -175,3 +175,26 @@
 .sd-bn { color: var(--muted); font-size: 10.5px; }
 .sd-budget tr:last-child th, .sd-budget tr:last-child td { border-bottom: 0; }
 .sd-phys-b { padding: 4px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+
+/* presenting: the configurator and design bar step aside; one slide fills the view */
+.sd.is-present .sd-cfg, .sd.is-present .sd-tabs, .sd.is-present .sd-head { display: none; }
+.sd.is-present .sd-body { grid-template-columns: minmax(0, 1fr); }
+.sd-slide { display: flex; flex-direction: column; gap: 12px; min-height: calc(100vh - var(--top) - 40px); }
+#app.is-slide .sd-slide { min-height: calc(100vh - 40px); }
+.sd-slide-h { display: flex; flex-direction: column; gap: 4px; }
+.sd-slide-t { margin: 0; font-family: var(--display); font-style: italic; font-weight: 900; text-transform: uppercase; font-size: clamp(28px, 3.2vw, 46px); line-height: .95; }
+.sd-take { margin: 2px 0 0; max-width: 120ch; font-size: clamp(14px, 1.15vw, 17px); line-height: 1.45; color: var(--text); border-left: 3px solid var(--gold); padding-left: 12px; }
+.sd-slide-body { flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.sd-slide-body .vsvg { max-height: 40vh; }
+.sd-grid-wide { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 900px) { .sd-grid-wide { grid-template-columns: 1fr; } }
+.sd-slide-body .sd-pre { display: none; }
+.sd-slide-f { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--line); }
+.sd-dots { display: flex; gap: 6px; }
+.sd-dot-b { width: 10px; height: 10px; border-radius: 50%; background: var(--line-2); }
+.sd-dot-b[aria-current="step"] { background: var(--gold); transform: scale(1.25); }
+.sd-slide-meta { margin: 0 auto 0 8px; }
+.sd-btn.is-present-btn { border-color: var(--gold); color: var(--accent); }
+.vtoggle.sd-exp { opacity: .75; }
+.vtoggle.sd-exp:hover { opacity: 1; }
+.sd-slide-body .sd-kpis + .sd-grid2 .vsvg { max-height: 32vh; }

@@ -12,8 +12,9 @@ still the SRR formulas), Phase 3 (weights, ranking, winner map, flip points, rob
 log), Phase 4 (optimizer in a Web Worker, five objectives, Pareto cloud), Phase 5 (tornado, elasticity, Monte Carlo).
 Second session: link budgets (sensor uplink with canopy foliage, station relay, GEO downlink), ITU rain fade and
 station power sizing now drive capacity, canopy timing, relay reach, S3-10 and station cost (Links & power tab).
-Not yet: satellite power and mass budgets, spares and reliability models; vendor quotes;
-a presenting mode and PNG/SVG export for the SDR tab (Phase 6); the optimizer does not run in `srr-offline.html`
+Third session: presenting mode (seven-slide deck from the live design, keys, deep links, PNG/SVG chart export,
+Markdown summary).
+Not yet: satellite power and mass budgets, spares and reliability models; vendor quotes; the optimizer does not run in `srr-offline.html`
 (the worker is a separate file).
 
 ## What it is

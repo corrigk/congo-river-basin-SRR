@@ -128,6 +128,7 @@ function readHash() {
   const [tab, sc, step] = location.hash.slice(1).split('/');
   if (TABS.includes(tab)) state.tab = tab;
   if (tab === 'conops') { state.coStep = ['today', 'what'].includes(sc) ? sc : 'why'; return; }
+  if (tab === 'sdr') { state.sdrSlide = sc === 'present' ? Math.max(0, (+step || 1) - 1) : null; return; }
   if (tab === 'decomposition') { state.dsel = sc ? decodeURIComponent(sc) : null; return; }
   if (tab === 'flow') { state.fn = /^F\d$/.test(sc || '') ? sc : null; return; }
   if (V.scenarioBy[sc]) state.sc = sc;
@@ -137,6 +138,7 @@ function readHash() {
 function writeHash() {
   const h = state.tab === 'scenario' ? `#scenario/${state.sc}/${state.step + 1}`
     : state.tab === 'conops' ? `#conops${state.coStep === 'why' ? '' : `/${state.coStep}`}`
+    : state.tab === 'sdr' && state.sdrSlide != null ? `#sdr/present/${state.sdrSlide + 1}`
     : state.tab === 'decomposition' && state.dsel ? `#decomposition/${encodeURIComponent(state.dsel)}` : `#${state.tab}`;
   if (location.hash !== h) history.replaceState(null, '', h);
 }
@@ -276,7 +278,12 @@ function renderAnalysis() {
 let sdr = null;
 function renderSdr() {
   if (state.tab !== 'sdr') return;
-  sdr ||= import('./sdr/view.js').then(async m => { await m.mount($('#view-sdr')); return m; });
+  const first = !sdr;
+  sdr ||= import('./sdr/view.js').then(async m => {
+    await m.mount($('#view-sdr'), { slide: state.sdrSlide, onSlide: i => { state.sdrSlide = i; writeHash(); } });
+    return m;
+  });
+  if (!first) sdr.then(m => m.present(state.sdrSlide));
 }
 
 // ---------- ConOps tab (loaded the first time it is opened) ----------

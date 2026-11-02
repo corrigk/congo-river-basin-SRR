@@ -14,7 +14,8 @@ Tab **4 · SDR** (`#sdr`). The SRR tabs (1–3) are unchanged. Code in `src/sdr/
 | `optimize.js` | Random sampling then hill climbing over the whole design space; best design for five objectives; Pareto frontier |
 | `sensitivity.js` | Tornado, elasticity matrix, Monte Carlo |
 | `worker.js` | Runs the optimizer and Monte Carlo off the page's main thread |
-| `view.js`, `sdr.css` | The tab |
+| `export.js` | Chart export: any SVG chart with its colours and fonts written inline, as .svg or a 2x .png |
+| `view.js`, `sdr.css` | The tab, including the presenting deck |
 | `designs/*.json` | Preset designs (★ in the design menu). Export a design to a JSON file and commit it here to share it |
 
 ## The physics (Links & power tab)
@@ -109,6 +110,27 @@ The optimizer samples 1,200 random designs, then hill-climbs from the four best 
 tightest margin; best weighted score. The cloud plots every design (cost against the chosen measure) with the
 efficient frontier of compliant designs; click any point to open it. "What the cheapest compliant designs choose"
 shows, per element, how often each option appears: a solid bar is a clear choice.
+
+## Presenting
+
+**Present ▸** in the design bar (or a link to `#sdr/present/1`) turns the current design into a short deck. The
+configurator and tabs step aside and each slide gets a title, a one-line takeaway written from the live numbers, and
+its charts:
+
+1. **The design**: headline numbers and the design in words
+2. **Does it meet the requirements?**: margins with the weakest link, failure scorecard
+3. **What it costs, year by year**: cost by year with the cap, cost by segment
+4. **How the links close**: link summary, uplink margin against elevation, rain fade
+5. **Why this design and not the others**: ranking by team weights, weight robustness
+6. **Where it sits in the design space**: the Pareto cloud (only after the optimizer has run)
+7. **What could change the answer**: tornado and Monte Carlo (run it first for the odds)
+
+→ / ← / Space / PgDn / PgUp move (clickers work), Home / End jump, Esc leaves; the link follows the slide
+(`#sdr/present/4`), so a slide can be linked from the team's deck. **H** hides the top bar for a full-screen
+screenshot, **P** is the site's larger-type presenter mode. Each slide has **Charts as PNG** (every chart on it) and
+**Summary (.md)**: all the takeaways plus the requirement, cost, equipment and link-budget tables as Markdown, ready to
+paste into the SDR report. Outside the deck, every chart card has **PNG** and **SVG** buttons. Exported images use the
+current theme; the PNG falls back to a system sans-serif font.
 
 ## Sensitivity
 

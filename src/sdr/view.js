@@ -9,6 +9,7 @@ import { weightedScore, contributions, winnerMap, flips, robustness, rank } from
 import { OBJECTIVES, frontier } from './optimize.js';
 import { tornado, elasticity, OUTCOMES } from './sensitivity.js';
 import { PHYS, PHYS_SLIDERS, physFor, uplink, rainAp } from './physics.js';
+import { addExportButtons, downloadPng } from './export.js';
 import { LEO_SIZES } from '../s3/conops/model.js';
 import '../s3/v2/v2.css';
 import './sdr.css';
@@ -25,7 +26,9 @@ const S = {
   d: store.get('sdr-design', null) || DEFAULT_DESIGN(), prev: null, tab: 'overview',
   weights: store.get('sdr-weights', { ...DEFAULT_WEIGHTS }), penalty: 0.6, budget: CAP_MUSD, yAxis: 'pop', tOut: 'lcc',
   saved: store.get('sdr-saved', []), compare: store.get('sdr-compare', null), opt: null, mc: null, busy: null, sens: null,
+  present: null, // slide index while presenting
 };
+let onSlide = () => {};
 let root = null, ctx = null, R = null, worker = null, jobs = 0;
 const $ = s => root.querySelector(s);
 const fill = (node, ...kids) => node.replaceChildren(...kids.flat(Infinity).filter(k => k != null && k !== false && k !== ''));
@@ -36,8 +39,10 @@ const mins = v => (Number.isFinite(v) ? (v >= 120 ? `${fmt(v / 60, 1)} h` : `${f
 const btag = b => el('span', { class: `vtag sd-b is-${b}`, title: BASIS[b]?.title, text: BASIS[b]?.label || b });
 const col = i => `var(${COLORS[i % COLORS.length]})`;
 
-export async function mount(host) {
+export async function mount(host, opts = {}) {
   root = host;
+  onSlide = opts.onSlide || onSlide;
+  if (opts.slide != null) S.present = opts.slide;
   root.replaceChildren(el('div', { class: 'v2-loading', text: 'Loading the SDR workbench…' }));
   ctx = { D, Y: {} };
   await ensureYear(S.d.year);
@@ -49,11 +54,21 @@ export async function mount(host) {
   update();
 }
 export function refit() { if (root && R) renderPane(); }
+// Called by main.js when a #sdr/present/N link opens or the hash changes.
+export function present(i) {
+  if (!root || !R) { S.present = i; return; }
+  S.present = i == null ? null : Math.max(0, Math.min(slides().length - 1, i));
+  renderAll();
+}
 
 async function ensureYear(y) { if (!ctx.Y[y]) ctx.Y[y] = await loadStations(y); }
 function update() {
   R = evaluateDesign(ctx, S.d, { withFails: true });
   persist();
+  renderAll();
+}
+function renderAll() {
+  $('.sd').classList.toggle('is-present', S.present != null);
   renderBar(); renderCfg(); renderTabs(); renderPane();
 }
 function setD(patch, { keepOpt = true } = {}) {
@@ -88,6 +103,7 @@ function renderBar() {
     el('button', { class: 'sd-btn', onclick: () => importJson.click(), text: 'Import' }), importJson,
     S.prev ? el('button', { class: 'sd-btn', onclick: () => { const p = S.prev; S.prev = S.d; S.d = p; update(); }, text: 'Undo load' }) : null,
     el('button', { class: 'sd-btn', onclick: () => loadDesign(DEFAULT_DESIGN()), text: 'Reset' }),
+    el('button', { class: 'sd-btn is-present-btn', onclick: () => goSlide(0), title: 'Present this design as slides (← → to move, Esc to leave)', text: 'Present ▸' }),
     el('span', { class: 'sd-flash', role: 'status' }));
 }
 let flashT; function flash(t) { const f = $('.sd-flash'); if (!f) return; f.textContent = t; clearTimeout(flashT); flashT = setTimeout(() => { f.textContent = ''; }, 2500); }
@@ -173,10 +189,105 @@ function renderTabs() {
       el('i', { class: `sd-pill is-${R.compliant ? 'pass' : 'fail'}`, text: R.compliant ? 'Meets every requirement' : `${R.checks.filter(c => !c.ok).length} requirement${R.checks.filter(c => !c.ok).length > 1 ? 's' : ''} missed` })));
 }
 function renderPane() {
+  if (S.present != null) return renderSlide();
   const pane = $('.sd-pane');
   const f = { overview, links: linksTab, time: timeTab, decide: decideTab, explore: exploreTab, sens: sensTab, catalog: catalogTab }[S.tab];
   fill(pane, f());
+  addExportButtons(pane);
 }
+
+// ---------- presenting: the design as a short deck, every slide built from the live numbers ----------
+const pctS = v => `${fmt(v * 100)}%`;
+function slides() {
+  const X = R.phys, m = R.metrics, failed = R.checks.filter(c => !c.ok);
+  const peak = [...R.perYear].sort((a, b) => b.total - a.total)[0];
+  const list = [
+    { title: S.d.name, kicker: 'The design', take: () => explain()[0], body: () => [kpis(), whyCard()] },
+    { title: 'Does it meet the requirements?', kicker: 'Requirements', take: () => (R.compliant
+      ? `Yes: all ten Level 0 requirements and the $400M cap. The weakest link is ${R.tight.id} ${NAMES[R.tight.id] || ''}, at ${fmt(R.tight.margin * 100)}% margin; it keeps ${pctS(R.criteria.resilience)} of its checks across five failure cases.`
+      : `Not yet: it misses ${failed.map(c => `${c.id} ${NAMES[c.id] || ''}`).join(', ')}.`),
+      body: () => [el('div', { class: 'sd-grid2' }, marginCard(), failCard())] },
+    { title: 'What it costs, year by year', kicker: 'Cost', take: () => `${money(R.total.base)} over 15 years (${money(R.total.low)}–${money(R.total.high)}): ${money(R.capexTotal)} to build by ${START_YEAR + R.ioc - 1}, then ${money(R.opexYr)} a year to run. The heaviest year is ${peak.cal} (${money(peak.total)})${peak.repl > peak.capex ? ', when equipment is replaced' : ''}; its biggest line is ${(l => (l ? `${l.name.split(':')[0].replace(/ \(.*\)$/, '')} (${money(l.byYear[peak.y - 1])})` : 'the build'))(R.lines.filter(x => x.byYear[peak.y - 1] > 0.5).sort((a, b) => b.byYear[peak.y - 1] - a.byYear[peak.y - 1])[0])}.`,
+      body: () => [el('div', { class: 'sd-grid-wide' }, timeChart(), segCard())] },
+    { title: 'How the links close', kicker: 'Link budgets', take: () => [
+      X.uplink ? `The sensor uplink closes with ${fmt(X.uplink.margin, 1)} dB at 20° and carries ${fmt(X.kbps, 1)} kbps per satellite (${fmt(m.util * 100)}% used); under canopy it closes above ${X.uplink.closeEl ?? '–'}°.` : `Sensors use ${R.P.leo.name.replace('Commercial service: ', '')}.`,
+      `Stations relay canopy sensors out to ${fmt(X.relay.km, 1)} km.`,
+      X.geo ? `Alerts reach a $${R.P.receiver.capexUsd} receiver with ${fmt(X.geo.margin, 1)} dB to spare.` : '',
+      `Rain keeps the GEO feeder up ${fmt(X.rain.feederAvail * 100, 2)}% of the year.`].filter(Boolean).join(' '),
+      body: () => { const parts = linksTab(); const sat = !!R.P.leo.perf.sat; return [parts[0], el('div', { class: 'sd-grid2' }, sat ? parts[1].children[0] : parts[1], parts[2].children[0])]; } },
+    { title: 'Why this design and not the others', kicker: 'Trade', take: () => {
+      const res = compareSet(), order = rank(res, S.weights, S.penalty), rob = robustness(res, S.penalty), lead = res[order[0].i];
+      return `${lead.design.name.replace(' (current)', '')} ranks first with the team's weights (${fmt(order[0].s * 100, 1)} of 100) and wins ${fmt(rob[order[0].i] * 100)}% of 3,000 random weightings.${order[1] ? ` Runner-up: ${res[order[1].i].design.name.replace(' (current)', '')} (${fmt(order[1].s * 100, 1)}).` : ''}`;
+    }, body: () => { const res = compareSet(), order = rank(res, S.weights, S.penalty); return [el('div', { class: 'sd-grid2' }, rankCard(res, order), robustCard(res))]; } },
+    S.opt && { title: 'Where it sits in the design space', kicker: 'Explore', take: () => {
+      const c = S.opt.best.cheapest?.point, n = S.opt.cloud.filter(p => p.compliant).length;
+      return `${fmt(S.opt.evaluated)} designs searched; ${fmt(n)} meet every requirement. The cheapest of them costs ${c ? money(c.lcc) : '–'}; this design costs ${money(R.lcc)}${c && R.lcc > c.lcc ? `, ${money(R.lcc - c.lcc)} more for what the team's weights value` : ''}.`;
+    }, body: () => [cloudCard()] },
+    { title: 'What could change the answer', kicker: 'Sensitivity', take: () => {
+      S.sens ||= { tor: tornado(ctx, S.d, S.weights, S.penalty), ela: elasticity(ctx, S.d) };
+      const top = S.sens.tor.rows.map(r => ({ r, span: Math.abs(r.hi.lcc - r.lo.lcc) })).sort((a, b) => b.span - a.span)[0];
+      return `${top.r.k.label} is the biggest cost uncertainty (a ${money(top.span)} swing).${S.mc ? ` Across 600 draws of every uncertain input the design stays under the cap ${pctS(S.mc.pUnderCap)} of the time and meets everything ${pctS(S.mc.pCompliant)}.` : ' Run the Monte Carlo for the odds of staying under the cap.'}`;
+    }, body: () => { S.sens ||= { tor: tornado(ctx, S.d, S.weights, S.penalty), ela: elasticity(ctx, S.d) }; S.tOut = 'lcc'; return [el('div', { class: 'sd-grid2' }, tornadoCard(), mcCard())]; } },
+  ];
+  return list.filter(Boolean);
+}
+function goSlide(i) {
+  const n = slides().length;
+  S.present = i == null ? null : Math.max(0, Math.min(n - 1, i));
+  hideTip();
+  renderAll();
+  onSlide(S.present);
+  root.scrollTop = 0;
+}
+function renderSlide() {
+  const deck = slides(), i = Math.min(S.present, deck.length - 1), sl = deck[i];
+  const body = el('div', { class: 'sd-slide-body' }, sl.body());
+  const pane = $('.sd-pane');
+  fill(pane, el('section', { class: 'sd-slide', 'aria-roledescription': 'slide', 'aria-label': `${i + 1} of ${deck.length}: ${sl.title}` },
+    el('header', { class: 'sd-slide-h' },
+      el('span', { class: 'sd-kicker', text: `${String(i + 1).padStart(2, '0')} · ${sl.kicker}` }),
+      el('h2', { class: 'sd-slide-t', text: sl.title }),
+      el('p', { class: 'sd-take', text: sl.take() })),
+    body,
+    el('footer', { class: 'sd-slide-f' },
+      el('button', { class: 'sd-btn', disabled: i === 0 || null, onclick: () => goSlide(i - 1), 'aria-label': 'Previous slide', text: '←' }),
+      el('div', { class: 'sd-dots', role: 'tablist', 'aria-label': 'Slides' }, deck.map((d, k) => el('button', { class: 'sd-dot-b', 'aria-current': k === i ? 'step' : null, title: d.title, 'aria-label': `Slide ${k + 1}: ${d.title}`, onclick: () => goSlide(k) }))),
+      el('button', { class: 'sd-btn', disabled: i === deck.length - 1 || null, onclick: () => goSlide(i + 1), 'aria-label': 'Next slide', text: '→' }),
+      el('span', { class: 'sd-note sd-slide-meta', text: `${S.d.name} · ${new Date().toISOString().slice(0, 10)} · H hides the top bar for a screenshot` }),
+      el('button', { class: 'sd-btn', onclick: () => exportSlide(i, sl), title: 'Download every chart on this slide as PNG', text: 'Charts as PNG' }),
+      el('button', { class: 'sd-btn', onclick: () => download(`${slug(S.d.name)}-summary.md`, summaryMd(), 'text/markdown'), title: 'The whole deck as text: takeaways, numbers and tables', text: 'Summary (.md)' }),
+      el('button', { class: 'sd-btn is-primary', onclick: () => goSlide(null), text: 'Exit (Esc)' }))));
+  addExportButtons(pane, `${String(i + 1).padStart(2, '0')} `);
+}
+async function exportSlide(i, sl) {
+  const svgs = [...$('.sd-slide-body').querySelectorAll('svg.vsvg')];
+  for (const [k, svg] of svgs.entries()) await downloadPng(svg, `${String(i + 1).padStart(2, '0')}-${sl.kicker}-${k + 1}`);
+  flash(`${svgs.length} chart${svgs.length === 1 ? '' : 's'} downloaded`);
+}
+// The deck as Markdown: every slide's takeaway, then the numbers behind it, ready to paste into a report.
+function summaryMd() {
+  const deck = slides();
+  const out = [`# ${S.d.name}: SDR summary (${new Date().toISOString().slice(0, 10)})`, ''];
+  deck.forEach((sl, i) => { out.push(`## ${i + 1}. ${sl.title}`, '', sl.take(), ''); });
+  out.push('## Requirements', '', '| Requirement | State | Margin | Value |', '| --- | --- | --- | --- |',
+    ...R.checks.map(c => `| ${c.id} ${NAMES[c.id] || ''} | ${c.state} | ${fmt(c.margin * 100)}% | ${c.v} |`), '');
+  out.push('## Life-cycle cost ($M)', '', '| Line | Basis | Setup | Running | Replacement | 15-yr | Low | High |', '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...[...R.lines].sort((a, b) => b.base - a.base).map(l => `| ${l.name} | ${l.basis} | ${fmt(l.capex, 1)} | ${fmt(l.opex, 1)} | ${fmt(l.repl, 1)} | ${fmt(l.base, 1)} | ${fmt(l.low, 1)} | ${fmt(l.high, 1)} |`),
+    `| **Total** | | ${fmt(R.capexTotal, 1)} | | | **${fmt(R.total.base, 1)}** | ${fmt(R.total.low, 1)} | ${fmt(R.total.high, 1)} |`, '');
+  out.push('## Equipment', '', ...ELEMENTS.map(e => `- **${e.name}**: ${opt(e.id, S.d.pick[e.id]).name} (${BASIS[opt(e.id, S.d.pick[e.id]).basis]?.label})`), '');
+  out.push('## Link budgets', '');
+  for (const L of [R.phys.uplink, R.phys.relay, R.phys.geo, R.phys.rain, R.phys.power].filter(Boolean)) out.push(`### ${L.name}`, '', '| Parameter | Value | Unit | Note |', '| --- | --- | --- | --- |', ...L.rows.map(([k, v, u, n]) => `| ${k} | ${dbv(v)} | ${u} | ${n || ''} |`), '');
+  return out.join('\n');
+}
+addEventListener('keydown', e => {
+  if (S.present == null || !root || root.hidden || e.target.closest?.('input, textarea, select')) return;
+  const k = e.key;
+  if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') { e.preventDefault(); e.stopImmediatePropagation(); goSlide(S.present + 1); }
+  else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); e.stopImmediatePropagation(); goSlide(S.present - 1); }
+  else if (k === 'Home') { e.preventDefault(); goSlide(0); }
+  else if (k === 'End') { e.preventDefault(); goSlide(slides().length - 1); }
+  else if (k === 'Escape') { e.stopImmediatePropagation(); goSlide(null); }
+}, true);
 
 // ---------- overview ----------
 function kpis() {
@@ -240,7 +351,7 @@ function linesCard() {
 function explain(r = R) {
   const d = r.design, p = r.P, m = r.metrics, big = [...r.lines].sort((a, b) => b.base - a.base).slice(0, 3);
   const out = [];
-  out.push(`${d.name}: ${r.own ? `${r.sats} ${p.leo.name.replace(/^Own /, '').toLowerCase()} on ${p.launch.name.toLowerCase()}` : p.leo.name.replace('Commercial service: ', 'the commercial ') + ' service'}, ${p.geo.perf.ok ? p.geo.name.toLowerCase() : 'no GEO broadcast'}, ${d.n} ranger stations, ${d.repeaters} repeaters and ${d.dbNodes} database node${d.dbNodes > 1 ? 's' : ''}.`);
+  out.push(`${d.name}: ${r.own ? `${r.sats} satellites (${p.leo.name.replace(/^Own /, '')}), ${p.launch.name.replace(/^(.)/, c => c.toLowerCase())}` : `sensors on ${p.leo.name.replace('Commercial service: ', '')}`}; alerts by ${p.geo.perf.ok ? p.geo.name.replace(/^(.)/, c => c.toLowerCase()) : 'no GEO broadcast'}; ${d.n} ranger stations, ${d.repeaters} canopy repeaters and ${d.dbNodes} database node${d.dbNodes > 1 ? 's' : ''}.`);
   out.push(`It costs ${money(r.total.base)} over 15 years (range ${money(r.total.low)}–${money(r.total.high)}): ${money(r.capexTotal)} to set up and ${money(r.opexYr)} a year to run. The biggest lines are ${big.map(l => `${l.name.toLowerCase()} (${money(l.base)})`).join(', ')}.`);
   out.push(r.compliant ? `It meets every Level 0 requirement. The tightest is ${r.tight.id} ${NAMES[r.tight.id] || ''} with ${fmt(r.tight.margin * 100)}% margin.` : `It misses ${r.checks.filter(c => !c.ok).map(c => `${c.id} ${NAMES[c.id] || ''}`).join(', ')}.`);
   out.push(`Priority sensor messages reach the COP in ${mins(m.p95Fast)} (p95); ${fmt(r.R.within30 * 100)}% arrive within 30 minutes. Uplink use is ${fmt(m.util * 100)}% of capacity. ${fmt(r.R.popPct, 1)}% of people live within a station's reach.`);
@@ -328,7 +439,8 @@ function powerCard() {
 }
 
 // ---------- cost over time ----------
-function timeTab() {
+function timeTab() { return [timeChart(), el('div', { class: 'sd-grid2' }, ganttCard(), segCard())]; }
+function timeChart() {
   const P = R.perYear, band = S.mc?.band;
   const W = 680, H = 260, l = 46, r = 54, t = 16, b = 28, maxBar = Math.max(...P.map(p => p.total)) * 1.1, maxCum = Math.max(CAP_MUSD * 1.05, P.at(-1).cum, band ? band.at(-1).p90 : 0) * 1.05;
   const bw = (W - l - r) / LIFE, X = i => l + i * bw, Yb = v => H - b - (v / maxBar) * (H - t - b), Yc = v => H - b - (v / maxCum) * (H - t - b);
@@ -356,7 +468,7 @@ function timeTab() {
     band ? el('span', {}, el('i', { class: 'is-band' }), 'Monte Carlo 10th–90th percentile') : el('button', { class: 'sd-btn', onclick: () => runMc().then(() => renderPane()), text: 'Add Monte Carlo band' }));
   const chart = chartBlock('sd-time', 'Cost by year, 2027–2041', el('div', {}, s, legend),
     [['Year', 'Setup $M', 'Running $M', 'Replacement $M', 'Total $M', 'Cumulative $M'], ...P.map(p => [String(p.cal), fmt(p.capex, 1), fmt(p.opex, 1), fmt(p.repl, 1), fmt(p.total, 1), fmt(p.cum, 1)])]);
-  return [chart, el('div', { class: 'sd-grid2' }, ganttCard(), segCard())];
+  return chart;
 }
 function ganttCard() {
   const rows = Object.entries(R.lead).filter(([k, v]) => v > 0 && !(k === 'launch' && !R.own)).sort((a, b) => b[1] - a[1]);

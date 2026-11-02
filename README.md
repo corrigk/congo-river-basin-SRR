@@ -18,7 +18,7 @@ citation and explains the labels.
 | 1 | **ConOps** | One map in three steps. **Why**: population density, conflict (UCDP), fire (NASA FIRMS), floods (GDACS), protected areas and existing infrastructure, with sourced figures. **Today** (→): the same map without S-3: who existing networks reach (a modeled proxy around the towns we hold) and the RFP's figures (3–7 days for field data, 62% with no warning, 13–15 river gauges). **With S-3 · where · how many** (→): the same map with the design: people within a station's reach, ranger stations and their reach, canopy repeaters, sensors, database nodes, the GEO alert footprint. Sliders and toggles (year, stations with the sweet-spot band, repeaters, raised antennas, database nodes, LEO size, GEO, Starlink, hydro, sensors per type, failure cases) drive live **requirement checks** (S3-01 to S3-10 and the $400M cap), the counts, and the **15-year cost range**; a **vs Today** tab says by how much the design improves each of today's numbers |
 | 2 | **Function flow** | The team's nine blocks: Acquire, Transmit, Process, Evaluate, Generate, Broadcast, Receive, Verify (a "No" loops back to Broadcast), and Coordinate (persistent). Each block's steps, performers and traceability; the latency budgets; and **Play**: the click-through scenarios on the globe or ground view (A flood warning chain, B routine collection, C degraded operations, D non-flood hazard), with an F1–F9 strip lighting each step's blocks |
 | 3 | **Requirements** | Mission & gap, the ten Level 0 requirements (threshold / objective), and the decomposition MO → L4 |
-| 4 | **SDR** | The decision workbench for the System Definition Review: configure the system with catalog equipment (sourced, labelled options for every element), see the 15-year cost by year, requirement margins and failure cases, weigh designs with team weights (winner map, flip points, robustness, decision log), search the design space (Pareto cloud), and test sensitivity (tornado, elasticity, Monte Carlo). See [docs/sdr-workbench.md](docs/sdr-workbench.md) |
+| 4 | **SDR** | The decision workbench for the System Definition Review: configure the system with catalog equipment (sourced, labelled options for every element), see the 15-year cost by year, requirement margins and failure cases, weigh designs with team weights (winner map, flip points, robustness, decision log), search the design space (Pareto cloud), and test sensitivity (tornado, elasticity, Monte Carlo). **Present ▸** turns the design into a seven-slide deck with live takeaways; every chart exports as PNG or SVG. See [docs/sdr-workbench.md](docs/sdr-workbench.md) |
 
 How the ConOps numbers are worked out (coverage, latency, capacity, availability, cost range, the sweet spot) is in
 [docs/conops-model.md](docs/conops-model.md). Every chart has a **Table** button.
@@ -41,7 +41,7 @@ How the ConOps numbers are worked out (coverage, latency, capacity, availability
 | F · ? | Fullscreen · shortcuts |
 
 **Deep links** open a view directly, so a slide can link straight to it: `…/#conops`, `…/#conops/today`, `…/#conops/what`,
-`…/#flow/F8`, `…/#scenario/A/5`, `…/#requirements`, `…/#overview`, `…/#decomposition`. Add `?present` for presenter
+`…/#flow/F8`, `…/#scenario/A/5`, `…/#sdr`, `…/#sdr/present/3`, `…/#requirements`, `…/#overview`, `…/#decomposition`. Add `?present` for presenter
 mode, `?slide` for slide mode and `?offline` to skip the online satellite imagery. Laid out for 1280×720 and up (also
 1024 px and phone width).
 
