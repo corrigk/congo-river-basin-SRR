@@ -7,6 +7,7 @@
 // scripts/sdr-report.mjs all run the same code.
 import { evaluate, ASSUME, LEO_SIZES } from '../s3/conops/model.js';
 import { ELEMENTS, opt } from './catalog.js';
+import { physFor, uplinkBudget, relayBudget, geoBudget, rainBudget, powerSizing } from './physics.js';
 
 export const LIFE = 15;              // years, RFP life-cycle cost horizon
 export const START_YEAR = 2027;      // program year 1
@@ -36,6 +37,10 @@ export const KNOBS = [
   { id: 'wait', label: 'Satellite wait times', lo: 0.8, hi: 1.3 },
   { id: 'relay', label: 'Station relay reach', lo: 0.75, hi: 1.25 },
   { id: 'traffic', label: 'Sensor data per day', lo: 0.7, hi: 2.0 },
+  { id: 'foliage', label: 'Foliage loss', lo: 0.7, hi: 1.6 },
+  { id: 'rain', label: 'Tropical rain rate', lo: 0.7, hi: 1.4 },
+  { id: 'load', label: 'Station power load', lo: 0.8, hi: 1.5 },
+  { id: 'psh', label: 'Peak sun hours', lo: 0.85, hi: 1.1 },
 ];
 
 export const CRITERIA = [
@@ -58,9 +63,11 @@ const BEST = (D, k) => (k === 1 ? [D.db.recommended[0]] : D.db.best_by_count[Str
 // The page data with the chosen orbit's revisit row (or a commercial service's) relabelled as the 15° table the
 // ConOps model reads, sensor traffic scaled. Memoized: the optimizer reuses a handful of variants.
 const dCache = new Map();
-function dataFor(D, leoOpt, launchOpt, k) {
+// canopy: how a sensor under canopy reaches a satellite, from the uplink budget: 'open' (closes from 20°, so open-sky
+// timing), 'mask45' (the 45° revisit row), 'high' / 'none' (no usable direct path: canopy sensors need a relay).
+function dataFor(D, leoOpt, launchOpt, k, canopy = 'mask45') {
   const p = leoOpt.perf, inc = p.kind === 'own' ? launchOpt.perf.inclination : p.inclination ?? null;
-  const key = `${leoOpt.id}|${inc}|${k('wait')}|${k('traffic')}`;
+  const key = `${leoOpt.id}|${inc}|${k('wait')}|${k('traffic')}|${canopy}`;
   if (dCache.has(key)) return dCache.get(key);
   const w = k('wait');
   const scale = r => ({ ...r, inclination_deg: 15,
@@ -72,6 +79,8 @@ function dataFor(D, leoOpt, launchOpt, k) {
     rows = LEO_SIZES.map(s => scale({ satellites: s, planes: 6, open_sky_20deg: { mean_wait_min: c.mean, p95_wait_min: c.p95, max_wait_min: c.max, pct_time_in_contact: 100 },
       under_canopy_45deg: { mean_wait_min: c.canopyMean, p95_wait_min: c.canopyP95, max_wait_min: c.canopyP95 * 2, pct_time_in_contact: 60 } }));
   } else rows = D.leo.results.filter(r => r.inclination_deg === inc).map(scale);
+  if (!p.continuous && canopy === 'open') rows = rows.map(r => ({ ...r, under_canopy_45deg: { ...r.open_sky_20deg } }));
+  if (!p.continuous && (canopy === 'high' || canopy === 'none')) rows = rows.map(r => ({ ...r, under_canopy_45deg: { mean_wait_min: Infinity, p95_wait_min: Infinity, max_wait_min: Infinity, pct_time_in_contact: 0 } }));
   const t = k('traffic');
   const D2 = { ...D, leo: { ...D.leo, results: rows }, sn: { ...D.sn, types: D.sn.types.map(x => ({ ...x, bytes_per_day: x.bytes_per_day * t })) } };
   if (dCache.size > 64) dCache.clear();
@@ -120,7 +129,15 @@ export function evaluateDesign(ctx, design, { knobs = {}, fail = null, withFails
   const pick = id => opt(id, design.pick[id]);
   const P = Object.fromEntries(ELEMENTS.map(e => [e.id, pick(e.id)]));
   const leoO = P.leo, own = leoO.perf.kind === 'own', launchO = P.launch, geoO = P.geo;
-  const D = dataFor(D0, leoO, launchO, k);
+  // ----- physics: link budgets, rain, power sizing (physics.js) -----
+  const ph = physFor(design, knobs);
+  const ub = leoO.perf.sat ? uplinkBudget(ph, leoO.perf.sat) : null;
+  const relay = relayBudget(ph, P.tower.perf.heightM);
+  const geoL = geoO.perf.ok ? geoBudget(ph, geoO.perf.eirpDbw) : null;
+  const rain = rainBudget(ph, P.backhaul.perf.fadeDb);
+  const power = powerSizing(ph, { backhaul: P.backhaul.id, tech: P.power.perf });
+  const D = dataFor(D0, leoO, launchO, k, ub?.canopyClass);
+  const kbps = own ? ub.kbpsPerSat : leoO.perf.kbpsPerSat;
   const sats = own ? design.leoSats : leoO.perf.sats ?? 24;
   const counts = Object.fromEntries(D0.sn.types.map(t => [t.id, Math.round(t.baseline_count * (design.sensorScale ?? 1))]));
   const nodes = BEST(D0, design.dbNodes);
@@ -130,8 +147,9 @@ export function evaluateDesign(ctx, design, { knobs = {}, fail = null, withFails
   const spaceAvail = Math.min(leoO.perf.availSpace, geoO.perf.ok ? geoO.perf.availSpace : 1);
 
   const R = withAssume({
-    leoKbpsPerSat: leoO.perf.kbpsPerSat * k('kbps'), terminalUsd: moduleUsd, terminalLifeYr: moduleLife,
-    'relayKm.station': P.tower.perf.relayKm * k('relay'), 'avail.node': nodeAvail, 'avail.space': spaceAvail,
+    leoKbpsPerSat: kbps * k('kbps'), terminalUsd: moduleUsd, terminalLifeYr: moduleLife,
+    'relayKm.station': Math.round(relay.km * k('relay') * 10) / 10, 'avail.node': nodeAvail, 'avail.space': spaceAvail,
+    'avail.rain': geoO.perf.ok ? rain.feederAvail : 0.999,
   }, () => evaluate(D, Y, {
     year: design.year, mode: design.mode, n: design.n, dbNodes: nodes, sensors: counts, repeaters: design.repeaters,
     leoSats: sats, geo: !!geoO.perf.ok, starlink: P.backhaul.id !== 'none', hydro: !!P.power.perf.hydro, raised: design.raised, fail,
@@ -167,12 +185,14 @@ export function evaluateDesign(ctx, design, { knobs = {}, fail = null, withFails
 
   // Ranger stations from the SRR station items, with the chosen tower, power and backhaul.
   const C = D0.cost.station, items = Object.fromEntries(C.capex_items.map(x => [x.id, x.usd]));
-  const common = sum(Object.entries(items).filter(([id]) => !['tower', 'solar', 'starlink'].includes(id)).map(([, v]) => v)) + P.tower.capexUsd + P.power.capexUsd;
+  const common = sum(Object.entries(items).filter(([id]) => !['tower', 'solar', 'starlink'].includes(id)).map(([, v]) => v)) + P.tower.capexUsd + power.capexUsd;
+  // micro-hydro river stations keep one day of battery and no PV
+  const hydroBatt = power.battUsd / ph.power.autonomyDays, hydroPower = C.hydro_option.hydro_capex_usd + hydroBatt + P.power.perf.bosUsd;
   let stCapex = 0;
   const lm = t => 1 + (C.logistics_multiplier[t] - 1) * k('logistics');
   for (const s of R.stations) {
     let c = common + C.access_kit[s.type].usd;
-    if (P.power.perf.hydro && s.type === 'river') c += C.hydro_option.hydro_capex_usd - (P.power.capexUsd - C.hydro_option.reduced_solar_capex_usd);
+    if (P.power.perf.hydro && s.type === 'river') c += hydroPower - power.capexUsd;
     stCapex += c * lm(s.type) * k('stationCost');
   }
   const st = add('stations', `Ranger stations (${nSt})`, 'Ground', 'srr', P.power.range).buy(stCapex, P.tower.lifeYr);
@@ -180,7 +200,7 @@ export function evaluateDesign(ctx, design, { knobs = {}, fail = null, withFails
   const riverN = R.stations.filter(s => s.type === 'river').length;
   // battery swaps: hydro river stations keep a smaller bank
   const hydroN = P.power.perf.hydro ? riverN : 0;
-  for (const [count, usd] of [[nSt - hydroN, P.power.battUsd], [hydroN, C.hydro_option.battery_replacement_usd]])
+  for (const [count, usd] of [[nSt - hydroN, power.battUsd], [hydroN, hydroBatt]])
     for (let y = ioc + P.power.battLifeYr; y <= LIFE; y += P.power.battLifeYr) st.at(y, count * usd);
   if (P.power.perf.hydro) st.yearly(riverN * C.hydro_option.extra_opex_usd_per_year);
 
@@ -218,6 +238,8 @@ export function evaluateDesign(ctx, design, { knobs = {}, fail = null, withFails
   const m = R.metrics, need = R.responderMbps, have = P.backhaul.perf.mbps * (nSt + dbN);
   const geoOk = !!geoO.perf.ok && fail !== 'geo';
   const ck = Object.fromEntries(R.checks.map(c => [c.id, { ...c }]));
+  if (ub && !ub.ok) ck['S3-01'] = { id: 'S3-01', ok: false, v: `Uplink does not close: ${ub.margin.toFixed(1)} dB margin at 20° (need ${ph.marginReqDb} dB)` };
+  if (geoL && !geoL.ok) ck['S3-05'] = { id: 'S3-05', ok: false, v: `GEO downlink margin ${geoL.margin.toFixed(1)} dB (need ${ph.geo.marginReqDb} dB)` };
   ck['S3-04'] = { id: 'S3-04', ok: moduleUsd <= 150 && moduleLife >= 1, v: `$${moduleUsd} module, ${moduleLife}-yr life`, obj: moduleUsd <= 50 && moduleLife >= 3 };
   ck['S3-07'] = { id: 'S3-07', ok: geoOk && P.receiver.capexUsd <= 25, v: geoOk ? `$${P.receiver.capexUsd} receiver, ${P.receiver.lifeYr}-yr life` : 'No broadcast to receive', obj: P.receiver.capexUsd <= 10 };
   ck['S3-08'] = { id: 'S3-08', ok: have >= need, near: have >= need / 2, v: `${need.toFixed(1)} Mbps needed; ${have >= 100 ? Math.round(have).toLocaleString('en-US') : have.toFixed(1)} Mbps of ${P.backhaul.name}` };
@@ -248,7 +270,7 @@ export function evaluateDesign(ctx, design, { knobs = {}, fail = null, withFails
   };
 
   const out = {
-    design, R, P, own, sats, lines: lineOut, total, perYear, npv, lcc, capexTotal, opexYr, ioc, driver, lead, checks, compliant, tight, criteria,
+    design, R, P, own, sats, phys: { ph, uplink: ub, relay, geo: geoL, rain, power, kbps }, lines: lineOut, total, perYear, npv, lcc, capexTotal, opexYr, ioc, driver, lead, checks, compliant, tight, criteria,
     metrics: { ...m, popPct: R.popPct, within30: R.within30, avail: R.avail, terminals, receivers: R.receivers, stations: nSt, repeaters: design.repeaters, dbNodes: dbN, sats, backhaulMbps: have },
   };
   if (withFails) {

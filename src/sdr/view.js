@@ -8,12 +8,13 @@ import { ELEMENTS, ELEMENT, opt, BASIS } from './catalog.js';
 import { weightedScore, contributions, winnerMap, flips, robustness, rank } from './decide.js';
 import { OBJECTIVES, frontier } from './optimize.js';
 import { tornado, elasticity, OUTCOMES } from './sensitivity.js';
+import { PHYS, PHYS_SLIDERS, physFor, uplink, rainAp } from './physics.js';
 import { LEO_SIZES } from '../s3/conops/model.js';
 import '../s3/v2/v2.css';
 import './sdr.css';
 
 const PRESETS = Object.values(import.meta.glob('../../designs/*.json', { eager: true, import: 'default' }));
-const TABS = [['overview', 'Overview'], ['time', 'Cost over time'], ['decide', 'Decide'], ['explore', 'Explore'], ['sens', 'Sensitivity'], ['catalog', 'Catalog']];
+const TABS = [['overview', 'Overview'], ['links', 'Links & power'], ['time', 'Cost over time'], ['decide', 'Decide'], ['explore', 'Explore'], ['sens', 'Sensitivity'], ['catalog', 'Catalog']];
 const COLORS = ['--s1', '--s2', '--s4', '--s7', '--s5', '--s3', '--s6'];
 const NAMES = { 'S3-01': 'Coverage', 'S3-02': 'Capacity', 'S3-03': 'Priority ≤30 min', 'S3-04': 'Terminal ≤$150', 'S3-05': 'Alert ≤10 min', 'S3-06': 'Targeting', 'S3-07': 'Receiver ≤$25', 'S3-08': 'Responders', 'S3-09': 'Command ≤6 h', 'S3-10': 'Availability', LCC: 'Cost ≤$400M' };
 const store = {
@@ -128,7 +129,20 @@ function renderCfg() {
     segs('Raised antennas on fixed sensors', 'raised', [false, true], v => (v ? 'Yes' : 'No')),
     slider('Sensors (× SRR baseline)', 'sensorScale', 0.5, 4, 0.25, '×'),
     slider('Discount rate (0 = nominal)', 'discountPct', 0, 10, 0.5, '%'),
-    Object.entries(groups).map(([g, es]) => [el('h3', { class: 'sd-h', text: g }), es.map(elementBox)]));
+    Object.entries(groups).map(([g, es]) => [el('h3', { class: 'sd-h', text: g }), es.map(elementBox)]),
+    el('details', { class: 'sd-el sd-phys', open: S.openPhys || null, ontoggle: ev => { S.openPhys = ev.target.open; } },
+      el('summary', {}, el('span', { class: 'sd-el-n', text: 'Physics assumptions' }), el('span', { class: 'sd-el-v', text: 'Link budgets, rain, power' })),
+      el('div', { class: 'sd-phys-b' }, PHYS_SLIDERS.map(physSlider),
+        el('button', { class: 'sd-link', onclick: () => setD({ phys: {} }), text: 'Back to defaults' }))));
+}
+function physSlider(sl) {
+  const def = sl.get(structuredClone(PHYS)), v = S.d.phys?.[sl.id] ?? def;
+  const out = el('b', { text: `${v} ${sl.unit}` });
+  return el('div', { class: 'sd-num' }, el('div', { class: 'sd-num-h' }, el('span', { text: sl.label }), out),
+    el('input', { type: 'range', min: sl.min, max: sl.max, step: sl.step, value: v, 'aria-label': sl.label,
+      oninput: e => { out.textContent = `${e.target.value} ${sl.unit}`; },
+      onchange: e => setD({ phys: { ...(S.d.phys || {}), [sl.id]: +e.target.value } }) }),
+    v !== def ? el('small', { text: `default ${def} ${sl.unit}` }) : null);
 }
 function optSummary(eid, o) {
   const p = o.perf || {};
@@ -138,7 +152,10 @@ function optSummary(eid, o) {
   if (o.hubUsd) parts.push(`hub $${fmt(o.hubUsd / 1e6, 1)}M, node $${fmt(o.nodeUsd / 1e6, 1)}M`);
   if (o.opexUsdYr) parts.push(`$${fmt(o.opexUsdYr >= 1e6 ? o.opexUsdYr / 1e6 : o.opexUsdYr, o.opexUsdYr >= 1e6 ? 1 : 0)}${o.opexUsdYr >= 1e6 ? 'M' : ''}/yr`);
   if (p.moduleUsd) parts.push(`module $${p.moduleUsd}, $${p.airtimeUsdMo}/device/mo`);
-  if (p.kbpsPerSat && p.kind === 'own') parts.push(`${p.kbpsPerSat} kbps/sat`);
+  if (p.sat && p.kind === 'own') parts.push(`G/T ${p.sat.gtDbK} dB/K, ${p.sat.channels} channels`);
+  if (p.eirpDbw) parts.push(`${p.eirpDbw} dBW`);
+  if (p.dod) parts.push(`DoD ${p.dod * 100}%, $${p.battUsdKwh}/kWh`);
+  if (p.heightM) parts.push(`${p.heightM} m`);
   if (o.fte) parts.push(`${o.fte} staff × $${fmt(o.usdPerFteYr / 1000)}k`);
   if (o.lifeYr && o.lifeYr < 15) parts.push(`${o.lifeYr}-yr life`);
   if (o.battLifeYr) parts.push(`battery every ${o.battLifeYr} yr`);
@@ -157,7 +174,7 @@ function renderTabs() {
 }
 function renderPane() {
   const pane = $('.sd-pane');
-  const f = { overview, time: timeTab, decide: decideTab, explore: exploreTab, sens: sensTab, catalog: catalogTab }[S.tab];
+  const f = { overview, links: linksTab, time: timeTab, decide: decideTab, explore: exploreTab, sens: sensTab, catalog: catalogTab }[S.tab];
   fill(pane, f());
 }
 
@@ -232,6 +249,83 @@ function explain(r = R) {
   return out;
 }
 function whyCard() { return card('This design in words', el('div', { class: 'sd-why' }, explain().map(t => el('p', { text: t })))); }
+
+// ---------- links & power: the physics behind the numbers ----------
+function lineChart({ id, title, series, xLabel, yLabel, xLog = false, xMin, xMax, yMin, yMax, hlines = [], vlines = [], fmtX = v => fmt(v), note, table }) {
+  const W = 460, H = 230, l = 44, r = 12, t = 16, b = 34;
+  const tx = v => (xLog ? Math.log10(v) : v), X = v => l + ((tx(v) - tx(xMin)) / (tx(xMax) - tx(xMin))) * (W - l - r), Y = v => H - b - ((Math.max(yMin, Math.min(yMax, v)) - yMin) / (yMax - yMin)) * (H - t - b);
+  const s = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'vsvg', role: 'img', 'aria-label': title });
+  for (let k = 0; k <= 4; k++) { const v = yMin + ((yMax - yMin) * k) / 4; sv('line', { x1: l, x2: W - r, y1: Y(v), y2: Y(v), class: 'sd-grid' }, s); svText(s, { x: l - 4, y: Y(v) + 4, 'text-anchor': 'end', class: 'sub' }, fmt(v)); }
+  const ticks = xLog ? [0.001, 0.01, 0.1, 1, 5].filter(v => v >= xMin && v <= xMax) : Array.from({ length: 5 }, (_, k) => xMin + ((xMax - xMin) * k) / 4);
+  for (const v of ticks) svText(s, { x: X(v), y: H - 18, 'text-anchor': 'middle', class: 'sub' }, fmtX(v));
+  svText(s, { x: (l + W - r) / 2, y: H - 3, 'text-anchor': 'middle', class: 'lbl' }, xLabel);
+  svText(s, { x: 0, y: 10, class: 'lbl' }, yLabel);
+  for (const h of hlines) { sv('line', { x1: l, x2: W - r, y1: Y(h.y), y2: Y(h.y), class: 'sd-cap' }, s); svText(s, { x: W - r - 2, y: Y(h.y) - 4, 'text-anchor': 'end', class: 'sub' }, h.label); }
+  vlines.forEach((v, i) => { if (v.x < xMin || v.x > xMax) return; sv('line', { x1: X(v.x), x2: X(v.x), y1: t, y2: H - b, class: 'sd-axis', 'stroke-dasharray': '3 3' }, s); svText(s, { x: X(v.x) + 3, y: t + 10 + i * 12, class: 'sub' }, v.label); });
+  series.forEach(se => {
+    const pts = se.pts.filter(([x, y]) => Number.isFinite(y) && x >= xMin && x <= xMax);
+    sv('path', { d: `M${pts.map(([x, y]) => `${X(x)},${Y(y)}`).join('L')}`, fill: 'none', stroke: `var(${se.color})`, 'stroke-width': 2.5 }, s);
+  });
+  const legend = el('div', { class: 'sd-legend' }, series.map(se => el('span', {}, el('i', { style: `background:var(${se.color})` }), se.label)));
+  return chartBlock(id, title, el('div', {}, s, legend, note ? el('p', { class: 'sd-note', text: note }) : null), table);
+}
+const dbv = v => (typeof v === 'number' ? fmt(v, Math.abs(v) < 100 ? 1 : 0) : String(v));
+function budgetCard(L) {
+  const body = el('table', { class: 'sd-budget' }, el('tbody', {}, L.rows.map(([k, v, u, n]) => el('tr', {}, el('th', { scope: 'row', text: k }), el('td', { class: 'sd-bv', text: dbv(v) }), el('td', { class: 'sd-bu', text: u }), el('td', { class: 'sd-bn', text: n || '' })))));
+  return card(L.name, body);
+}
+function linksTab() {
+  const X = R.phys, ph = X.ph, leo = R.P.leo, sat = leo.perf.sat;
+  const tiles = [];
+  if (X.uplink) tiles.push(['Sensor uplink', `${fmt(X.uplink.margin, 1)} dB`, `open sky at 20° · canopy closes above ${X.uplink.closeEl ?? '–'}°`, X.uplink.ok]);
+  else tiles.push(['Sensor uplink', 'provider', `${leo.name.replace('Commercial service: ', '')} link, not modeled`, true]);
+  tiles.push(['Uplink capacity', `${fmt(X.kbps, 1)} kbps`, `per satellite · ${fmt(R.metrics.util * 100)}% used`, R.metrics.util < 1]);
+  tiles.push(['Station relay reach', `${fmt(X.relay.km, 1)} km`, `${R.P.tower.perf.heightM} m tower · horizon ${fmt(X.relay.horizon, 1)} km`, true]);
+  if (X.geo) tiles.push(['Alert downlink', `${fmt(X.geo.margin, 1)} dB`, `at a $${R.P.receiver.capexUsd} receiver`, X.geo.ok]);
+  tiles.push(['Feeder in rain', `${fmt(X.rain.feederAvail * 100, 2)}%`, `${ph.rain.feederMarginDb} dB margin at ${ph.rain.feederGHz} GHz`, X.rain.feederAvail >= 0.995]);
+  tiles.push(['Station power', `${fmt(X.power.pvKwp, 1)} kWp · ${fmt(X.power.battKwh)} kWh`, `$${fmt(X.power.capexUsd / 1000, 1)}k per station`, true]);
+  const strip = el('div', { class: 'sd-kpis' }, tiles.map(([n, b, s2, ok]) => el('div', { class: `sd-kpi is-${ok ? 'pass' : 'fail'}` }, el('span', { class: 'sd-kpi-k', text: n }), el('b', { text: b }), el('span', { text: s2 }))));
+  const out = [strip];
+  // uplink margin against elevation, open sky and under canopy
+  if (sat) {
+    const els = Array.from({ length: 81 }, (_, i) => 10 + i);
+    out.push(el('div', { class: 'sd-grid2' },
+      lineChart({ id: 'sd-elev', title: 'Uplink margin against elevation', xLabel: 'Satellite elevation (°)', yLabel: 'Margin (dB)', xMin: 10, xMax: 90, yMin: -15, yMax: 25,
+        series: [{ label: 'Open sky', color: '--s1', pts: els.map(e => [e, uplink(ph, sat, e, false).margin]) }, { label: `Under canopy (${ph.foliage.layerM} m crown, ×${ph.foliage.wet} wet)`, color: '--s6', pts: els.map(e => [e, uplink(ph, sat, e, true).margin]) }],
+        hlines: [{ y: ph.marginReqDb, label: `required ${ph.marginReqDb} dB` }], vlines: [{ x: 20, label: '20° mask' }, { x: 45, label: '45°' }, ...(X.uplink.closeEl ? [{ x: X.uplink.closeEl, label: `canopy closes ${X.uplink.closeEl}°` }] : [])],
+        note: `Where the canopy curve crosses the required margin sets which revisit a canopy sensor gets: from 20° it is timed like open sky, up to 45° it uses the 45° revisit, higher than that it needs a relay. Now: ${X.uplink.canopyClass === 'open' ? 'open-sky timing' : X.uplink.canopyClass === 'mask45' ? 'the 45° revisit' : 'no direct path'}.`,
+        table: [['Elevation °', 'Open sky dB', 'Canopy dB'], ...[10, 20, 30, 45, 60, 90].map(e => [String(e), fmt(uplink(ph, sat, e, false).margin, 1), fmt(uplink(ph, sat, e, true).margin, 1)])] }),
+      relayChart()));
+  } else out.push(relayChart());
+  out.push(el('div', { class: 'sd-grid2' }, rainChart(), powerCard()));
+  out.push(el('div', { class: 'sd-budgets' }, [X.uplink, X.relay, X.geo, X.rain, X.power].filter(Boolean).map(budgetCard)));
+  out.push(el('p', { class: 'sd-note', text: 'Models: free-space loss; Weissberger foliage loss (ITU-R P.833 family) × a wet-tropical factor; two-ray ground reflection and radio horizon for the relay; ITU-R P.838 rain coefficients and the P.618 effective path, scaled to other time percentages with the classic P.618 formula. Payload, antenna and price figures are estimates (see the Catalog tab). Change the assumptions under "Physics assumptions" in the configurator.' }));
+  return out;
+}
+function relayChart() {
+  const r = R.phys.relay, ph = R.phys.ph, ds = Array.from({ length: 60 }, (_, i) => 0.5 + i * 0.6);
+  const sens = ph.relay.rxSensDbm + ph.relay.fadeDb;
+  return lineChart({ id: 'sd-relay', title: 'Station relay: received power against distance', xLabel: 'Distance from the tower (km)', yLabel: 'Received (dBm)', xMin: 0.5, xMax: 36, yMin: -160, yMax: -80,
+    series: [{ label: `${R.P.tower.perf.heightM} m tower`, color: '--s4', pts: ds.map(d => [d, r.prx(d)]) }, { label: '24 m / 30 m for comparison', color: '--faint', pts: ds.map(d => [d, r.prx(d) + 20 * Math.log10((R.P.tower.perf.heightM === 30 ? 24 : 30) / R.P.tower.perf.heightM)]) }],
+    hlines: [{ y: sens, label: `sensitivity + ${ph.relay.fadeDb} dB fade` }], vlines: [{ x: r.km, label: `reach ${fmt(r.km, 1)} km` }, { x: r.horizon, label: 'horizon' }],
+    note: 'Beyond a few hundred metres the ground reflection makes loss grow with distance⁴: doubling the reach costs 12 dB, so tower height (and the sensor\'s antenna height) matters more than transmit power.',
+    table: [['km', 'dBm'], ...[1, 5, 10, 15, 20, 25, 30].map(d => [String(d), fmt(r.prx(d), 1)])] });
+}
+function rainChart() {
+  const X = R.phys.rain, ph = R.phys.ph, ps = Array.from({ length: 50 }, (_, i) => 0.001 * 5000 ** (i / 49));
+  return lineChart({ id: 'sd-rain', title: 'Rain fade against share of the year', xLabel: '% of the year the fade is exceeded', yLabel: 'Fade (dB)', xLog: true, xMin: 0.001, xMax: 5, yMin: 0, yMax: 40, fmtX: v => `${v}%`,
+    series: [{ label: `GEO feeder ${ph.rain.feederGHz} GHz`, color: '--s2', pts: ps.map(p => [p, rainAp(X.fe.A, p)]) }, { label: `Backhaul ${ph.rain.backhaulGHz} GHz`, color: '--s1', pts: ps.map(p => [p, rainAp(X.bh.A, p)]) }],
+    hlines: [{ y: ph.rain.feederMarginDb, label: `feeder margin ${ph.rain.feederMarginDb} dB` }], vlines: [{ x: 0.5, label: 'S3-10: 0.5%' }],
+    note: `The feeder is down whenever its fade exceeds the margin: ${fmt((1 - X.feederAvail) * 100, 2)}% of the year. Sensor and alert links at UHF and L-band lose under 0.1 dB, which is why the service itself rides out tropical storms. A second feeder at another node (site diversity) is the usual fix.`,
+    table: [['% of year', 'Feeder dB', 'Backhaul dB'], ...[0.01, 0.05, 0.1, 0.5, 1].map(p => [String(p), fmt(rainAp(X.fe.A, p), 1), fmt(rainAp(X.bh.A, p), 1)])] });
+}
+function powerCard() {
+  const P = R.phys.power, max = Math.max(...P.loads.map(l => l.wh), P.speaker.wh);
+  const rows = [...P.loads, P.speaker].map((l, i) => el('div', { class: 'sd-seg' }, el('span', { text: l.name }), el('div', { class: 'sd-segbar' }, el('i', { style: `width:${(l.wh / max) * 100}%;background:${l === P.speaker ? 'var(--alert)' : col(i)}` })), el('b', { text: `${fmt(l.wh)} Wh` })));
+  return chartBlock('sd-power', `Station power: ${fmt(P.pvKwp, 1)} kWp PV, ${fmt(P.battKwh, 1)} kWh battery, $${fmt(P.capexUsd / 1000, 1)}k`, el('div', { class: 'sd-segs' }, rows,
+    el('p', { class: 'sd-note', text: `A normal day uses ${fmt(P.normal / 1000, 1)} kWh; an alert day adds the loudspeakers. The battery carries ${R.phys.ph.power.autonomyDays} cloudy days plus one alert; the array recharges it at ${fmt(R.phys.ph.power.psh, 1)} peak sun hours. The SRR kit (6 kWp + 40 kWh, $28k) was about ${fmt(6 / P.pvKwp, 1)}× this array.` })),
+  [['Load', 'Wh/day'], ...[...P.loads, P.speaker].map(l => [l.name, fmt(l.wh)]), ['PV kWp', fmt(P.pvKwp, 2)], ['Battery kWh', fmt(P.battKwh, 1)], ['Cost USD', fmt(P.capexUsd)]]);
+}
 
 // ---------- cost over time ----------
 function timeTab() {

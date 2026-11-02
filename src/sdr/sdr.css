@@ -163,3 +163,15 @@
   .sd-cat-r { grid-template-columns: 1fr; }
   .sd-grid2 { grid-template-columns: 1fr; }
 }
+
+/* links & power */
+.sd-kpi-k { font-size: 10px !important; letter-spacing: .1em; text-transform: uppercase; color: var(--faint) !important; }
+.sd-budgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 12px; }
+.sd-budget { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.sd-budget th { text-align: left; font-weight: 500; color: var(--text); padding: 3px 6px 3px 0; border-bottom: 1px solid var(--line); }
+.sd-budget td { padding: 3px 4px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.sd-bv { text-align: right; font-weight: 700; white-space: nowrap; }
+.sd-bu { color: var(--faint); white-space: nowrap; }
+.sd-bn { color: var(--muted); font-size: 10.5px; }
+.sd-budget tr:last-child th, .sd-budget tr:last-child td { border-bottom: 0; }
+.sd-phys-b { padding: 4px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
